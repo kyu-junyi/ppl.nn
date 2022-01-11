@@ -68,6 +68,7 @@ Define_bool_opt("--save-inputs", g_flag_save_inputs, false, "save separated inpu
 Define_bool_opt("--save-outputs", g_flag_save_outputs, false, "save separated output tensors in NDARRAY format");
 Define_string_opt("--save-data-dir", g_flag_save_data_dir, ".",
                   "directory to save input/output data if '--save-*' options are enabled.");
+Define_bool_opt("--perf-with-io", g_flag_perf_with_io, false, "profiling with io copy");
 
 /* -------------------------------------------------------------------------- */
 
@@ -370,6 +371,40 @@ static inline bool RegisterRiscvEngine(vector<unique_ptr<Engine>>* engines) {
 
 #endif
 
+#ifdef PPLNN_USE_ARM
+
+Define_bool_opt("--use-arm", g_flag_use_arm, false, "use arm engine");
+
+Define_bool_opt("--use-fp16", g_flag_use_fp16, false, "infer with armv8.2 fp16");
+Define_int32_opt("--wg-level", g_flag_wg_level, 1, "select winograd level[0-3]. 0: wingorad off. 1: turn on winograd and automatically select block size. 2: use winograd block 2 if possible. 3: use winograd block 4 if possible");
+Define_int32_opt("--tuning-level", g_flag_tuning_level, 1, "select conv algo dynamic tuning level[0-1]. 0: off. 1: on");
+
+#include "ppl/nn/engines/arm/engine_factory.h"
+static inline bool RegisterArmEngine(vector<unique_ptr<Engine>>* engines) {
+    ArmEngineOptions options;
+    if (g_flag_mm_policy == "perf") {
+        options.mm_policy = ARM_MM_MRU;
+    } else if (g_flag_mm_policy == "mem") {
+        options.mm_policy = ARM_MM_COMPACT;
+    }
+
+    if (g_flag_use_fp16) {
+        options.forward_precision = ppl::common::DATATYPE_FLOAT16;
+    } else{
+        options.forward_precision = ppl::common::DATATYPE_FLOAT32;
+    }
+    options.graph_optimization_level = ARM_OPT_ENABLE_ALL;
+    options.winograd_level = g_flag_wg_level;
+    options.dynamic_tuning_level = g_flag_tuning_level;
+
+    auto arm_engine = ArmEngineFactory::Create(options);
+    // configure engine
+    engines->emplace_back(unique_ptr<Engine>(arm_engine));
+    LOG(INFO) << "***** register ArmEngine *****";
+    return true;
+}
+#endif
+
 static inline bool RegisterEngines(vector<unique_ptr<Engine>>* engines) {
 #ifdef PPLNN_USE_X86
     if (g_flag_use_x86) {
@@ -396,6 +431,16 @@ static inline bool RegisterEngines(vector<unique_ptr<Engine>>* engines) {
         bool ok = RegisterRiscvEngine(engines);
         if (!ok) {
             LOG(ERROR) << "RegisterCudaEngine failed.";
+            return false;
+        }
+    }
+#endif
+
+#ifdef PPLNN_USE_ARM
+    if (g_flag_use_arm) {
+        bool ok = RegisterArmEngine(engines);
+        if (!ok) {
+            LOG(ERROR) << "RegisterArmEngine failed.";
             return false;
         }
     }
@@ -884,6 +929,54 @@ static void PrintProfilingStatistics(const ProfilingStatistics& stat, double run
 }
 #endif
 
+static bool SetInputs(const vector<string>& input_data, Runtime* runtime) {
+    if (input_data.size() != runtime->GetInputCount()) {
+        LOG(ERROR) << "number of input data [" << input_data.size() << "] != runtime input count ["
+                   << runtime->GetInputCount() << "]";
+        return false;
+    }
+
+    for (uint32_t i = 0; i < runtime->GetInputCount(); ++i) {
+        auto t = runtime->GetInputTensor(i);
+        auto status = t->ReallocBuffer();
+        if (status != RC_SUCCESS) {
+            LOG(ERROR) << "realloc buffer for input[" << t->GetName() << "] failed: " << GetRetCodeStr(status);
+            return false;
+        }
+
+        TensorShape src_desc = *t->GetShape();
+        src_desc.SetDataFormat(DATAFORMAT_NDARRAY);
+        status = t->ConvertFromHost(input_data[i].data(), src_desc);
+        if (status != RC_SUCCESS) {
+            LOG(ERROR) << "set input [" << t->GetName() << "] failed: " << GetRetCodeStr(status);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool GetOutputs(const Runtime* runtime) {
+    for (uint32_t c = 0; c < runtime->GetOutputCount(); ++c) {
+        auto t = runtime->GetOutputTensor(c);
+
+        TensorShape dst_desc = *t->GetShape();
+        dst_desc.SetDataFormat(DATAFORMAT_NDARRAY);
+        if (dst_desc.GetDataType() == DATATYPE_FLOAT16) {
+            dst_desc.SetDataType(DATATYPE_FLOAT32);
+        }
+        auto bytes = dst_desc.GetBytesIncludingPadding();
+        vector<char> buffer(bytes);
+        auto status = t->ConvertToHost(buffer.data(), dst_desc);
+        if (status != RC_SUCCESS) {
+            LOG(ERROR) << "convert data of tensor[" << t->GetName() << "] failed: " << GetRetCodeStr(status);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static bool Profiling(const vector<string>& input_data, Runtime* runtime) {
     if (g_flag_warmup_iterations > 0) {
         LOG(INFO) << "Warm up start for " << g_flag_warmup_iterations << " times.";
@@ -905,7 +998,9 @@ static bool Profiling(const vector<string>& input_data, Runtime* runtime) {
     uint32_t run_count = 0;
     while (run_dur < g_flag_min_profiling_seconds * 1000 || run_count < g_flag_min_profiling_iterations) {
         auto run_begin_ts = std::chrono::system_clock::now();
+        if (g_flag_perf_with_io) SetInputs(input_data, runtime);
         runtime->Run();
+        if (g_flag_perf_with_io) GetOutputs(runtime);
         auto run_end_ts = std::chrono::system_clock::now();
         auto diff = std::chrono::duration_cast<std::chrono::microseconds>(run_end_ts - run_begin_ts);
         run_dur += (double)diff.count() / 1000;

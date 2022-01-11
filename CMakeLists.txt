@@ -85,6 +85,10 @@ if(HPCC_USE_RISCV)
     include(cmake/riscv.cmake)
 endif()
 
+if(HPCC_USE_AARCH64)
+    include(cmake/arm.cmake)
+endif()
+
 # --------------------------------------------------------------------------- #
 
 if(PPLNN_ENABLE_PYTHON_API)
