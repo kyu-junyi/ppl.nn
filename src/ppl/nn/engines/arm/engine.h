@@ -29,7 +29,7 @@ class ArmEngine final : public EngineImpl {
 public:
     ppl::common::RetCode Init(const ArmEngineOptions&);
     ArmEngine()
-        : EngineImpl("arm"), device_(ARM_DEFAULT_ALIGNMENT, ppl::common::ISA_ARMV8 | ppl::common::ISA_ARMV8_2){};
+        : EngineImpl("arm"), device_(ARM_DEFAULT_ALIGNMENT, ppl::common::GetCpuISA()){};
     ppl::common::RetCode BindNumaNode(int32_t numa_node_id) const;
     ppl::common::RetCode Configure(uint32_t, ...) override;
     EngineContext* CreateEngineContext() override;
