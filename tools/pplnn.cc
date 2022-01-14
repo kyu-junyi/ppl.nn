@@ -378,6 +378,7 @@ Define_bool_opt("--use-arm", g_flag_use_arm, false, "use arm engine");
 Define_bool_opt("--use-fp16", g_flag_use_fp16, false, "infer with armv8.2 fp16");
 Define_int32_opt("--wg-level", g_flag_wg_level, 1, "select winograd level[0-3]. 0: wingorad off. 1: turn on winograd and automatically select block size. 2: use winograd block 2 if possible. 3: use winograd block 4 if possible");
 Define_int32_opt("--tuning-level", g_flag_tuning_level, 1, "select conv algo dynamic tuning level[0-1]. 0: off. 1: on");
+Define_int32_opt("--numa-node-id", g_flag_numa_node_id, -1, "bind arm engine to specified numa node, range [0, numa_max_node), -1 means not bind");
 
 #include "ppl/nn/engines/arm/engine_factory.h"
 static inline bool RegisterArmEngine(vector<unique_ptr<Engine>>* engines) {
@@ -396,6 +397,7 @@ static inline bool RegisterArmEngine(vector<unique_ptr<Engine>>* engines) {
     options.graph_optimization_level = ARM_OPT_ENABLE_ALL;
     options.winograd_level = g_flag_wg_level;
     options.dynamic_tuning_level = g_flag_tuning_level;
+    options.numa_node_id = g_flag_numa_node_id;
 
     auto arm_engine = ArmEngineFactory::Create(options);
     // configure engine

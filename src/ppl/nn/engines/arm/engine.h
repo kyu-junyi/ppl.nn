@@ -30,6 +30,7 @@ public:
     ppl::common::RetCode Init(const ArmEngineOptions&);
     ArmEngine()
         : EngineImpl("arm"), device_(ARM_DEFAULT_ALIGNMENT, ppl::common::ISA_ARMV8 | ppl::common::ISA_ARMV8_2){};
+    ppl::common::RetCode BindNumaNode(int32_t numa_node_id) const;
     ppl::common::RetCode Configure(uint32_t, ...) override;
     EngineContext* CreateEngineContext() override;
     bool Supports(const ir::Node* node) const override;

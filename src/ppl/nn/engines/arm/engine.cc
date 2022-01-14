@@ -22,6 +22,11 @@
 #include "ppl/nn/engines/arm/optimizer/opt_graph.h"
 #include "ppl/nn/common/logger.h"
 #include "ppl/nn/engines/utils.h"
+
+#if defined(__linux__) && defined(PPLNN_USE_NUMA)
+#include <numa.h>
+#endif
+
 using namespace std;
 using namespace ppl::common;
 
@@ -29,7 +34,34 @@ namespace ppl { namespace nn { namespace arm {
 
 RetCode ArmEngine::Init(const ArmEngineOptions& options) {
     options_ = options;
+    BindNumaNode(options_.numa_node_id); // TODO: move to runtime init
     return RC_SUCCESS;
+}
+
+RetCode ArmEngine::BindNumaNode(int32_t numa_node_id) const {
+    if (numa_node_id < 0) {
+        return RC_SUCCESS; // not bind numa node
+    }
+#if defined(__linux__) && defined(PPLNN_USE_NUMA)
+    if (numa_available() < 0) {
+        LOG(WARNING) << "NUMA API check failed. current system not support NUMA API. engine will not bind numa.";
+        return RC_UNSUPPORTED;
+    }
+    const int32_t max_numa_node_id = numa_max_node();
+    if (numa_node_id > max_numa_node_id) {
+        return RC_SUCCESS; // invalid numa_node_id, will not bind numa node
+    }
+    if (0 != numa_run_on_node(numa_node_id)) { // bind cpu task
+        LOG(WARNING) << "numa bind failed.";
+        return RC_UNSUPPORTED;
+    }
+    numa_set_preferred(numa_node_id); // bind memory alloc
+    LOG(INFO) << "successfully bind engine to numa node " << numa_node_id << ".";
+    return RC_SUCCESS;
+#else
+    LOG(WARNING) << "current build does not support NUMA. will not bind to numa node.";
+    return RC_UNSUPPORTED;
+#endif
 }
 
 EngineContext* ArmEngine::CreateEngineContext() {

@@ -31,6 +31,7 @@ struct PPLNN_PUBLIC ArmEngineOptions final {
     uint32_t graph_optimization_level = ARM_OPT_ENABLE_ALL;
     uint32_t winograd_level = ARM_WG_ON;
     uint32_t dynamic_tuning_level = ARM_TUNING_SELECT_ALGO;
+    int32_t  numa_node_id = -1; // bind engine to speicified numa node, range [0, numa_max_node). other value will not bind.
 };
 
 }} // namespace ppl::nn
