@@ -2,14 +2,8 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(PPLKernelArmServer)
 
 option(PPL_USE_ARM_SERVER_OMP "Build arm server kernel with openmp support." ON)
-option(PPL_USE_ARM_SERVER_FP16 "Build arm server kernel with fp16 support." ON)
-
-if(HPCC_USE_ARM_SERVER_OPENMP)
+if(HPCC_USE_OPENMP)
     set(PPL_USE_ARM_SERVER_OMP ON)
-endif()
-
-if(HPCC_USE_ARM_SERVER_FP16)
-    set(PPL_USE_ARM_SERVER_FP16 ON)
 endif()
 
 set(PPL_KERNEL_ARM_SERVER_COMPILE_OPTIONS )
@@ -35,7 +29,7 @@ set(PPLNN_ARM_ENGINE_INCLUDE_DIRECTORIES ${PPLNN_SOURCE_DIR}/src/ ${PPLNN_SOURCE
 #### #### #### #### ####
 ### file globbing ######
 #### #### #### #### ####
-file(GLOB_RECURSE PPL_KERNEL_ARM_SERVER_FP16_SRC ${CMAKE_CURRENT_LIST_DIR}/src/*)
+file(GLOB_RECURSE PPL_KERNEL_ARM_SERVER_SRC ${CMAKE_CURRENT_LIST_DIR}/src/*)
 list(APPEND PPL_KERNEL_ARM_SERVER_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/include)
 list(APPEND PPL_KERNEL_ARM_SERVER_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/src)
 
@@ -60,14 +54,12 @@ endif()
 
 if(PPL_USE_ARM_SERVER_FP16) 
     list(APPEND PPL_KERNEL_ARM_SERVER_COMPILE_OPTIONS "-march=armv8.2-a+fp16")
-else()
-    list(APPEND PPL_KERNEL_ARM_SERVER_COMPILE_OPTIONS "-march=armv8.2-a")
 endif()
 
 #### #### #### #### ####
 ### targets ############
 #### #### #### #### ####
-add_library(PPLKernelArmServer ${PPL_KERNEL_ARM_SERVER_FP16_SRC})
+add_library(PPLKernelArmServer ${PPL_KERNEL_ARM_SERVER_SRC})
 target_link_libraries(PPLKernelArmServer PRIVATE ${PPL_KERNEL_ARM_SERVER_LINK_LIBRARIES})
 target_include_directories(PPLKernelArmServer 
     PUBLIC ${PPL_KERNEL_ARM_SERVER_INCLUDE_DIRECTORIES}
