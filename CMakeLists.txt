@@ -32,8 +32,6 @@ include(cmake/deps.cmake)
 include(cmake/protobuf.cmake)
 include(cmake/rapidjson.cmake)
 
-hpcc_populate_dep(pplcommon)
-
 # --------------------------------------------------------------------------- #
 
 # framework related
@@ -88,6 +86,8 @@ endif()
 if(HPCC_USE_AARCH64)
     include(cmake/arm.cmake)
 endif()
+
+hpcc_populate_dep(pplcommon)
 
 # --------------------------------------------------------------------------- #
 

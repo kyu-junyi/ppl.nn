@@ -1,6 +1,8 @@
 option(PPL_USE_ARMV8_2 "Build arm server kernel with armv8.2-a support." ON)
 option(PPLNN_USE_NUMA "build with libnuma" OFF)
 
+set(PPLCOMMON_USE_ARMV8_2 ${PPL_USE_ARMV8_2})
+
 if (PPL_USE_ARMV8_2)
     set(PPL_USE_ARM_SERVER_FP16 ON)
 endif()
