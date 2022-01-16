@@ -41,6 +41,6 @@ void conv2d_n4cx_store_group_fp32(
     const int64_t gid_local,
     const int64_t fuse_flag);
 
-}}}
+}}} // namespace ppl::kernel::arm_server
 
 #endif

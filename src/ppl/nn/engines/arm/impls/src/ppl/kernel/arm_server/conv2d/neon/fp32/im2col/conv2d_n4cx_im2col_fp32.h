@@ -56,7 +56,9 @@ class conv2d_n4cx_im2col_fp32_runtime_executor final : public conv2d_runtime_exe
 public:
     conv2d_n4cx_im2col_fp32_runtime_executor() {}
     conv2d_n4cx_im2col_fp32_runtime_executor(const conv2d_param *conv_param, const void *cvt_filter, const void *bias, conv2d_n4cx_im2col_fp32_schedule_param sched_param, conv2d_n4cx_im2col_fp32_kernel_param ker_param)
-        : conv2d_runtime_executor(conv_param, cvt_filter, bias), sched_param_(sched_param), ker_param_(ker_param) {}
+        : conv2d_runtime_executor(conv_param, cvt_filter, bias)
+        , sched_param_(sched_param)
+        , ker_param_(ker_param) {}
     // calculate overall temp buffer size
     uint64_t cal_temp_buffer_size() override;
     // prepare runtime scheduling params if needed
@@ -83,8 +85,7 @@ private:
         const int64_t oc_l2_base,
         const int64_t hw_l2_base,
         const uint32_t fuse_type,
-        const bool renew_tile_im2col
-    );
+        const bool renew_tile_im2col);
 
     friend conv2d_n4cx_im2col_fp32_offline_manager;
 };

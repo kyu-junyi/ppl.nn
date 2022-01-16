@@ -256,7 +256,6 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         }
     }
 
-
     // check direct
     // TODO: remove group restriction after add group support
     if (1) {

@@ -27,14 +27,14 @@ namespace ppl { namespace kernel { namespace arm_server {
 class conv2d_n8cx_depthwise_fp16_offline_manager;
 
 typedef struct {
-
 } conv2d_n8cx_depthwise_fp16_schedule_param;
 
 class conv2d_n8cx_depthwise_fp16_runtime_executor final : public conv2d_runtime_executor {
 public:
     conv2d_n8cx_depthwise_fp16_runtime_executor() {}
     conv2d_n8cx_depthwise_fp16_runtime_executor(const conv2d_param *conv_param, const void *cvt_filter, const void *bias, conv2d_n8cx_depthwise_fp16_schedule_param sched_param)
-        : conv2d_runtime_executor(conv_param, cvt_filter, bias), sched_param_(sched_param) {}
+        : conv2d_runtime_executor(conv_param, cvt_filter, bias)
+        , sched_param_(sched_param) {}
     // calculate overall temp buffer size
     uint64_t cal_temp_buffer_size() override;
     // prepare runtime scheduling params if needed

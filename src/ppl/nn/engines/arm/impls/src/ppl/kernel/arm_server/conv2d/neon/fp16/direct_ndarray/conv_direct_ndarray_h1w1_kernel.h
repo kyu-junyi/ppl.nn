@@ -29,7 +29,7 @@ namespace ppl { namespace kernel { namespace arm_server {
 
 #define CBLK() 8
 
-template<const int64_t oc_section>
+template <const int64_t oc_section>
 void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel(
     const __fp16 *input_base,
     const __fp16 *filter_base,
@@ -49,7 +49,7 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel(
     const int64_t outBCHW_stride,
     const uint32_t fuse_type);
 
-template<>
+template <>
 void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<16>(
     const __fp16 *input_base,
     const __fp16 *filter_base,
@@ -74,23 +74,22 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<16>(
     if (bias_base == nullptr) {
         v0 = vld1q_f16(output_base);
         v1 = vld1q_f16(output_base + outBCHW_stride);
-    }
-    else {
+    } else {
         v0 = vld1q_f16(bias_base);
         v1 = vld1q_f16(bias_base + CBLK());
     }
 
-    int64_t ic = inC;
+    int64_t ic                   = inC;
     const __fp16 *filter_ic_base = filter_base;
-    const __fp16 *input_ic_base = input_base;
+    const __fp16 *input_ic_base  = input_base;
     do {
         for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-            const __fp16 * input_kh_base = input_ic_base + kh * input_kh_stride;
+            const __fp16 *input_kh_base = input_ic_base + kh * input_kh_stride;
             for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
                 const __fp16 *filter_ptr = filter_ic_base + (kh * fltW + kw) * CBLK() * 2;
 
                 v2 = vld1q_f16(filter_ptr);
-                v3 = vld1q_f16(filter_ptr+CBLK());
+                v3 = vld1q_f16(filter_ptr + CBLK());
                 v4 = vld1q_dup_f16(input_kh_base + kw * dltnW);
 
                 v0 = vfmaq_f16(v0, v2, v4);
@@ -100,28 +99,27 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<16>(
         filter_ic_base += flt_ic_stride; //  fltH * fltW * CBLK() * 2;
         input_ic_base += inHW_stride;
         ic -= 1;
-    }
-    while (ic > 0);
+    } while (ic > 0);
 
     if (fuse_type & conv_fuse_flag::SUM) { // sum
         v0 = vaddq_f16(v0, vld1q_f16(sum_base));
-        v1 = vaddq_f16(v1, vld1q_f16(sum_base+outBCHW_stride));
+        v1 = vaddq_f16(v1, vld1q_f16(sum_base + outBCHW_stride));
     }
     if (fuse_type & conv_fuse_flag::RELU) { // relu
         v5 = vdupq_n_f16(0.0);
         v0 = vmaxq_f16(v0, v5);
         v1 = vmaxq_f16(v1, v5);
     }
-    if (fuse_type & conv_fuse_flag::RELU6) {  // relu6
+    if (fuse_type & conv_fuse_flag::RELU6) { // relu6
         v5 = vdupq_n_f16(6.0);
         v0 = vminq_f16(v0, v5);
         v1 = vminq_f16(v1, v5);
     }
     vst1q_f16(output_base, v0);
-    vst1q_f16(output_base+outBCHW_stride, v1);
+    vst1q_f16(output_base + outBCHW_stride, v1);
 }
 
-template<>
+template <>
 void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<8>(
     const __fp16 *input_base,
     const __fp16 *filter_base,
@@ -145,31 +143,29 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<8>(
 
     if (bias_base == nullptr) {
         v0 = vld1q_f16(output_base);
-    }
-    else {
+    } else {
         v0 = vld1q_f16(bias_base);
     }
 
-    int64_t ic = inC;
+    int64_t ic                   = inC;
     const __fp16 *filter_ic_base = filter_base;
-    const __fp16 *input_ic_base = input_base;
+    const __fp16 *input_ic_base  = input_base;
     do {
         for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-            const __fp16 * input_kh_base = input_ic_base + kh * input_kh_stride;
+            const __fp16 *input_kh_base = input_ic_base + kh * input_kh_stride;
             for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
                 const __fp16 *filter_ptr = filter_ic_base + (kh * fltW + kw) * CBLK() * 2;
 
                 v2 = vld1q_f16(filter_ptr);
                 v4 = vld1q_dup_f16(input_kh_base + kw * dltnW);
-                
+
                 v0 = vfmaq_f16(v0, v2, v4);
             }
         }
         filter_ic_base += flt_ic_stride; //  fltH * fltW * CBLK() * 2;
         input_ic_base += inHW_stride;
         ic -= 1;
-    }
-    while (ic > 0);
+    } while (ic > 0);
 
     if (fuse_type & conv_fuse_flag::SUM) { // sum
         v0 = vaddq_f16(v0, vld1q_f16(sum_base));
@@ -178,7 +174,7 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<8>(
         v5 = vdupq_n_f16(0.0);
         v0 = vmaxq_f16(v0, v5);
     }
-    if (fuse_type & conv_fuse_flag::RELU6) {  // relu6
+    if (fuse_type & conv_fuse_flag::RELU6) { // relu6
         v5 = vdupq_n_f16(6.0);
         v0 = vminq_f16(v0, v5);
     }
@@ -204,6 +200,6 @@ typedef void (*ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel
     const int64_t outBCHW_stride,
     const uint32_t fuse_type);
 
-}}}
+}}} // namespace ppl::kernel::arm_server
 
 #endif

@@ -30,7 +30,7 @@ void conv2d_n8cx_load_group_fp16(
     const int64_t ic_group,
     const int64_t gid_global,
     const int64_t gid_local);
-    
+
 void conv2d_n8cx_store_group_fp16(
     const __fp16 *output_gbuf_g_base,
     __fp16 *output_b_base,
@@ -41,6 +41,6 @@ void conv2d_n8cx_store_group_fp16(
     const int64_t gid_local,
     const uint32_t fuse_flag);
 
-}}}
+}}} // namespace ppl::kernel::arm_server
 
 #endif

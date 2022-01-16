@@ -26,10 +26,9 @@
 #include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-#define CBLK() 4
+#define CBLK()  4
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
-
 
 namespace ppl { namespace kernel { namespace arm_server {
 
@@ -50,11 +49,11 @@ void conv2d_n4cx_load_group_fp32(
         int64_t channel_base = channel_g_base + ic;
         for (int64_t idx = 0; idx < hw_in; idx++) {
             const float *input_base = input_b_base + idx * ICBLK();
-            float *input_gbuf_base = input_gbuf_g_base + ic * hw_in + idx * ICBLK();
+            float *input_gbuf_base  = input_gbuf_g_base + ic * hw_in + idx * ICBLK();
 
             // TODO: vectorization
             for (int64_t lane = 0; lane < ICBLK(); lane++) {
-                int src_idx = FLOOR4(channel_base + lane) * hw_in + (channel_base + lane) % ICBLK();
+                int src_idx           = FLOOR4(channel_base + lane) * hw_in + (channel_base + lane) % ICBLK();
                 input_gbuf_base[lane] = input_base[src_idx];
             }
         }
@@ -66,11 +65,11 @@ void conv2d_n4cx_load_group_fp32(
         int64_t channel_base = channel_g_base + ic_group_align;
         for (int64_t idx = 0; idx < hw_in; idx++) {
             const float *input_base = input_b_base + idx * ICBLK();
-            float *input_gbuf_base = input_gbuf_g_base + ic_group_align * hw_in + idx * ICBLK();
+            float *input_gbuf_base  = input_gbuf_g_base + ic_group_align * hw_in + idx * ICBLK();
 
             // TODO: vectorization
             for (int64_t lane = 0; lane < ic_tail; lane++) {
-                int src_idx = FLOOR4(channel_base + lane) * hw_in + (channel_base + lane) % ICBLK();
+                int src_idx           = FLOOR4(channel_base + lane) * hw_in + (channel_base + lane) % ICBLK();
                 input_gbuf_base[lane] = input_base[src_idx];
             }
             for (int64_t lane = ic_tail; lane < ICBLK(); lane++) {
@@ -90,24 +89,24 @@ void conv2d_n4cx_store_group_fp32(
     const int64_t gid_local,
     const int64_t fuse_flag)
 {
-    const int64_t oc_group_pck = CEIL4(oc_group);
+    const int64_t oc_group_pck    = CEIL4(oc_group);
     const int64_t global_oc_start = gid_global * oc_group;
-    const int64_t global_oc_end = global_oc_start + oc_group;
+    const int64_t global_oc_end   = global_oc_start + oc_group;
 
     int64_t global_oc_inner_start = CEIL4(global_oc_start);
-    int64_t global_oc_inner_end = FLOOR4(global_oc_end);
+    int64_t global_oc_inner_end   = FLOOR4(global_oc_end);
 
     global_oc_inner_start = std::min(global_oc_inner_start, global_oc_end);
-    global_oc_inner_end = std::max(global_oc_inner_end, global_oc_inner_start);
+    global_oc_inner_end   = std::max(global_oc_inner_end, global_oc_inner_start);
 
     const int64_t oc_head = global_oc_inner_start - global_oc_start;
 
     float32x4_t vzero = vdupq_n_f32(0.0f);
-    float32x4_t vsix = vdupq_n_f32(6.0f);
+    float32x4_t vsix  = vdupq_n_f32(6.0f);
 
     PRAGMA_OMP_SINGLE_NOWAIT()
     if (oc_head) {
-        const int64_t global_oc_base = FLOOR4(global_oc_start);
+        const int64_t global_oc_base        = FLOOR4(global_oc_start);
         const int64_t global_oc_ofs_in_lane = global_oc_start - global_oc_base;
         for (int64_t idx = 0; idx < hw_out; idx++) {
             for (int64_t lane = 0; lane < oc_head; lane++) {
@@ -130,8 +129,8 @@ void conv2d_n4cx_store_group_fp32(
     for (int64_t global_oc = global_oc_inner_start; global_oc < global_oc_inner_end; global_oc += OCBLK()) {
         for (int64_t idx = 0; idx < hw_out; idx++) {
             for (int64_t lane = 0; lane < OCBLK(); lane++) {
-                int64_t channel_in_group = global_oc - global_oc_start + lane;
-                int64_t buffer_idx = FLOOR4(channel_in_group) * hw_out + idx * OCBLK() + channel_in_group % OCBLK();
+                int64_t channel_in_group                          = global_oc - global_oc_start + lane;
+                int64_t buffer_idx                                = FLOOR4(channel_in_group) * hw_out + idx * OCBLK() + channel_in_group % OCBLK();
                 output[global_oc * hw_out + idx * OCBLK() + lane] = output_gbuf_g_base[buffer_idx];
             }
             if (fuse_flag) {
@@ -154,13 +153,13 @@ void conv2d_n4cx_store_group_fp32(
 
     PRAGMA_OMP_SINGLE_NOWAIT()
     if (oc_tail) {
-        const int64_t global_oc_base = global_oc_inner_end;  // FLOOR4(global_oc_inner_end);
-        const int64_t group_oc_ofs = global_oc_inner_end - global_oc_start;
+        const int64_t global_oc_base = global_oc_inner_end; // FLOOR4(global_oc_inner_end);
+        const int64_t group_oc_ofs   = global_oc_inner_end - global_oc_start;
         for (int64_t idx = 0; idx < hw_out; idx++) {
             for (int64_t lane = 0; lane < oc_tail; lane++) {
                 int64_t channel_in_group = group_oc_ofs + lane;
-                int64_t buffer_idx = FLOOR4(channel_in_group) * hw_out + idx * OCBLK() + channel_in_group % OCBLK();
-                float tmp_result = output_gbuf_g_base[buffer_idx];
+                int64_t buffer_idx       = FLOOR4(channel_in_group) * hw_out + idx * OCBLK() + channel_in_group % OCBLK();
+                float tmp_result         = output_gbuf_g_base[buffer_idx];
                 if (fuse_flag & conv_fuse_flag::SUM) {
                     tmp_result += sum[global_oc_base * hw_out + idx * OCBLK() + lane];
                 }
@@ -176,4 +175,4 @@ void conv2d_n4cx_store_group_fp32(
     }
 }
 
-}}}
+}}} // namespace ppl::kernel::arm_server
