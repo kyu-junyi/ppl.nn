@@ -22,10 +22,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#define FLOOR4(val)  ((val) & (~3))
-#define CEIL4(val)   (((val) + 3) & (~3))
-#define CEIL128(val) (((val) + 127) & (~127))
-
 #define CBLK()  4
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
@@ -997,7 +993,6 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
                     for (int64_t ow = 0; ow < outW_align4; ow += 4) {
                         const float *input_ptr = input_h_base + ow * 2 * ICBLK();
                         float *output_ptr      = output_h_base + ow * OCBLK();
-                        float *sum_ptr         = sum_h_base + ow * OCBLK();
                         __builtin_prefetch(output_ptr, 1, 2);
 
                         float32x4_t vin[18]; // double buffer
@@ -2051,17 +2046,15 @@ ppl::common::RetCode conv2d_n4cx_depthwise_fp32_offline_manager::gen_cvt_weights
     }
 
     const int64_t num_output = param_.num_output;
-    const int64_t channels   = param_.channels;
     const int64_t kernel_h   = param_.kernel_h;
     const int64_t kernel_w   = param_.kernel_w;
-    const int64_t num_group  = param_.group;
 
     cvt_bias_size_               = CEIL4(num_output) * sizeof(float);
     cvt_bias_                    = allocator_->Alloc(cvt_bias_size_);
     int64_t padding_offset_bytes = num_output * sizeof(float);
     int64_t padding_bytes        = (CEIL4(num_output) - num_output) * sizeof(float);
     memcpy(cvt_bias_, bias, num_output * sizeof(float));
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     cvt_filter_size_ = conv_n4cx_depthwise_get_converted_filter_size(num_output, kernel_h, kernel_w);
     cvt_filter_      = allocator_->Alloc(cvt_filter_size_);

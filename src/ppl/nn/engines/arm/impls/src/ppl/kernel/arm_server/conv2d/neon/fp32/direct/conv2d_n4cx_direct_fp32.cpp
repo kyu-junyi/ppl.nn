@@ -375,7 +375,6 @@ ppl::common::RetCode conv2d_n4cx_direct_fp32_runtime_executor::execute()
         // const int64_t ocL1S = 64; (void)ocL1S;
         // const int64_t icL1S = 128; (void)icL1S;
 
-        const bool pre_padding = (outW <= (otW + (otW + 1) / 2)) && (padW > 0);
         const bool use_pack    = (fltH == 1 && fltW == 1 && (strdH > 1 || strdW > 1));
         const bool use_f1s1    = (fltH == 1 && fltW == 1 && strdH == 1 && strdW == 1);
         int64_t packed_batch   = -1;
@@ -426,7 +425,7 @@ ppl::common::RetCode conv2d_n4cx_direct_fp32_runtime_executor::execute()
                 float *sum_bg_base_ptr            = sum + batch_id * single_batch_output_size + g * oc_group * outH * outW;
                 for (int64_t ic_l1 = 0; ic_l1 < ic_g_pck; ic_l1 += icS) {
                     const int64_t ic_remain  = std::min(icS, ic_g_pck - ic_l1);
-                    const uint32_t fuse_flag = (ic_l1 + icS >= ic_g_pck) ? kernel_fuse_type : conv_fuse_flag::NONE;
+                    const uint32_t fuse_flag = (ic_l1 + icS >= ic_g_pck) ? kernel_fuse_type : (const uint32_t)conv_fuse_flag::NONE;
                     for (int64_t oc_l1 = 0; oc_l1 < oc_g_pck; oc_l1 += ocS) {
                         const float *const bias_ptr = (ic_l1 == 0) ? (bias_g_base + oc_l1) : nullptr;
                         const int64_t oc_remains    = std::min(ocS, oc_g_pck - oc_l1);
@@ -439,7 +438,7 @@ ppl::common::RetCode conv2d_n4cx_direct_fp32_runtime_executor::execute()
                         for (int64_t oh = 0; oh < outH; oh += otH) {
 #else
             for (int64_t ic_l1 = 0; ic_l1 < ic_g_pck; ic_l1 += icS) {
-                const uint32_t fuse_flag = (ic_l1 + icS >= ic_g_pck) ? kernel_fuse_type : conv_fuse_flag::NONE;
+                const uint32_t fuse_flag = (ic_l1 + icS >= ic_g_pck) ? kernel_fuse_type : (const uint32_t)conv_fuse_flag::NONE;
                 PRAGMA_OMP_FOR_COLLAPSE(3)
                 for (int64_t batch_id = 0; batch_id < num_batch; batch_id++) {
                     for (int64_t oc_l1 = 0; oc_l1 < oc_g_pck; oc_l1 += ocS) {
@@ -674,16 +673,16 @@ ppl::common::RetCode conv2d_n4cx_direct_fp32_offline_manager::pick_best_schedule
     float *src             = (float *)allocator_->Alloc(src_size);
     float *dst             = (float *)allocator_->Alloc(dst_size);
 
-    for (int64_t idx = 0; idx < cvt_filter_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < cvt_filter_size / sizeof(float); idx++) {
         cvt_filter[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < cvt_bias_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < cvt_bias_size / sizeof(float); idx++) {
         cvt_bias[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < src_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < src_size / sizeof(float); idx++) {
         src[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < dst_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < dst_size / sizeof(float); idx++) {
         dst[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
 
@@ -849,7 +848,7 @@ ppl::common::RetCode conv2d_n4cx_direct_fp32_offline_manager::gen_cvt_weights(co
     int64_t padding_offset_bytes = num_output * sizeof(float);
     int64_t padding_bytes        = (CEIL4(num_output) - num_output) * sizeof(float);
     memcpy(cvt_bias_, bias, num_output * sizeof(float));
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     if (sched_param_.oc_blk == 8) {
         cvt_filter_size_ = ppl_arm_server_kernel_fp32_conv_direct_n4cx_get_converted_filter_size(

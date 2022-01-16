@@ -49,15 +49,6 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define WGB2F3_NSET() WINOGRAD_B2F3_NUM_SET()
 
 #define N8CX_HGEMM_N_BLOCK0() 12
-
-#define CEIL2(val)           ((val + 1) & (~1))
-#define CEIL8(val)           ((val + 7) & (~7))
-#define CEIL128(val)         ((val + 127) & (~127))
-#define DIV_CEIL(aval, bval) ((aval + bval - 1) / bval)
-
-#define CEIL(aval, bval)  ((aval + bval - 1) / bval * bval)
-#define FLOOR(aval, bval) (aval - (aval % bval))
-
 #define LLC_CACHELINE_SIZE() 128
 
 size_t conv_wgb2f3_get_input_buffer_size_fp16(
@@ -466,10 +457,6 @@ uint64_t conv2d_wgb2f3_fp16_runtime_executor::cal_temp_buffer_size()
 {
     const conv2d_param &cp                      = *conv_param_;
     const conv2d_wgb2f3_fp16_schedule_param &sp = sched_param_;
-    const int64_t src_h                         = src_shape_->GetDim(2);
-    const int64_t src_w                         = src_shape_->GetDim(3);
-    const int64_t dst_h                         = dst_shape_->GetDim(2);
-    const int64_t dst_w                         = dst_shape_->GetDim(3);
     size_t input_buffer_size                    = conv_wgb2f3_get_input_buffer_size_fp16(
         cp.channels, sp.tile_blk);
     size_t output_buffer_size = conv_wgb2f3_get_output_buffer_size_fp16(
@@ -514,8 +501,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
     const int64_t c_out                         = cp.num_output;
     const int64_t outH                          = dst_shape_->GetDim(2);
     const int64_t outW                          = dst_shape_->GetDim(3);
-    const int64_t fltH                          = cp.kernel_h;
-    const int64_t fltW                          = cp.kernel_w;
     const int64_t padH                          = cp.pad_h;
     const int64_t padW                          = cp.pad_w;
     const int64_t num_group                     = cp.group;
@@ -524,7 +509,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
     const int64_t tile_l2_size                  = sp.tile_blk;
     const int64_t num_batch                     = src_shape_->GetDim(0);
     const size_t input_prep_buffer_size         = sp.input_buffer_size;
-    const size_t output_postp_buffer_size       = sp.output_buffer_size;
 
     PRAGMA_OMP_PARALLEL()
     {
@@ -983,8 +967,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::pick_best_schedule_para
 {
     const int64_t num_output = param_.num_output;
     const int64_t channels   = param_.channels;
-    const int64_t kernel_h   = param_.kernel_h;
-    const int64_t kernel_w   = param_.kernel_w;
 
     if (src_shape.GetDimCount() < 4) {
         return ppl::common::RC_INVALID_VALUE;
@@ -1007,22 +989,22 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::pick_best_schedule_para
     __fp16 *src            = (__fp16 *)allocator_->Alloc(src_size);
     __fp16 *dst            = (__fp16 *)allocator_->Alloc(dst_size);
 
-    for (int64_t idx = 0; idx < cvt_filter_size / sizeof(__fp16); idx++) {
+    for (uint64_t idx = 0; idx < cvt_filter_size / sizeof(__fp16); idx++) {
         cvt_filter[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < cvt_bias_size / sizeof(__fp16); idx++) {
+    for (uint64_t idx = 0; idx < cvt_bias_size / sizeof(__fp16); idx++) {
         cvt_bias[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < src_size / sizeof(__fp16); idx++) {
+    for (uint64_t idx = 0; idx < src_size / sizeof(__fp16); idx++) {
         src[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < dst_size / sizeof(__fp16); idx++) {
+    for (uint64_t idx = 0; idx < dst_size / sizeof(__fp16); idx++) {
         dst[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
 
-    std::vector<uint64_t> candidate_oc_blk_list   = {1024};
-    std::vector<uint64_t> candidate_ic_blk_list   = {128};
-    std::vector<uint64_t> candidate_tile_blk_list = {128};
+    std::vector<int64_t> candidate_oc_blk_list   = {1024};
+    std::vector<int64_t> candidate_ic_blk_list   = {128};
+    std::vector<int64_t> candidate_tile_blk_list = {128};
 
     if (tune_blocksize) {
         // candidate_oc_blk_list = {/*64, 128, 192, 256, 384, 512, 640, 768, 896, */1024};
@@ -1115,15 +1097,13 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::gen_cvt_weights(const v
 
     const int64_t num_output = param_.num_output;
     const int64_t channels   = param_.channels;
-    const int64_t kernel_h   = param_.kernel_h;
-    const int64_t kernel_w   = param_.kernel_w;
 
     cvt_bias_size_               = CEIL8(num_output) * sizeof(__fp16);
     cvt_bias_                    = allocator_->Alloc(cvt_bias_size_);
     int64_t padding_offset_bytes = num_output * sizeof(__fp16);
     int64_t padding_bytes        = (CEIL8(num_output) - num_output) * sizeof(__fp16);
     memcpy(cvt_bias_, bias, padding_offset_bytes);
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     cvt_filter_size_ = conv_wgb2f3_get_converted_filter_size_fp16(
         channels, num_output, param_.group);

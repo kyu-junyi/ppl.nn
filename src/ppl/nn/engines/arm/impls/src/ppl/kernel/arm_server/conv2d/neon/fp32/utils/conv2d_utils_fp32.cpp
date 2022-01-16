@@ -89,7 +89,6 @@ void conv2d_n4cx_store_group_fp32(
     const int64_t gid_local,
     const int64_t fuse_flag)
 {
-    const int64_t oc_group_pck    = CEIL4(oc_group);
     const int64_t global_oc_start = gid_global * oc_group;
     const int64_t global_oc_end   = global_oc_start + oc_group;
 

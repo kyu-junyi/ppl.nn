@@ -25,10 +25,6 @@
 #include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-#define FLOOR8(val)  ((val) & (~7))
-#define CEIL8(val)   (((val) + 7) & (~7))
-#define CEIL128(val) (((val) + 127) & (~127))
-
 #define CBLK()  8
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
@@ -1973,17 +1969,15 @@ ppl::common::RetCode conv2d_n8cx_depthwise_fp16_offline_manager::gen_cvt_weights
     }
 
     const int64_t num_output = param_.num_output;
-    const int64_t channels   = param_.channels;
     const int64_t kernel_h   = param_.kernel_h;
     const int64_t kernel_w   = param_.kernel_w;
-    const int64_t num_group  = param_.group;
 
     cvt_bias_size_               = CEIL8(num_output) * sizeof(__fp16);
     cvt_bias_                    = allocator_->Alloc(cvt_bias_size_);
     int64_t padding_offset_bytes = num_output * sizeof(__fp16);
     int64_t padding_bytes        = (CEIL8(num_output) - num_output) * sizeof(__fp16);
     memcpy(cvt_bias_, bias, num_output * sizeof(__fp16));
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     cvt_filter_size_ = conv_n8cx_depthwise_get_converted_filter_size(num_output, kernel_h, kernel_w);
     cvt_filter_      = allocator_->Alloc(cvt_filter_size_);

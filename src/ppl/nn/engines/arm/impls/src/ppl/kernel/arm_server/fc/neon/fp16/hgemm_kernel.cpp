@@ -746,11 +746,9 @@ PRAGMA_OMP_PARALLEL()
                             const int64_t p = p_l3 + p_l1;
                             const int64_t k_l1 = std::min((k_l3-p_l1), sgemm_k1);
                             const bool is_first_k = (p == 0);
-                            const bool is_last_k = (p + sgemm_k1 >= num_in);
 
                             for (int64_t j_l0 = 0; j_l0 < n_l1_pack; j_l0 += k_sgemm_n0) {
                                 for (int64_t i_l0 = 0; i_l0 < m_l1_align; i_l0 += k_sgemm_m0) {
-                                    const int64_t i = i_l0 + i_l1 + i_l2;
                                     const int64_t j = j_l0 + j_l1 + j_l2;
                                     const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)k_sgemm_n0);
 

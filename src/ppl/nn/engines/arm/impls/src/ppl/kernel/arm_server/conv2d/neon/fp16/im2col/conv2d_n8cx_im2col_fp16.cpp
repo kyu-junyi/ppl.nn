@@ -43,11 +43,6 @@
 #error
 #endif
 
-#define CEIL8(val)           (((val) + 7) & (~7))
-#define CEIL128(val)         (((val) + 127) & (~127))
-#define FLOOR8(val)          ((val) & (~7))
-#define DIV_CEIL(aval, bval) (((aval) + (bval)-1) / (bval))
-
 namespace ppl { namespace kernel { namespace arm_server {
 
 static inline void prefetch_l1(const void *ptr, size_t offset)
@@ -140,7 +135,6 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
     const int64_t k = ic_g_pck * hw_flt;
 
     const int64_t lda           = k;
-    const int64_t ldb           = hw_in;
     const int64_t ldc           = hw_out;
     const int64_t ld_fused_data = ldc;
 
@@ -285,12 +279,9 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
     const int64_t hw_in     = src_shape_->GetDim(2) * src_shape_->GetDim(3);
     const int64_t hw_out    = dst_shape_->GetDim(2) * dst_shape_->GetDim(3);
 
-    const int64_t k_input_b_stride      = PACK_CHANNEL(ic_group) * hw_in;
-    const int64_t k_output_b_stride     = PACK_CHANNEL(oc_group) * hw_out;
     const int64_t k_input_g_stride      = ic_group * hw_in;
     const int64_t k_output_g_stride     = oc_group * hw_out;
     const int64_t kk                    = ic_g_pck * cp.kernel_h * cp.kernel_w;
-    const int64_t k_cvt_filter_g_stride = oc_g_pck * kk;
 
     // int64_t l3_cache_size = (ppl::common::GetCpuCacheL3() == 0) ? (kp.target_l3_cache_size * num_threads) : ppl::common::GetCpuCacheL3();
     int64_t l3_cache_size = (kp.target_l3_cache_size * num_threads);
@@ -344,7 +335,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
         const __fp16 *converted_filter = (const __fp16 *)cvt_filter_;
         const __fp16 *bias             = (const __fp16 *)cvt_bias_;
         const __fp16 *input            = (const __fp16 *)src_;
-        const __fp16 *sum_data         = nullptr;
         __fp16 *output                 = (__fp16 *)dst_;
         __fp16 *sum                    = (__fp16 *)sum_;
         __fp16 *tmp_buffer             = (__fp16 *)temp_buffer_;
@@ -358,12 +348,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
         const int64_t w_out     = dst_shape_->GetDim(3);
         const int64_t h_flt     = cp.kernel_h;
         const int64_t w_flt     = cp.kernel_w;
-        const int64_t h_pad     = cp.pad_h;
-        const int64_t w_pad     = cp.pad_w;
-        const int64_t h_strd    = cp.stride_h;
-        const int64_t w_strd    = cp.stride_w;
-        const int64_t h_dltn    = cp.dilation_h;
-        const int64_t w_dltn    = cp.dilation_w;
         const int64_t num_group = cp.group;
         const int64_t num_batch = src_shape_->GetDim(0);
 
@@ -371,9 +355,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
         const int64_t batch_block3 = sp.batch_block3;
         const int64_t hw_block2    = sp.hw_block2;
         const int64_t oc_block2    = sp.oc_block2;
-        const int64_t m_block1     = ker_param_.hgemm_m_block1;
-        const int64_t n_block1     = ker_param_.hgemm_n_block1;
-        const int64_t k_block1     = ker_param_.hgemm_k_block1;
 
         const int64_t ic_pck = PACK_CHANNEL(c_in);
         const int64_t oc_pck = PACK_CHANNEL(c_out);
@@ -412,7 +393,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
         const int64_t k_input_g_stride      = ic_group * hw_in;
         const int64_t k_output_g_stride     = oc_group * hw_out;
         const int64_t kk                    = ic_g_pck * h_flt * w_flt;
-        const int64_t k_cvt_filter_g_stride = oc_g_pck * kk;
 
         const int64_t input_gbuf_offset  = batch_block3 * group_block3 * ic_g_pck * hw_in;
         const int64_t output_gbuf_offset = batch_block3 * group_block3 * oc_g_pck * hw_out;
@@ -473,7 +453,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
                                 // std::cout << "ocl2: " << oc_l2 << std::endl;
                                 const int64_t hw_block2_valid = std::min(hw_block2, hw_out - hw_l2);
                                 const int64_t oc_block2_valid = std::min(oc_block2, oc_g_pck - oc_l2);
-                                const bool is_last_oc         = (oc_l2 + oc_block2 >= oc_g_pck);
 
                                 const int64_t output_offset  = b * out_b_stride + g * out_g_stride + oc_l2 * hw_out + hw_l2 * OCBLK();
                                 const bool renew_tile_im2col = use_im2col && (prv_g != g || prv_b != b || prv_hwl2 != hw_l2);
@@ -624,16 +603,16 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_offline_manager::pick_best_schedule
     float *src             = (float *)allocator_->Alloc(src_size);
     float *dst             = (float *)allocator_->Alloc(dst_size);
 
-    for (int64_t idx = 0; idx < cvt_filter_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < cvt_filter_size / sizeof(float); idx++) {
         cvt_filter[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < cvt_bias_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < cvt_bias_size / sizeof(float); idx++) {
         cvt_bias[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < src_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < src_size / sizeof(float); idx++) {
         src[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < dst_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < dst_size / sizeof(float); idx++) {
         dst[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
 
@@ -737,7 +716,7 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_offline_manager::gen_cvt_weights(co
     int64_t padding_offset_bytes = num_output * sizeof(__fp16);
     int64_t padding_bytes        = (CEIL8(num_output) - num_output) * sizeof(__fp16);
     memcpy(cvt_bias_, bias, num_output * sizeof(__fp16));
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     cvt_filter_size_ = conv_n8cx_tile_im2col_get_converted_filter_size(
         num_output, channels, kernel_h, kernel_w, num_group);

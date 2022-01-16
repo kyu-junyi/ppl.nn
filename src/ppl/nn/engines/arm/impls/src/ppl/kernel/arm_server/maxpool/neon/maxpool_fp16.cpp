@@ -407,6 +407,7 @@ static void ppl_arm_server_kernel_fp16_pooling_max_f3s1(
     const int64_t padH,
     const int64_t padW)
 {
+    (void)ppl_arm_server_kernel_fp16_pooling_max_f3s1;
 PRAGMA_OMP_PARALLEL()
 {
     const int64_t num_channel_ceil8 = CEIL8(num_channel);

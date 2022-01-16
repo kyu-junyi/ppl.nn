@@ -50,14 +50,6 @@ namespace ppl { namespace kernel { namespace arm_server {
 
 #define N4CX_SGEMM_N_BLOCK0() 12
 
-#define CEIL2(val)           ((val + 1) & (~1))
-#define CEIL4(val)           ((val + 3) & (~3))
-#define CEIL128(val)         ((val + 127) & (~127))
-#define DIV_CEIL(aval, bval) ((aval + bval - 1) / bval)
-
-#define CEIL(aval, bval)  ((aval + bval - 1) / bval * bval)
-#define FLOOR(aval, bval) (aval - (aval % bval))
-
 #define LLC_CACHELINE_SIZE() 128
 
 size_t conv_wgb2f3_get_input_buffer_size_fp32(
@@ -466,10 +458,6 @@ uint64_t conv2d_wgb2f3_fp32_runtime_executor::cal_temp_buffer_size()
 {
     const conv2d_param &cp                      = *conv_param_;
     const conv2d_wgb2f3_fp32_schedule_param &sp = sched_param_;
-    const int64_t src_h                         = src_shape_->GetDim(2);
-    const int64_t src_w                         = src_shape_->GetDim(3);
-    const int64_t dst_h                         = dst_shape_->GetDim(2);
-    const int64_t dst_w                         = dst_shape_->GetDim(3);
     size_t input_buffer_size                    = conv_wgb2f3_get_input_buffer_size_fp32(
         cp.channels, sp.tile_blk);
     size_t output_buffer_size = conv_wgb2f3_get_output_buffer_size_fp32(
@@ -514,8 +502,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
     const int64_t c_out                         = cp.num_output;
     const int64_t outH                          = dst_shape_->GetDim(2);
     const int64_t outW                          = dst_shape_->GetDim(3);
-    const int64_t fltH                          = cp.kernel_h;
-    const int64_t fltW                          = cp.kernel_w;
     const int64_t padH                          = cp.pad_h;
     const int64_t padW                          = cp.pad_w;
     const int64_t num_group                     = cp.group;
@@ -524,7 +510,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
     const int64_t tile_l2_size                  = sp.tile_blk;
     const int64_t num_batch                     = src_shape_->GetDim(0);
     const size_t input_prep_buffer_size         = sp.input_buffer_size;
-    const size_t output_postp_buffer_size       = sp.output_buffer_size;
 
     PRAGMA_OMP_PARALLEL()
     {
@@ -544,7 +529,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
         const int64_t k_tile_l2 = tile_l2_size;
 
         const int64_t k_in_wg_set_offset  = k_in_channel_section * k_tile_l2;
-        const int64_t k_out_wg_set_offset = oc_g_packed * k_tile_l2;
 
         // TODO: make sure buffer sizes are valid.
         /* Inner parallel mode */
@@ -566,9 +550,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
         const int64_t output_g_stride     = oc_group * hw_out;
         const int64_t filter_wgset_stride = oc_g_packed * ic_g_packed;
         const int64_t filter_g_stride     = WGB2F3_NSET() * filter_wgset_stride;
-
-        bool ih_valid[WGB2F3_IBLK()];
-        bool iw_valid[WGB2F3_IBLK()];
 
         for (int64_t g = 0; g < num_group; g++) {
             const float *input_g_base  = input + g * input_g_stride;
@@ -934,8 +915,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_offline_manager::pick_best_schedule_para
 {
     const int64_t num_output = param_.num_output;
     const int64_t channels   = param_.channels;
-    const int64_t kernel_h   = param_.kernel_h;
-    const int64_t kernel_w   = param_.kernel_w;
 
     if (src_shape.GetDimCount() < 4) {
         return ppl::common::RC_INVALID_VALUE;
@@ -958,16 +937,16 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_offline_manager::pick_best_schedule_para
     float *src             = (float *)allocator_->Alloc(src_size);
     float *dst             = (float *)allocator_->Alloc(dst_size);
 
-    for (int64_t idx = 0; idx < cvt_filter_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < cvt_filter_size / sizeof(float); idx++) {
         cvt_filter[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < cvt_bias_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < cvt_bias_size / sizeof(float); idx++) {
         cvt_bias[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < src_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < src_size / sizeof(float); idx++) {
         src[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
-    for (int64_t idx = 0; idx < dst_size / sizeof(float); idx++) {
+    for (uint64_t idx = 0; idx < dst_size / sizeof(float); idx++) {
         dst[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
 
@@ -1064,15 +1043,13 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_offline_manager::gen_cvt_weights(const v
 
     const int64_t num_output = param_.num_output;
     const int64_t channels   = param_.channels;
-    const int64_t kernel_h   = param_.kernel_h;
-    const int64_t kernel_w   = param_.kernel_w;
 
     cvt_bias_size_               = CEIL4(num_output) * sizeof(float);
     cvt_bias_                    = allocator_->Alloc(cvt_bias_size_);
     int64_t padding_offset_bytes = num_output * sizeof(float);
     int64_t padding_bytes        = (CEIL4(num_output) - num_output) * sizeof(float);
     memcpy(cvt_bias_, bias, padding_offset_bytes);
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     cvt_filter_size_ = conv_wgb2f3_get_converted_filter_size_fp32(
         channels, num_output, param_.group);

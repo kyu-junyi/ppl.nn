@@ -147,7 +147,7 @@ static ppl_kernel_arm_server_conv2d_fp32_conv_direct_ndarray_kernel_func_t ppl_a
         ppl_kernel_arm_server_conv2d_fp32_conv_direct_ndarray_kernel<4, 13>,
         ppl_kernel_arm_server_conv2d_fp32_conv_direct_ndarray_kernel<4, 14>,
 };
-#undef OW_CASE()
+#undef OW_CASE
 
 }}} // namespace ppl::kernel::arm_server
 

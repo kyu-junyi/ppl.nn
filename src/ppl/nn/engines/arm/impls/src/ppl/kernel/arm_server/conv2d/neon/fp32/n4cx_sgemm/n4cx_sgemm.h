@@ -20,9 +20,6 @@
 
 #include <cstdint>
 
-#define CVL()            4
-#define SGEMM_N_BLOCK0() 12
-
 enum class N4cxSgemmBlockingOrd {
     M_N_K,
     N_M_K,

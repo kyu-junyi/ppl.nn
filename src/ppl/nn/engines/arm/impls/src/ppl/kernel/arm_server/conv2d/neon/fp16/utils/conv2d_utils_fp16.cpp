@@ -89,7 +89,6 @@ void conv2d_n8cx_store_group_fp16(
     const int64_t gid_local,
     const uint32_t fuse_flag)
 {
-    const int64_t oc_group_pck    = CEIL8(oc_group);
     const int64_t global_oc_start = gid_global * oc_group;
     const int64_t global_oc_end   = global_oc_start + oc_group;
 

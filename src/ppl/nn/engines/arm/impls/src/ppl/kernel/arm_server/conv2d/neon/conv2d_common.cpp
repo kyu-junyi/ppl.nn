@@ -336,7 +336,6 @@ static conv2d_offline_manager *get_conv2d_offline_manager_with_algo(
     }
 }
 
-// TODO add offline algo selection
 conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
     const ppl::nn::TensorShape &src_shape,
     const ppl::nn::ArmEngineOptions &options,
@@ -349,14 +348,12 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
 
     const bool src_shape_inferred = src_shape.GetDimCount() >= 4;
 
-    const int64_t num_batch  = src_shape_inferred ? src_shape.GetDim(0) : 1;
-    const int64_t num_group  = param.group;
-    const int64_t num_output = param.num_output;
-    const int64_t channels   = param.channels;
     const int64_t src_h      = src_shape_inferred ? src_shape.GetDim(2) : 224;
     const int64_t src_w      = src_shape_inferred ? src_shape.GetDim(3) : 224;
     const int64_t dst_h      = ((src_h + 2 * param.pad_h - param.dilation_h * (param.kernel_h - 1) - 1) / param.stride_h + 1);
     const int64_t dst_w      = ((src_w + 2 * param.pad_w - param.dilation_w * (param.kernel_w - 1) - 1) / param.stride_w + 1);
+    (void)dst_h;
+    (void)dst_w;
 
     static conv2d_algo_info unknown_info = {
         conv2d_algo::unknown,

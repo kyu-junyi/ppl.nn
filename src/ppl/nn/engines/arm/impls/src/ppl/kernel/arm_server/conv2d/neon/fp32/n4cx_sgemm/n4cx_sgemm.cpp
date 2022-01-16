@@ -21,7 +21,9 @@
 #include <arm_neon.h>
 #include <iostream>
 
-#define CEIL4(val) (((val) + 3) & (~3))
+#include "ppl/kernel/arm_server/common/internal_include.h"
+#define CVL()            4
+#define SGEMM_N_BLOCK0() 12
 
 #define V_TRANSPOSE_FP32_4x4(v)                                                                  \
     do {                                                                                         \
@@ -41,6 +43,7 @@ static void ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_inner_4x4(
     const int64_t m,
     const int64_t k)
 {
+    (void)ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_inner_4x4;
     const float32x4_t vzeros = vdupq_n_f32(0.0f);
 
     for (int64_t i = 0; i < m; i += 4) {

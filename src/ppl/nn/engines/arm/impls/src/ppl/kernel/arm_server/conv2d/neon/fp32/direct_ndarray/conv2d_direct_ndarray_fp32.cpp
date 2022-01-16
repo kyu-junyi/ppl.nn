@@ -66,14 +66,12 @@ ppl::common::RetCode conv2d_direct_ndarray_fp32_runtime_executor::execute()
     PRAGMA_OMP_PARALLEL()
     {
         const conv2d_param &cp                              = *conv_param_;
-        const conv2d_direct_ndarray_fp32_schedule_param &sp = sched_param_;
 
         const float *input                          = (const float *)src_;
         const float *cvt_filter                     = (const float *)cvt_filter_;
         const float *bias                           = (const float *)cvt_bias_;
         float *output                               = (float *)dst_;
         float *sum                                  = (float *)sum_;
-        float *tmp_buffer                           = (float *)temp_buffer_;
         const int64_t inH                           = src_shape_->GetDim(2);
         const int64_t inW                           = src_shape_->GetDim(3);
         const int64_t inC                           = src_shape_->GetDim(1);
@@ -88,7 +86,6 @@ ppl::common::RetCode conv2d_direct_ndarray_fp32_runtime_executor::execute()
         const int64_t strdW                         = cp.stride_w;
         const int64_t dltnH                         = cp.dilation_h;
         const int64_t dltnW                         = cp.dilation_w;
-        const int64_t single_core_tmp_buffer_offset = sp.temp_buffer_size_per_thread / sizeof(float);
         const int64_t num_batch                     = src_shape_->GetDim(0);
 
         int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((padW - 0 * dltnW), strdW)); // inclusive
@@ -104,17 +101,6 @@ ppl::common::RetCode conv2d_direct_ndarray_fp32_runtime_executor::execute()
 
         const int64_t ocS = OCBLK() * 2; // 64
         const int64_t icS = 128;
-
-        const int64_t icV_bytes = 16; // ICBLK() * sizeof(float);
-        const int64_t ocV_bytes = 16; // OCBLK() * sizeof(float);
-
-        const int64_t inH_x_inW_x_icV_bytes   = inH * inW * icV_bytes;
-        const int64_t outH_x_outW_x_ocV_bytes = outH * outW * ocV_bytes;
-        const int64_t dltnH_x_icV_bytes       = dltnH * icV_bytes;
-        const int64_t dltnW_x_icV_bytes       = dltnW * icV_bytes;
-        const int64_t strdW_x_icV_bytes       = strdW * icV_bytes;
-        const int64_t dltnH_x_inW_x_icV_bytes = inW * dltnH_x_icV_bytes;
-        const int64_t fltW_x_icV_x_ocS_bytes  = fltW * ocS * icV_bytes;
 
         const int64_t input_hw_num        = inH * inW;
         const int64_t input_chw_num       = inC * input_hw_num;
@@ -346,7 +332,7 @@ ppl::common::RetCode conv2d_direct_ndarray_fp32_offline_manager::gen_cvt_weights
     int64_t padding_offset_bytes = num_output * sizeof(float);
     int64_t padding_bytes        = (CEIL4(num_output) - num_output) * sizeof(float);
     memcpy(cvt_bias_, bias, num_output * sizeof(float));
-    memset(cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
+    memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
     if (sched_param_.oc_blk == 8) {
         cvt_filter_size_ = ppl_arm_server_kernel_fp32_conv_direct_n4cx_get_converted_filter_size(

@@ -11,6 +11,7 @@ set(PPL_KERNEL_ARM_SERVER_COMPILE_DEFINITIONS )
 set(PPL_KERNEL_ARM_SERVER_INCLUDE_DIRECTORIES )
 set(PPL_KERNEL_ARM_SERVER_LINK_LIBRARIES )
 
+list(APPEND PPL_KERNEL_ARM_SERVER_COMPILE_OPTIONS "-Werror")
 #### #### #### #### ####
 ### dependencies #######
 #### #### #### #### ####
