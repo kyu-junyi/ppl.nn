@@ -39,70 +39,104 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
 
-// #define CEIL4(val) (((val) + 3) & (~3))
-// #define CEIL128(val) (((val) + 127) & (~127))
-// #define DIV_CEIL(aval, bval) ( ((aval) + (bval) - 1) / (bval) )
+template<const int64_t ocv, const int64_t otw>
+void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func(
+    const float *input_base,
+    const float *filter_base,
+    const float *bias_base,
+          float *output_base,
+          float *sum_base,
+    int64_t      ic_section_pck,
+    const int64_t h_flt,
+    const int64_t w_flt,
+    const int64_t flt_h_offset_byte,
+    const int64_t flt_hw_offset_byte,
+    const int64_t out_ocblk_offset_byte,
+    const int64_t out_icblk_offset_byte,
+    const int64_t in_filter_row_offset_byte,
+    const int64_t in_filter_elem_offset_byte,
+    const int64_t in_out_elem_offset_byte,
+    const uint32_t fuse_flag);
+
+template<const uint64_t ocv, const int64_t otw>
+void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func(
+    const float *input_base,
+    const float *filter_base,
+    const float *bias_base,
+          float *output_base,
+          float *sum_base,
+    int64_t inC_block_ceil8,
+    const int64_t fltH,
+    const int64_t fltW,
+    const int64_t fltDiffW_bytes,
+    const int64_t fltDiffHW_bytes,
+    const int64_t outH_x_outW_x_ocV_bytes,
+    const int64_t inH_x_inW_x_icV_bytes,
+    const int64_t dltnH_x_inW_x_icV_bytes,
+    const int64_t dltnW_x_icV_bytes,
+    const int64_t strdW_x_icV_bytes,
+    const uint32_t fuse_flag);
 
 #define OUT_TILE_W() 10
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 9
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 8
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 7
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 6
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 5
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 4
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 3
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 2
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 1
-    #include "conv_direct_kernel.inc"
+    #include "conv2d_direct_fxsx_kernel.inc"
 #undef OUT_TILE_W
 
 #define OUT_TILE_W() 10
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 9
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 8
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 7
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 6
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 5
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 4
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 3
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 2
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 1
-    #include "conv_direct_kernel_f1.inc"
+    #include "conv2d_direct_f1s1_kernel.inc"
 #undef OUT_TILE_W
 
 typedef void(*ppl_arm_server_kernel_fp32_conv_direct_kernel_t)(
@@ -127,16 +161,16 @@ typedef void(*ppl_arm_server_kernel_fp32_conv_direct_kernel_t)(
 static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc8_kernel_func_table[OW_CASE()+1] =
 {
     nullptr,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w2_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w3_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w4_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w5_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w6_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w7_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w8_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w9_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w10_func,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 1>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 2>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 3>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 4>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 5>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 6>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 7>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 8>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 9>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 10>,
 };
 #undef OW_CASE
 
@@ -144,173 +178,53 @@ static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp3
 static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_func_table[OW_CASE()+1] =
 {
     nullptr,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w2_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w3_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w4_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w5_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w6_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w7_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w8_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w9_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w10_func,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 1>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 2>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 3>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 4>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 5>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 6>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 7>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 8>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 9>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 10>,
 };
 #undef OW_CASE
 
 #define OW_CASE() 10
-static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc8_kernel_f1_func_table[OW_CASE()+1] =
+static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc8_f1s1_kernel_func_table[OW_CASE()+1] =
 {
     nullptr,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w1_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w2_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w3_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w4_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w5_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w6_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w7_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w8_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w9_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc8_h1w10_f1_func,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 1>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 2>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 3>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 4>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 5>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 6>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 7>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 8>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 9>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 10>,
 };
 #undef OW_CASE
 
 #define OW_CASE() 10
-static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_f1_func_table[OW_CASE()+1] =
+static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc4_f1s1_kernel_func_table[OW_CASE()+1] =
 {
     nullptr,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w1_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w2_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w3_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w4_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w5_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w6_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w7_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w8_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w9_f1_func,
-    ppl_arm_server_kernel_fp32_conv_direct_n4cx_oc4_h1w10_f1_func,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 1>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 2>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 3>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 4>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 5>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 6>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 7>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 8>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 9>,
+    ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, 10>,
 };
 #undef OW_CASE
 
-static void ppl_arm_server_kernel_fp32_conv_direct_n4cx_load_input_tile(
-    const float *input,
-    float *tmp_buffer,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t ih_start,
-    const int64_t ih_end,
-    const int64_t iw_start,
-    const int64_t iw_end,
-    const int64_t ic_start,
-    const int64_t ic_end)
-{
-    const float32x4_t vzeros = vdupq_n_f32(0.0f);
-
-    const int64_t inH_x_inW = inH * inW;
-    const int64_t inW_x_cblk = inW * ICBLK();
-    const int64_t iTileH_x_iTileW = (ih_end-ih_start) * (iw_end-iw_start);
-    const int64_t iTileW_x_cblk = (iw_end-iw_start) * ICBLK();
-
-    const bool in_pad_right = (iw_end > inW);
-    const int64_t in_valid_end = std::min(inW, iw_end);
-
-    // if (ic_start % ICBLK() != 0) std::abort();
-
-    for (int64_t ic = ic_start, itc = 0; ic < ic_end; ic += ICBLK(), itc += ICBLK()) {
-        for (int64_t ih = ih_start, ith = 0; ih < ih_end; ih++, ith++) {
-            float * const buffer_row_base_ptr = tmp_buffer + itc * iTileH_x_iTileW + ith * iTileW_x_cblk;
-            if (ih < 0 || ih >= inH) {
-// #pragma unroll 4
-                for (int64_t iw = iw_start, itw_x_cblk = 0; iw < iw_end; iw++, itw_x_cblk += ICBLK()) {
-                    vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vzeros);
-                }
-            }
-            else {
-                const float * const input_row_base_ptr = input + ic * inH_x_inW + ih * inW_x_cblk;
-                int64_t iw = iw_start;
-                int64_t itw_x_cblk = 0;
-                for (; iw < 0; iw++, itw_x_cblk += ICBLK()) {
-                    vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vzeros);
-                }
-// #pragma unroll 4
-                for (; iw < in_valid_end; iw++, itw_x_cblk += ICBLK()) {
-                    vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vld1q_f32(input_row_base_ptr + iw * ICBLK()));
-                }
-                if (in_pad_right) {
-                    for (; iw < iw_end; iw++, itw_x_cblk += ICBLK()) {
-                        vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vzeros);
-                    }
-                }
-            }
-        }
-    }
-}
-
-#if 0
-static void ppl_arm_server_kernel_fp32_conv_direct_ndarray_load_input_tile(
-    const float *input,
-    float *tmp_buffer,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t ih_start,
-    const int64_t ih_end,
-    const int64_t iw_start,
-    const int64_t iw_end,
-    const int64_t ic_start,
-    const int64_t ic_end)
-{
-    const float32x4_t vzeros = vdupq_n_f32(0.0f);
-
-    const int64_t inH_x_inW = inH * inW;
-    const int64_t inW_x_cblk = inW * ICBLK();
-    const int64_t iTileH_x_iTileW = (ih_end-ih_start) * (iw_end-iw_start);
-    const int64_t iTileW_x_cblk = (iw_end-iw_start) * ICBLK();
-
-    const bool in_pad_right = (iw_end > inW);
-    const int64_t in_valid_end = std::min(inW, iw_end);
-
-    // if (ic_start % ICBLK() != 0) std::abort();
-
-    for (int64_t ic = ic_start, itc = 0; ic < ic_end; ic += ICBLK(), itc += ICBLK()) {
-        const int64_t ic_blk_valid = std::min((int64_t)ICBLK(), ic_end-ic);
-            // std::cout << ih_start << " H " << ih_end << std::endl;
-            // std::cout << iw_start << " W " << iw_end << std::endl;
-        for (int64_t ih = ih_start, ith = 0; ih < ih_end; ih++, ith++) {
-            float * const buffer_row_base_ptr = tmp_buffer + itc * iTileH_x_iTileW + ith * iTileW_x_cblk;
-            if (ih < 0 || ih >= inH) {
-// #pragma unroll 4
-                for (int64_t iw = iw_start, itw_x_cblk = 0; iw < iw_end; iw++, itw_x_cblk += ICBLK()) {
-                    vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vzeros);
-                }
-            }
-            else {
-                const float * const input_c_h_base = input + ic * inH_x_inW + ih * inW;
-                int64_t iw = iw_start;
-                int64_t itw_x_cblk = 0;
-                for (; iw < 0; iw++, itw_x_cblk += ICBLK()) {
-                    vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vzeros);
-                }
-// #pragma unroll 4
-                for (; iw < in_valid_end; iw++, itw_x_cblk += ICBLK()) {
-                    const float * const input_w_base = input_c_h_base + iw;
-                    for (int64_t lane = 0; lane < ic_blk_valid; lane++) {
-                        buffer_row_base_ptr[itw_x_cblk+lane] = input_w_base[lane * inH_x_inW];
-                    }
-                    for (int64_t lane = ic_blk_valid; lane < ICBLK(); lane++) {
-                        buffer_row_base_ptr[itw_x_cblk+lane] = 0.0f;
-                    }
-                }
-                if (in_pad_right) {
-                    for (; iw < iw_end; iw++, itw_x_cblk += ICBLK()) {
-                        vst1q_f32(buffer_row_base_ptr+itw_x_cblk, vzeros);
-                    }
-                }
-            }
-        }
-    }
-    // for (int64_t idx = 0; idx < 36; idx++) std::cout << tmp_buffer[idx] << " , ";
-    // std::cout << std::endl;
-}
-#endif
 
 uint64_t conv2d_n4cx_direct_fp32_runtime_executor::get_padding_buffer_size() {
     const int64_t num_threads = PPL_OMP_MAX_THREADS();
@@ -516,8 +430,8 @@ PRAGMA_OMP_PARALLEL()
                                            ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_func_table;
                     if (use_pack || use_f1s1) {
                         conv_direct_kernel_func_table = 
-                            (oc_remains > 4) ? ppl_arm_server_kernel_fp32_conv_direct_oc8_kernel_f1_func_table :
-                                               ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_f1_func_table;
+                            (oc_remains > 4) ? ppl_arm_server_kernel_fp32_conv_direct_oc8_f1s1_kernel_func_table :
+                                               ppl_arm_server_kernel_fp32_conv_direct_oc4_f1s1_kernel_func_table;
                     }
                     for (int64_t oh = 0; oh < outH; oh += otH) {
 #else
@@ -535,11 +449,11 @@ PRAGMA_OMP_PARALLEL()
                         const int64_t oc_remains = std::min(ocS, oc_g_pck - oc_l1);
                         const ppl_arm_server_kernel_fp32_conv_direct_kernel_t * conv_direct_kernel_func_table = 
                             (oc_remains > 4) ? ppl_arm_server_kernel_fp32_conv_direct_oc8_kernel_func_table :
-                                                ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_func_table;
+                                               ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_func_table;
                         if (use_pack || use_f1s1) {
                             conv_direct_kernel_func_table = 
-                                (oc_remains > 4) ? ppl_arm_server_kernel_fp32_conv_direct_oc8_kernel_f1_func_table :
-                                                   ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_f1_func_table;
+                                (oc_remains > 4) ? ppl_arm_server_kernel_fp32_conv_direct_oc8_f1s1_kernel_func_table :
+                                                   ppl_arm_server_kernel_fp32_conv_direct_oc4_f1s1_kernel_func_table;
                         }
 #endif
                         const int64_t ih = -padH + oh * strdH;

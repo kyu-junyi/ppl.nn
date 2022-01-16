@@ -651,7 +651,7 @@ PRAGMA_OMP_PARALLEL()
                     
                 const int32_t init_id = (is_first_ic) ? 0 : 2;
                 const int64_t fini_id = 0;
-                    PRAGMA_OMP_FOR_COLLAPSE(2)
+                PRAGMA_OMP_FOR_COLLAPSE(2)
                 for (int64_t set_id = 0; set_id < WGB2F3_NSET(); set_id ++) {
                     // Note: using `oc_group` in the loop is the same with using `oc_g_packed`.
                     for (int64_t oc_l2 = 0; oc_l2 < oc_g_packed; oc_l2 += k_out_channel_section) {

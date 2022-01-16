@@ -232,6 +232,31 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         }
     }
 
+    // check im2col
+    if (param.kernel_h == 1 && param.stride_h == 1 && param.pad_h == 0 && param.dilation_h == 1 &&
+        param.kernel_w == 1 && param.stride_w == 1 && param.pad_w == 0 && param.dilation_w == 1 &&
+        target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
+        target_algo.algo_type              = ppl::kernel::arm_server::conv2d_algo::tile_gemm;
+        conv2d_offline_manager *im2col_mgr = nullptr;
+        if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
+            target_algo.input_format = ppl::common::DATAFORMAT_N4CX;
+            im2col_mgr               = new conv2d_n4cx_im2col_fp32_offline_manager(param, allocator);
+        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+            target_algo.input_format = ppl::common::DATAFORMAT_N8CX;
+            im2col_mgr               = new conv2d_n8cx_im2col_fp16_offline_manager(param, allocator);
+        }
+        if (im2col_mgr != nullptr) {
+            if (im2col_mgr->is_supported()) {
+                im2col_mgr->set_algo_info(target_algo);
+                im2col_mgr->fast_init_schedule_param();
+                return im2col_mgr;
+            } else {
+                delete im2col_mgr;
+            }
+        }
+    }
+
+
     // check direct
     // TODO: remove group restriction after add group support
     if (1) {
@@ -258,26 +283,6 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
             } else {
                 delete direct_mgr;
             }
-        }
-    }
-
-    // check im2col
-    target_algo.algo_type              = ppl::kernel::arm_server::conv2d_algo::tile_gemm;
-    conv2d_offline_manager *im2col_mgr = nullptr;
-    if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
-        target_algo.input_format = ppl::common::DATAFORMAT_N4CX;
-        im2col_mgr               = new conv2d_n4cx_im2col_fp32_offline_manager(param, allocator);
-    } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
-        target_algo.input_format = ppl::common::DATAFORMAT_N8CX;
-        im2col_mgr               = new conv2d_n8cx_im2col_fp16_offline_manager(param, allocator);
-    }
-    if (im2col_mgr != nullptr) {
-        if (im2col_mgr->is_supported()) {
-            im2col_mgr->set_algo_info(target_algo);
-            im2col_mgr->fast_init_schedule_param();
-            return im2col_mgr;
-        } else {
-            delete im2col_mgr;
         }
     }
 

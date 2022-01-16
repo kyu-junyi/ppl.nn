@@ -160,696 +160,696 @@ void ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_outer<N4cxSgemmBlockingOr
 #define FUSE_T() 0
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 1
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 2
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 4
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 5
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 6
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_kernel.inc"
+            #include "n4cx_sgemm_m4nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
@@ -857,696 +857,696 @@ void ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_outer<N4cxSgemmBlockingOr
 #define FUSE_T() 0
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 1
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 2
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 4
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 5
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T
 #define FUSE_T() 6
     #define INIT_T() 0
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 1
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
     #define INIT_T() 2
         #define N_BLOCK0() 12
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 11
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 10
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 9
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 8
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 7
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 6
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 5
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 4
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 3
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 2
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
         #define N_BLOCK0() 1
-            #include "n4cx_sgemm_m8n10_kernel.inc"
+            #include "n4cx_sgemm_m8nx_kernel.inc"
         #undef N_BLOCK0
     #undef INIT_T
 #undef FUSE_T

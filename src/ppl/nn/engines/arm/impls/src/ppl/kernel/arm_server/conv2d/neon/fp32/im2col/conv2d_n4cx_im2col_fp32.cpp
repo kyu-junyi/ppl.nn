@@ -128,8 +128,10 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
     const int64_t hw_out = h_out * w_out;
     const int64_t hw_flt = h_flt * w_flt;
 
-    const int64_t k_m_block0 = CBLK();
-    const int64_t k_n_block0 = kp.sgemm_n_block0;
+    const int64_t k_m8_block0 = 8;
+    const int64_t k_n10_block0 = 10;
+    const int64_t k_m4_block0 = 4;
+    const int64_t k_n12_block0 = 12;
 
     int64_t prv_j2 = -1;
 
@@ -154,7 +156,6 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
 
     const int64_t m_l1 = std::min(m-i2, m_block1);
     const int64_t n_l1 = std::min(n-j2, n_block1);
-    // std::cout << "nl1: " << n_l1 << std::endl;
 
     float *i2c_local_base = input_im2col_buffer + j2 * ic_g_pck * hw_flt;
     if (renew_tile_im2col && prv_j2 != j2) {
@@ -207,24 +208,35 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
         prv_j2 = j2;
     }
 
+    const int64_t m_l1_align8 = FLOOR8(CEIL4(m_l1));
+    // make FMA chains evenly distributed
+    int64_t n10_block0 = k_n10_block0;
+    // if (n_l1 % k_n10_block0 != 0) {
+    //     int64_t tmp_n_block0 = n10_block0 - 2;
+    //     if ( (n_l1 + n10_block0 - 1) / n10_block0 == (n_l1 + tmp_n_block0 - 1) / tmp_n_block0 ) {
+    //         n10_block0 = tmp_n_block0;
+    //     }
+    //     else if ( (n_l1 + n10_block0 - 1) / n10_block0 == (n_l1 + tmp_n_block0) / (tmp_n_block0+1) ) {
+    //         n10_block0 = tmp_n_block0 + 1;
+    //     }
+    // }
+    int64_t n12_block0 = k_n12_block0;
+    // if (n_l1 % k_n12_block0 != 0) {
+    //     int64_t tmp_n_block0 = n12_block0 - 2;
+    //     if ( (n_l1 + n12_block0 - 1) / n12_block0 == (n_l1 + tmp_n_block0 - 1) / tmp_n_block0 ) {
+    //         n12_block0 = tmp_n_block0;
+    //     }
+    //     else if ( (n_l1 + n12_block0 - 1) / n12_block0 == (n_l1 + tmp_n_block0) / (tmp_n_block0+1) ) {
+    //         n12_block0 = tmp_n_block0 + 1;
+    //     }
+    // }
+
     for (int64_t p2 = 0; p2 < k; p2 += k_block1) {
         const bool is_first_k = (p2 == 0);
         const bool is_last_k = (p2 + k_block1 >= k);
         const int64_t k_l1 = std::min(k-p2, k_block1);
 
-        // make FMA chains evenly distributed
-        int64_t n_block0 = k_n_block0;
-        if (n_l1 % k_n_block0 != 0) {
-            int64_t tmp_n_block0 = n_block0 - 2;
-            if ( (n_l1 + n_block0 - 1) / n_block0 == (n_l1 + tmp_n_block0 - 1) / tmp_n_block0 ) {
-                n_block0 = tmp_n_block0;
-            }
-            else if ( (n_l1 + n_block0 - 1) / n_block0 == (n_l1 + tmp_n_block0) / (tmp_n_block0+1) ) {
-                n_block0 = tmp_n_block0 + 1;
-            }
-        }
-
-        const float *a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
+        const float *a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK() * 2;
         const float *b_ptr = (use_im2col) ? (i2c_local_base + p2 * n_block1) : (input_g_base + p2 * hw_in + (hw_l2_base + j2) * CBLK());
         const int64_t ldb_local = (use_im2col) ? n_block1 : hw_in;
         const float * const_ptr = bias_oc_base + i2;
@@ -236,12 +248,12 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
         uint32_t fuse_id = (is_last_k)  ? fuse_type : 0;
         // std::cout << "FUSE: " << fuse_id << std::endl;
 
-        for (int64_t j = 0; j < n_l1; j += n_block0) {
-            for (int64_t i = 0; i < m_l1; i += k_m_block0) {
-                const int64_t m_l0 = std::min((m_l1-i), k_m_block0);
-                const int64_t n_l0 = std::min((n_l1-j), n_block0);
+        for (int64_t i = 0; i < m_l1_align8; i += k_m8_block0) {
+            for (int64_t j = 0; j < n_l1; j += n10_block0) {
+                const int64_t m_l0 = std::min((m_l1_align8-i), k_m8_block0);
+                const int64_t n_l0 = std::min((n_l1-j), n10_block0);
     
-                n4cx_sgemm_m4nx_kernel_func_table[n_l0-1][init_id][fuse_id](
+                n4cx_sgemm_m8nx_kernel_func_table[n_l0-1][init_id][fuse_id](
                     a_ptr + i * lda,
                     b_ptr + j * CBLK(), 
                     const_ptr + i,
@@ -249,6 +261,24 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                     c_ptr + i * ldc + j * CBLK(),
                     m_l0, n_l0, k_l1,
                     lda, ldb_local, ld_fused_data, ldc);
+            }
+        }
+        if (m_l1_align8 < CEIL4(m_l1)) {
+            a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
+            for (int64_t i = m_l1_align8; i < CEIL4(m_l1); i += k_m4_block0) {
+                for (int64_t j = 0; j < n_l1; j += n12_block0) {
+                    const int64_t m_l0 = std::min((CEIL4(m_l1)-i), k_m4_block0);
+                    const int64_t n_l0 = std::min((n_l1-j), n12_block0);
+        
+                    n4cx_sgemm_m4nx_kernel_func_table[n_l0-1][init_id][fuse_id](
+                        a_ptr + i * lda,
+                        b_ptr + j * CBLK(), 
+                        const_ptr + i,
+                        fused_ptr + i * ld_fused_data + j * CBLK(),
+                        c_ptr + i * ldc + j * CBLK(),
+                        m_l0, n_l0, k_l1,
+                        lda, ldb_local, ld_fused_data, ldc);
+                }
             }
         }
 
@@ -565,33 +595,34 @@ void conv_n4cx_tile_im2col_convert_filter(
         const float *filter_g_base = filter + g * oc_group * ic_group * hw_flt;
         float *cvt_filter_g_base = converted_filter + g * oc_group_pck * ic_group_pck * hw_flt;
 
-        // NOTE: (num_g * oc_g, ic_g, kh, kw) -> ((num_g * oc_g/4, [ic_g/4, kh, kw, 4ic], 4oc)
-        for (int64_t oc = 0; oc < oc_group_pck; oc+= OCBLK()) {
+        // NOTE: (num_g * oc_g, ic_g, kh, kw) -> ((num_g * oc_g/8, [ic_g/4, kh, kw, 4ic], 8oc) w/ tailing: (..., 4ic, 4oc)
+        for (int64_t oc = 0; oc < oc_group_pck; oc += 2*OCBLK()) {
             for (int64_t ic = 0; ic < ic_group_pck; ic += ICBLK()) {
-                float *cvt_filter_c_base = cvt_filter_g_base + oc * ic_group_pck * hw_flt + ic * hw_flt * OCBLK();
 
                 const int64_t ic_valid_blk = std::min((int64_t)ICBLK(), ic_group - ic);
-                const int64_t oc_valid_blk = std::min((int64_t)OCBLK(), oc_group - oc);
+                const int64_t oc_valid_blk = std::min((int64_t)2*OCBLK(), oc_group - oc);
+                const int64_t k_ocblk_local = (oc_valid_blk > OCBLK()) ? 2 * OCBLK() : OCBLK();
+                float *cvt_filter_c_base = cvt_filter_g_base + oc * ic_group_pck * hw_flt + ic * hw_flt * k_ocblk_local;
 
                 for (int64_t k = 0; k < hw_flt; k++) {
                     const float *filter_k_base = filter_g_base + oc * ic_group * hw_flt + ic * hw_flt + k;
-                    float *cvt_filter_k_base = cvt_filter_c_base + k * ICBLK() * OCBLK();
+                    float *cvt_filter_k_base = cvt_filter_c_base + k * ICBLK() * k_ocblk_local;
                     for (int64_t ic0 = 0; ic0 < ic_valid_blk; ic0++) {
                         for (int64_t oc0 = 0; oc0 < oc_valid_blk; oc0++) {
-                            cvt_filter_k_base[ic0 * OCBLK() + oc0] = filter_k_base[ oc0 * ic_group * hw_flt + ic0 * hw_flt];
+                            cvt_filter_k_base[ic0 * k_ocblk_local + oc0] = filter_k_base[ oc0 * ic_group * hw_flt + ic0 * hw_flt];
                         }
-                        for (int64_t oc0 = oc_valid_blk; oc0 < OCBLK(); oc0++) {
-                            cvt_filter_k_base[ic0 * OCBLK() + oc0] = 0.0f;
+                        for (int64_t oc0 = oc_valid_blk; oc0 < k_ocblk_local; oc0++) {
+                            cvt_filter_k_base[ic0 * k_ocblk_local + oc0] = 0.0f;
                         }
                     }
                     for (int64_t ic0 = ic_valid_blk; ic0 < ICBLK(); ic0++) {
-                        for (int64_t oc0 = 0; oc0 < OCBLK(); oc0++) {
-                            cvt_filter_k_base[ic0 * OCBLK() + oc0] = 0.0f;
+                        for (int64_t oc0 = 0; oc0 < k_ocblk_local; oc0++) {
+                            cvt_filter_k_base[ic0 * k_ocblk_local + oc0] = 0.0f;
                         }
                     }
                 }
             }
-        }
+        }        
     }
 }
 
@@ -643,8 +674,8 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::pick_best_schedule
         dst[idx] = float(rand())/float((RAND_MAX)) - 0.5;
     }
 
-    std::vector<int64_t> candidate_m_blk_list = {32};
-    std::vector<int64_t> candidate_n_blk_list = {72};
+    std::vector<int64_t> candidate_m_blk_list = {40};
+    std::vector<int64_t> candidate_n_blk_list = {68};
     std::vector<int64_t> candidate_k_blk_list = {128};
 
     if (tune_blocksize) {
@@ -653,8 +684,8 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::pick_best_schedule
         candidate_k_blk_list = {64, 128, 192};       
     }
 
-    int64_t best_m_blk = 32;
-    int64_t best_n_blk = 72;
+    int64_t best_m_blk = 40;
+    int64_t best_n_blk = 68;
     int64_t best_k_blk = 128;
     int64_t best_run_time = std::numeric_limits<int64_t>::max();
 

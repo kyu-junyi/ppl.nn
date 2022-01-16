@@ -68,8 +68,8 @@ void ppl_arm_server_kernel_fp32_n4cx_sgemm(
     const int64_t N_blocksize,
     const int64_t K_blocksize);
 
-#include "n4cx_sgemm_header.inc"
-#include "n4cx_sgemm_m8n10_header.inc"
+#include "n4cx_sgemm_m4nx_header.inc"
+#include "n4cx_sgemm_m8nx_header.inc"
 
 typedef void (*ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t)(
     const float* A,
@@ -400,7 +400,7 @@ const ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t n4cx_sgemm_m4nx_k
     }
 };
 
-const ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t n4cx_sgemm_m8n10_kernel_func_table[10][3][6] = {
+const ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t n4cx_sgemm_m8nx_kernel_func_table[10][3][6] = {
     {
         {
             ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<1, 0, 0>,
