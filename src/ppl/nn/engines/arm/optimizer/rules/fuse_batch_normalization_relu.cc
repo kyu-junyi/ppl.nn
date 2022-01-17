@@ -27,9 +27,7 @@ bool FuseBatchNormalizationReLURule::Apply(const OptKernelOptions& options) {
     bool graph_changed = false;
 
     auto graph_topo = options.graph_topo;
-    auto graph_data = options.graph_data;
     auto info = options.info;
-    auto& tensors = *options.tensors;
 
     for (auto it = graph_topo->CreateNodeIter(); it->IsValid(); it->Forward()) {
         auto node = it->Get();
@@ -55,7 +53,6 @@ bool FuseBatchNormalizationReLURule::Apply(const OptKernelOptions& options) {
                 continue;
             }
             auto relu_node = successor_node;
-            auto relu_output_edge = graph_topo->GetEdgeById(relu_node->GetOutput(0));
 
             auto bn_kernel_it = info->kernels.find(bn_node->GetId());
             if (bn_kernel_it == info->kernels.end()) {

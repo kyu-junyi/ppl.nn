@@ -25,8 +25,6 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, OUT_TILE_W()>(
     const uint32_t fuse_flag)
 {
 #define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
 
     // x9  : filter pointer
     // x10 : input pointer
@@ -67,7 +65,6 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, OUT_TILE_W()>(
         "b 1f\n\t"
 
 "0:\n\t" // RELOAD OUTPUT
-        // "add x12, %[outPtr], %[outH_x_outW_x_ocV_bytes]\n\t"  // scheduled earlier
                     "ldr q10, [%[outPtr]      ]\n\t"
         IF_OW_GT(1, "ldr q11, [%[outPtr], #16 ]\n\t")
         IF_OW_GT(2, "ldr q12, [%[outPtr], #32 ]\n\t")
@@ -218,7 +215,6 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, OUT_TILE_W()>(
 
         "ldr q31, [x9], #16\n\t"
 
-        // "subs x14, x14, #1\n\t"  // scheduled earlier
         "bne 5b\n\t"
 "2:\n\t"
         "subs x13, x13, #1\n\t"
@@ -418,8 +414,6 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, OUT_TILE_W()>(
     const uint32_t fuse_flag)
 {
 #define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
 
     // x9  : input 8-channel base pointer
     // x10 : input row base pointer
@@ -538,7 +532,6 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, OUT_TILE_W()>(
         
         "ldr q31, [x9], #32\n\t"
 
-        // "subs x14, x14, #1\n\t"  // scheduled earlier
         "bne 5b\n\t"
 "2:\n\t"
         "subs x13, x13, #1\n\t"

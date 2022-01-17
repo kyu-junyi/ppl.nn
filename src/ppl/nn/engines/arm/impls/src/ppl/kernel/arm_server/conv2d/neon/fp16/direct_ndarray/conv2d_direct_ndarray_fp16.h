@@ -18,6 +18,8 @@
 #ifndef __ST_PPL_KERNEL_ARM_SERVER_CONV2D_NEON_FP16_DIRECT_NDARRAY_CONV2D_DIRECT_NDARRAY_FP16_H_
 #define __ST_PPL_KERNEL_ARM_SERVER_CONV2D_NEON_FP16_DIRECT_NDARRAY_CONV2D_DIRECT_NDARRAY_FP16_H_
 
+#ifdef PPL_USE_ARM_SERVER_FP16
+
 #include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
@@ -64,9 +66,9 @@ public:
         : conv2d_offline_manager(param, allocator) {}
     bool is_supported() override;
     // initialize scheduling params, e.g., block size, correspoding temp buffer size, etc.
-    // TODO for fast algo selection
+    // for fast algo selection
     ppl::common::RetCode fast_init_schedule_param() override;
-    // TODO for offline selecting best algo
+    // for offline selecting best algo
     ppl::common::RetCode pick_best_schedule_param(const ppl::nn::TensorShape &src_shape, double &run_time, bool tune_blocksize) override;
     // convert filter according to scheduling params.
     ppl::common::RetCode gen_cvt_weights(const void *filter, const void *bias) override;
@@ -79,4 +81,5 @@ private:
 
 }}}; // namespace ppl::kernel::arm_server
 
+#endif
 #endif

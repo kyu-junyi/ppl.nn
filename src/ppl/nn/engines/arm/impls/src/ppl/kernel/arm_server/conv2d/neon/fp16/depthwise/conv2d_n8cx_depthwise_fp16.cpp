@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+#ifdef PPL_USE_ARM_SERVER_FP16
+
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/depthwise/conv2d_n8cx_depthwise_fp16.h"
 
 #include <arm_neon.h>
@@ -53,16 +55,16 @@ static inline void conv_n8cx_depthwise_general_h1w1_kernel(
     const int64_t flt_h_end,
     const int64_t flt_w_start,
     const int64_t flt_w_end,
-    const int64_t dilation_h,
-    const int64_t dilation_w,
+    const int64_t dltn_h,
+    const int64_t dltn_w,
     const int64_t fuse_flag)
 {
     float16x8_t vout = vbias;
     for (int64_t fh = flt_h_start; fh < flt_h_end; fh++) {
-        const __fp16 *input_h_base  = input_ptr + fh * dilation_h * src_w * ICBLK();
+        const __fp16 *input_h_base  = input_ptr + fh * dltn_h * src_w * ICBLK();
         const __fp16 *filter_h_base = cvt_filter_ptr + fh * flt_w * CBLK();
         for (int64_t fw = flt_w_start; fw < flt_w_end; fw++) {
-            float16x8_t vin  = vld1q_f16(input_h_base + fw * dilation_w * ICBLK());
+            float16x8_t vin  = vld1q_f16(input_h_base + fw * dltn_w * ICBLK());
             float16x8_t vflt = vld1q_f16(filter_h_base + fw * CBLK());
             vout             = vfmaq_f16(vout, vin, vflt);
         }
@@ -86,13 +88,13 @@ static inline void conv_n8cx_depthwise_general_h1w8_kernel(
     __fp16 *sum_ptr,
     const float16x8_t vbias,
     const int64_t flt_w,
-    const int64_t stride_w,
+    const int64_t strd_w,
     const int64_t ih_base,
     const int64_t iw_base,
     const int64_t flt_h_start,
     const int64_t flt_h_end,
-    const int64_t dilation_h_x_src_w,
-    const int64_t dilation_w,
+    const int64_t dltn_h_x_src_w,
+    const int64_t dltn_w,
     const int64_t fuse_flag)
 {
     float16x8_t vout0 = vbias;
@@ -106,19 +108,19 @@ static inline void conv_n8cx_depthwise_general_h1w8_kernel(
 
     for (int64_t fh = flt_h_start; fh < flt_h_end; fh++) {
         const __fp16 *filter_h_base = cvt_filter_ptr + fh * flt_w * CBLK();
-        const __fp16 *input_h_base  = input_ptr + fh * dilation_h_x_src_w * ICBLK();
+        const __fp16 *input_h_base  = input_ptr + fh * dltn_h_x_src_w * ICBLK();
         for (int64_t fw = 0; fw < flt_w; fw++) {
-            const __fp16 *input_base = input_h_base + fw * dilation_w * ICBLK();
+            const __fp16 *input_base = input_h_base + fw * dltn_w * ICBLK();
             float16x8_t vflt         = vld1q_f16(filter_h_base + fw * CBLK());
 
             float16x8_t vin0 = vld1q_f16(input_base);
-            float16x8_t vin1 = vld1q_f16(input_base + stride_w * OCBLK());
-            float16x8_t vin2 = vld1q_f16(input_base + stride_w * OCBLK() * 2);
-            float16x8_t vin3 = vld1q_f16(input_base + stride_w * OCBLK() * 3);
-            float16x8_t vin4 = vld1q_f16(input_base + stride_w * OCBLK() * 4);
-            float16x8_t vin5 = vld1q_f16(input_base + stride_w * OCBLK() * 5);
-            float16x8_t vin6 = vld1q_f16(input_base + stride_w * OCBLK() * 6);
-            float16x8_t vin7 = vld1q_f16(input_base + stride_w * OCBLK() * 7);
+            float16x8_t vin1 = vld1q_f16(input_base + strd_w * OCBLK());
+            float16x8_t vin2 = vld1q_f16(input_base + strd_w * OCBLK() * 2);
+            float16x8_t vin3 = vld1q_f16(input_base + strd_w * OCBLK() * 3);
+            float16x8_t vin4 = vld1q_f16(input_base + strd_w * OCBLK() * 4);
+            float16x8_t vin5 = vld1q_f16(input_base + strd_w * OCBLK() * 5);
+            float16x8_t vin6 = vld1q_f16(input_base + strd_w * OCBLK() * 6);
+            float16x8_t vin7 = vld1q_f16(input_base + strd_w * OCBLK() * 7);
 
             vout0 = vfmaq_f16(vout0, vin0, vflt);
             vout1 = vfmaq_f16(vout1, vin1, vflt);
@@ -172,7 +174,7 @@ static inline void conv_n8cx_depthwise_general_h1w8_kernel(
     vst1q_f16(output_ptr + OCBLK() * 7, vout7);
 }
 
-template <const uint32_t padding, const uint32_t stride>
+template <const uint32_t padding, const uint32_t strd>
 void conv_n8cx_depthwise_f3sx_h1w4(
     const __fp16 *converted_filter,
     const __fp16 *bias,
@@ -207,16 +209,16 @@ void conv_n8cx_depthwise_f3sx_h1w4<0, 1>(
         const int64_t flt_c_pck            = CEIL8(flt_c);
         const int64_t src_hw                = src_h * src_w;
         const int64_t dst_hw               = dst_h * dst_w;
-        const int64_t input_batch_stride  = flt_c_pck * src_hw;
-        const int64_t output_batch_stride = flt_c_pck * dst_hw;
+        const int64_t input_batch_strd  = flt_c_pck * src_hw;
+        const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < flt_c; c += CBLK()) {
                 const __fp16 *converted_filter_c_base = converted_filter + c * 9;
                 const __fp16 *bias_c_base             = bias + c;
-                const __fp16 *input_c_base            = input + b * input_batch_stride + c * src_hw;
-                __fp16 *output_c_base                 = output + b * output_batch_stride + c * dst_hw;
-                __fp16 *sum_c_base                    = sum + b * output_batch_stride + c * dst_hw;
+                const __fp16 *input_c_base            = input + b * input_batch_strd + c * src_hw;
+                __fp16 *output_c_base                 = output + b * output_batch_strd + c * dst_hw;
+                __fp16 *sum_c_base                    = sum + b * output_batch_strd + c * dst_hw;
 
                 float16x8_t vflt[9];
                 vflt[0]           = vld1q_f16(converted_filter_c_base + 0 * CBLK());
@@ -409,16 +411,16 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 1>(
         const int64_t flt_c_pck            = CEIL8(flt_c);
         const int64_t src_hw                = src_h * src_w;
         const int64_t dst_hw               = dst_h * dst_w;
-        const int64_t input_batch_stride  = flt_c_pck * src_hw;
-        const int64_t output_batch_stride = flt_c_pck * dst_hw;
+        const int64_t input_batch_strd  = flt_c_pck * src_hw;
+        const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < flt_c; c += CBLK()) {
                 const __fp16 *converted_filter_c_base = converted_filter + c * 9;
                 const __fp16 *bias_c_base             = bias + c;
-                const __fp16 *input_c_base            = input + b * input_batch_stride + c * src_hw;
-                __fp16 *output_c_base                 = output + b * output_batch_stride + c * dst_hw;
-                __fp16 *sum_c_base                    = sum + b * output_batch_stride + c * dst_hw;
+                const __fp16 *input_c_base            = input + b * input_batch_strd + c * src_hw;
+                __fp16 *output_c_base                 = output + b * output_batch_strd + c * dst_hw;
+                __fp16 *sum_c_base                    = sum + b * output_batch_strd + c * dst_hw;
 
                 float16x8_t vflt[9];
                 vflt[0]           = vld1q_f16(converted_filter_c_base + 0 * CBLK());
@@ -443,10 +445,6 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 1>(
                 ow_inner_end = std::max(ow_inner_end, ow_inner_start);
 
                 int64_t ow_inner_end_align4 = ((ow_inner_end - ow_inner_start) & (~3)) + ow_inner_start;
-
-                // std::cout << oh_inner_end << std::endl;
-                // std::cout << ow_inner_end_align4 << std::endl;
-                // std::cout << ow_inner_end << std::endl;
 
                 PRAGMA_OMP_FOR_NOWAIT()
                 for (int64_t oh = 0; oh < dst_h; oh++) {
@@ -860,7 +858,6 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 1>(
                             vst1q_f16(output_ptr, vout[0]);
                         }
                         if (ow_inner_end < dst_w) {
-                            // ow = dst_w - 1 == src_w - 1 (as dst_w == src_w f3p1s1d1)
                             const __fp16 *input_ptr = input_h_base + (src_w - 2) * ICBLK();
 
                             vout[0] = vbias;
@@ -920,16 +917,16 @@ void conv_n8cx_depthwise_f3sx_h1w4<0, 2>(
         const int64_t flt_c_pck            = CEIL8(flt_c);
         const int64_t src_hw                = src_h * src_w;
         const int64_t dst_hw               = dst_h * dst_w;
-        const int64_t input_batch_stride  = flt_c_pck * src_hw;
-        const int64_t output_batch_stride = flt_c_pck * dst_hw;
+        const int64_t input_batch_strd  = flt_c_pck * src_hw;
+        const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < flt_c; c += CBLK()) {
                 const __fp16 *converted_filter_c_base = converted_filter + c * 9;
                 const __fp16 *bias_c_base             = bias + c;
-                const __fp16 *input_c_base            = input + b * input_batch_stride + c * src_hw;
-                __fp16 *output_c_base                 = output + b * output_batch_stride + c * dst_hw;
-                __fp16 *sum_c_base                    = sum + b * output_batch_stride + c * dst_hw;
+                const __fp16 *input_c_base            = input + b * input_batch_strd + c * src_hw;
+                __fp16 *output_c_base                 = output + b * output_batch_strd + c * dst_hw;
+                __fp16 *sum_c_base                    = sum + b * output_batch_strd + c * dst_hw;
 
                 float16x8_t vflt[9];
                 vflt[0]           = vld1q_f16(converted_filter_c_base + 0 * CBLK());
@@ -1131,16 +1128,16 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 2>(
         const int64_t flt_c_pck            = CEIL8(flt_c);
         const int64_t src_hw                = src_h * src_w;
         const int64_t dst_hw               = dst_h * dst_w;
-        const int64_t input_batch_stride  = flt_c_pck * src_hw;
-        const int64_t output_batch_stride = flt_c_pck * dst_hw;
+        const int64_t input_batch_strd  = flt_c_pck * src_hw;
+        const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < flt_c; c += CBLK()) {
                 const __fp16 *converted_filter_c_base = converted_filter + c * 9;
                 const __fp16 *bias_c_base             = bias + c;
-                const __fp16 *input_c_base            = input + b * input_batch_stride + c * src_hw;
-                __fp16 *output_c_base                 = output + b * output_batch_stride + c * dst_hw;
-                __fp16 *sum_c_base                    = sum + b * output_batch_stride + c * dst_hw;
+                const __fp16 *input_c_base            = input + b * input_batch_strd + c * src_hw;
+                __fp16 *output_c_base                 = output + b * output_batch_strd + c * dst_hw;
+                __fp16 *sum_c_base                    = sum + b * output_batch_strd + c * dst_hw;
 
                 float16x8_t vflt[9];
                 vflt[0]           = vld1q_f16(converted_filter_c_base + 0 * CBLK());
@@ -1373,7 +1370,7 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 2>(
 
                             vst1q_f16(output_h_base + ow * OCBLK(), vout[0]);
                         }
-                        if (ow_inner_end < dst_w) { // NOTE: when in_size, k_size and stride are unmatched, the tail is no more than 1.
+                        if (ow_inner_end < dst_w) { // NOTE: when in_size, k_size and strd are unmatched, the tail is no more than 1.
                             const __fp16 *input_ptr = input_h_base + (ow_inner_end * 2 - 1) * ICBLK();
 
                             vout[0] = vbias;
@@ -1597,7 +1594,7 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 2>(
 
                             vst1q_f16(output_ptr, vout[0]);
                         }
-                        if (ow_inner_end < dst_w) { // NOTE: when in_size, k_size and stride are unmatched, the tail is no more than 1.
+                        if (ow_inner_end < dst_w) { // NOTE: when in_size, k_size and strd are unmatched, the tail is no more than 1.
                             const __fp16 *input_ptr = input_h_base + (ow_inner_end * 2 - 1) * ICBLK();
 
                             vout[0] = vbias;
@@ -1648,11 +1645,11 @@ static void conv_n8cx_depthwise_f3sx_convolution(
     const int64_t dst_w,
     const int64_t flt_c,
     const int64_t padding,
-    const int64_t stride,
+    const int64_t strd,
     const int64_t num_batch,
     const uint32_t fuse_flag)
 {
-    int64_t case_id = padding * 10 + stride;
+    int64_t case_id = padding * 10 + strd;
 
     switch (case_id) {
         case 01: // p0s1
@@ -1739,15 +1736,15 @@ static void conv_n8cx_depthwise_general_convolution(
     const int64_t flt_w,
     const int64_t pad_h,
     const int64_t pad_w,
-    const int64_t stride_h,
-    const int64_t stride_w,
-    const int64_t dilation_h,
-    const int64_t dilation_w,
+    const int64_t strd_h,
+    const int64_t strd_w,
+    const int64_t dltn_h,
+    const int64_t dltn_w,
     const int64_t num_batch,
     const int64_t fuse_flag)
 {
-    int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((pad_w - 0 * dilation_w), stride_w)); // inclusive
-    int64_t ow_inner_end   = std::min((int64_t)dst_w, DIV_CEIL((src_w + pad_w - (flt_w - 1) * dilation_w), stride_w)); // exclusive
+    int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((pad_w - 0 * dltn_w), strd_w)); // inclusive
+    int64_t ow_inner_end   = std::min((int64_t)dst_w, DIV_CEIL((src_w + pad_w - (flt_w - 1) * dltn_w), strd_w)); // exclusive
     ow_inner_start         = std::min(ow_inner_start, dst_w);
     ow_inner_end           = std::max(ow_inner_end, ow_inner_start);
 
@@ -1757,8 +1754,8 @@ static void conv_n8cx_depthwise_general_convolution(
     const int64_t flt_c_pck            = CEIL8(flt_c);
     const int64_t src_hw                = src_h * src_w;
     const int64_t dst_hw               = dst_h * dst_w;
-    const int64_t input_batch_stride  = flt_c_pck * src_hw;
-    const int64_t output_batch_stride = flt_c_pck * dst_hw;
+    const int64_t input_batch_strd  = flt_c_pck * src_hw;
+    const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
     PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
     for (int64_t b = 0; b < num_batch; b++) {
@@ -1766,14 +1763,14 @@ static void conv_n8cx_depthwise_general_convolution(
             for (int64_t oh = 0; oh < dst_h; oh++) {
                 const __fp16 *cvt_filter_c_base = converted_filter + c * flt_h * flt_w;
                 float16x8_t vbias               = vld1q_f16(bias + c);
-                const __fp16 *input_c_base      = input + b * input_batch_stride + c * src_hw;
-                __fp16 *output_c_base           = output + b * output_batch_stride + c * dst_hw;
-                __fp16 *sum_c_base              = sum + b * output_batch_stride + c * dst_hw;
+                const __fp16 *input_c_base      = input + b * input_batch_strd + c * src_hw;
+                __fp16 *output_c_base           = output + b * output_batch_strd + c * dst_hw;
+                __fp16 *sum_c_base              = sum + b * output_batch_strd + c * dst_hw;
 
-                const int64_t ih_base = -pad_h + oh * stride_h;
+                const int64_t ih_base = -pad_h + oh * strd_h;
 
-                const int64_t flt_h_start = std::max(-ih_base + dilation_h - 1, (int64_t)0) / dilation_h; // inclusive
-                const int64_t flt_h_end   = std::min(flt_h, (src_h - ih_base + dilation_h - 1) / dilation_h); // exclusive
+                const int64_t flt_h_start = std::max(-ih_base + dltn_h - 1, (int64_t)0) / dltn_h; // inclusive
+                const int64_t flt_h_end   = std::min(flt_h, (src_h - ih_base + dltn_h - 1) / dltn_h); // exclusive
                 if (flt_h_end - flt_h_start <= 0) continue;
 
                 const __fp16 *input_h_base = input_c_base + ih_base * src_w * ICBLK();
@@ -1781,34 +1778,32 @@ static void conv_n8cx_depthwise_general_convolution(
                 __fp16 *sum_h_base         = sum_c_base + oh * dst_w * OCBLK();
 
                 for (int64_t ow = 0; ow < ow_inner_start; ow++) {
-                    int64_t iw_base    = -pad_w + ow * stride_w;
-                    int64_t flt_w_start = std::max(-iw_base + dilation_w - 1, (int64_t)0) / dilation_w; // inclusive
-                    int64_t flt_w_end   = std::min(flt_w, (src_w - iw_base + dilation_w - 1) / dilation_w); // exclusive
+                    int64_t iw_base    = -pad_w + ow * strd_w;
+                    int64_t flt_w_start = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                    int64_t flt_w_end   = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                     conv_n8cx_depthwise_general_h1w1_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, flt_w_start, flt_w_end, dilation_h, dilation_w, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, flt_w_start, flt_w_end, dltn_h, dltn_w, fuse_flag);
                 }
                 for (int64_t ow = ow_inner_start; ow < ow_inner_end_align; ow += otw) {
-                    int64_t iw_base = -pad_w + ow * stride_w;
+                    int64_t iw_base = -pad_w + ow * strd_w;
 
                     conv_n8cx_depthwise_general_h1w8_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, flt_w, stride_w, ih_base, iw_base, flt_h_start, flt_h_end, dilation_h * src_w, dilation_w, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, flt_w, strd_w, ih_base, iw_base, flt_h_start, flt_h_end, dltn_h * src_w, dltn_w, fuse_flag);
                 }
-                // TODO(kyu): use h1wx function
                 for (int64_t ow = ow_inner_end_align; ow < ow_inner_end; ow++) {
-                    int64_t iw_base = -pad_w + ow * stride_w;
+                    int64_t iw_base = -pad_w + ow * strd_w;
 
                     conv_n8cx_depthwise_general_h1w1_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, 0, flt_w, dilation_h, dilation_w, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, 0, flt_w, dltn_h, dltn_w, fuse_flag);
                 }
                 for (int64_t ow = ow_inner_end; ow < dst_w; ow++) {
-                    int64_t iw_base    = -pad_w + ow * stride_w;
-                    // TODO(kyu): check if flt_w_start is always 0.
-                    int64_t flt_w_start = std::max(-iw_base + dilation_w - 1, (int64_t)0) / dilation_w; // inclusive
-                    int64_t flt_w_end   = std::min(flt_w, (src_w - iw_base + dilation_w - 1) / dilation_w); // exclusive
+                    int64_t iw_base    = -pad_w + ow * strd_w;
+                    int64_t flt_w_start = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                    int64_t flt_w_end   = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                     conv_n8cx_depthwise_general_h1w1_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, flt_w_start, flt_w_end, dilation_h, dilation_w, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, flt_w_start, flt_w_end, dltn_h, dltn_w, fuse_flag);
                 }
             }
         }
@@ -1855,16 +1850,16 @@ ppl::common::RetCode conv2d_n8cx_depthwise_fp16_runtime_executor::execute()
     const int64_t flt_w      = cp.kernel_w;
     const int64_t pad_h      = cp.pad_h;
     const int64_t pad_w      = cp.pad_w;
-    const int64_t stride_h     = cp.stride_h;
-    const int64_t stride_w     = cp.stride_w;
-    const int64_t dilation_h     = cp.dilation_h;
-    const int64_t dilation_w     = cp.dilation_w;
+    const int64_t strd_h     = cp.stride_h;
+    const int64_t strd_w     = cp.stride_w;
+    const int64_t dltn_h     = cp.dilation_h;
+    const int64_t dltn_w     = cp.dilation_w;
     const int64_t num_batch = src_shape_->GetDim(0);
 
     if (flt_h == 3 && flt_w == 3 &&
         pad_h < 2 && pad_h == pad_w &&
-        stride_h < 3 && stride_h == stride_w &&
-        dilation_h == 1 && dilation_w == 1) {
+        strd_h < 3 && strd_h == strd_w &&
+        dltn_h == 1 && dltn_w == 1) {
         conv_n8cx_depthwise_f3sx_convolution(
             converted_filter,
             bias,
@@ -1877,7 +1872,7 @@ ppl::common::RetCode conv2d_n8cx_depthwise_fp16_runtime_executor::execute()
             dst_w,
             num_output,
             pad_h,
-            stride_h,
+            strd_h,
             num_batch,
             fuse_flag);
     } else {
@@ -1896,10 +1891,10 @@ ppl::common::RetCode conv2d_n8cx_depthwise_fp16_runtime_executor::execute()
             flt_w,
             pad_h,
             pad_w,
-            stride_h,
-            stride_w,
-            dilation_h,
-            dilation_w,
+            strd_h,
+            strd_w,
+            dltn_h,
+            dltn_w,
             num_batch,
             fuse_flag);
     }
@@ -1907,40 +1902,40 @@ ppl::common::RetCode conv2d_n8cx_depthwise_fp16_runtime_executor::execute()
 }
 
 size_t conv_n8cx_depthwise_get_converted_filter_size(
-    const int64_t c_out,
-    const int64_t h_flt,
-    const int64_t w_flt)
+    const int64_t out_c,
+    const int64_t flt_h,
+    const int64_t flt_w)
 {
-    return CEIL128(CEIL8(c_out) * h_flt * w_flt * sizeof(__fp16));
+    return CEIL128(CEIL8(out_c) * flt_h * flt_w * sizeof(__fp16));
 }
 
 void conv_n8cx_depthwise_convert_filter(
     const __fp16 *filter,
     __fp16 *converted_filter,
-    const int64_t c_out,
-    const int64_t h_flt,
-    const int64_t w_flt)
+    const int64_t out_c,
+    const int64_t flt_h,
+    const int64_t flt_w)
 {
-    const int64_t oc_pck    = CEIL8(c_out);
-    const int64_t oc_floor8 = FLOOR8(c_out);
-    const int64_t hw_flt    = h_flt * w_flt;
+    const int64_t oc_pck    = CEIL8(out_c);
+    const int64_t oc_floor8 = FLOOR8(out_c);
+    const int64_t flt_hw    = flt_h * flt_w;
 
     for (int64_t c = 0; c < oc_floor8; c += CBLK()) {
-        for (int64_t idx = 0; idx < hw_flt; idx++) {
+        for (int64_t idx = 0; idx < flt_hw; idx++) {
             for (int64_t c_in = 0; c_in < CBLK(); c_in++) {
-                converted_filter[hw_flt * c + idx * CBLK() + c_in] = filter[hw_flt * c + c_in * hw_flt + idx];
+                converted_filter[flt_hw * c + idx * CBLK() + c_in] = filter[flt_hw * c + c_in * flt_hw + idx];
             }
         }
     }
 
     const int64_t oc_tail = oc_pck - oc_floor8;
     if (oc_tail) {
-        for (int64_t idx = 0; idx < hw_flt; idx++) {
+        for (int64_t idx = 0; idx < flt_hw; idx++) {
             for (int64_t c = 0; c < oc_tail; c++) {
-                converted_filter[hw_flt * oc_floor8 + idx * CBLK() + c] = filter[hw_flt * oc_floor8 + c * hw_flt + idx];
+                converted_filter[flt_hw * oc_floor8 + idx * CBLK() + c] = filter[flt_hw * oc_floor8 + c * flt_hw + idx];
             }
             for (int64_t c = oc_tail; c < CBLK(); c++) {
-                converted_filter[hw_flt * oc_floor8 + idx * CBLK() + c] = 0.0f;
+                converted_filter[flt_hw * oc_floor8 + idx * CBLK() + c] = 0.0f;
             }
         }
     }
@@ -1992,3 +1987,5 @@ conv2d_runtime_executor *conv2d_n8cx_depthwise_fp16_offline_manager::gen_executo
 }
 
 }}} // namespace ppl::kernel::arm_server
+
+#endif

@@ -33,8 +33,6 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_F1_FUNC(OUT_TILE_W())(
     const uint32_t fuse_flag)
 {
 #define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
 
     // x9  : filter pointer
     // x10 : input pointer
@@ -75,7 +73,6 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_F1_FUNC(OUT_TILE_W())(
         "b 1f\n\t"
 
 "0:\n\t" // RELOAD OUTPUT
-        // "add x12, %[outPtr], %[outH_x_outW_x_ocV_bytes]\n\t"  // scheduled earlier
                     "ldr q10, [%[outPtr]      ]\n\t"
         IF_OW_GT(1, "ldr q11, [%[outPtr], #16 ]\n\t")
         IF_OW_GT(2, "ldr q12, [%[outPtr], #32 ]\n\t")
@@ -240,56 +237,6 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_F1_FUNC(OUT_TILE_W())(
         "add x10, x10, %[diffW_x_icV_bytes]\n\t"
         "add x10, x10, %[diffHW_x_icV_bytes]\n\t"
         "add x10, x10, %[inDiffH_x_inW_x_icV_bytes]\n\t"
-
-
-
-
-
-
-
-
-        //             "fmla v10.4s, v30.4s, v0.s[3]\n\t"
-        // IF_OW_GT(1, "fmla v11.4s, v30.4s, v1.s[3]\n\t")
-        // IF_OW_GT(2, "fmla v12.4s, v30.4s, v2.s[3]\n\t")
-        // IF_OW_GT(3, "fmla v13.4s, v30.4s, v3.s[3]\n\t")
-        // IF_OW_GT(4, "fmla v14.4s, v30.4s, v4.s[3]\n\t")
-        // IF_OW_GT(5, "fmla v15.4s, v30.4s, v5.s[3]\n\t")
-        // IF_OW_GT(6, "fmla v16.4s, v30.4s, v6.s[3]\n\t")
-        // IF_OW_GT(7, "fmla v17.4s, v30.4s, v7.s[3]\n\t")
-        // IF_OW_GT(8, "fmla v18.4s, v30.4s, v8.s[3]\n\t")
-        // IF_OW_GT(9, "fmla v19.4s, v30.4s, v9.s[3]\n\t")
-
-        // "add x9,  x9,  %[fltDiffHW_bytes]\n\t"
-        // "add x9,  x9,  #32\n\t"
-
-        // "ldr q30, [x9], #16\n\t"
-        
-        //             "fmla v20.4s, v31.4s, v0.s[3]\n\t"
-        //             "ldr q0, [x10], #16\n\t"
-        // IF_OW_GT(1, "fmla v21.4s, v31.4s, v1.s[3]\n\t")
-        // IF_OW_GT(1, "ldr q1, [x10], #16\n\t")
-        // IF_OW_GT(2, "fmla v22.4s, v31.4s, v2.s[3]\n\t")
-        // IF_OW_GT(2, "ldr q2, [x10], #16\n\t")
-        // IF_OW_GT(3, "fmla v23.4s, v31.4s, v3.s[3]\n\t")
-        // IF_OW_GT(3, "ldr q3, [x10], #16\n\t")
-        // IF_OW_GT(4, "fmla v24.4s, v31.4s, v4.s[3]\n\t")
-        // IF_OW_GT(4, "ldr q4, [x10], #16\n\t")
-        // IF_OW_GT(5, "fmla v25.4s, v31.4s, v5.s[3]\n\t")
-        // IF_OW_GT(5, "ldr q5, [x10], #16\n\t")
-        // IF_OW_GT(6, "fmla v26.4s, v31.4s, v6.s[3]\n\t")
-        // IF_OW_GT(6, "ldr q6, [x10], #16\n\t")
-        // IF_OW_GT(7, "fmla v27.4s, v31.4s, v7.s[3]\n\t")
-        // IF_OW_GT(7, "ldr q7, [x10], #16\n\t")
-        // IF_OW_GT(8, "fmla v28.4s, v31.4s, v8.s[3]\n\t")
-        // IF_OW_GT(8, "ldr q8, [x10], #16\n\t")
-        // IF_OW_GT(9, "fmla v29.4s, v31.4s, v9.s[3]\n\t")
-        // IF_OW_GT(9, "ldr q9, [x10], #16\n\t")
-
-        // "ldr q31, [x9], #16\n\t"
-
-        // "add x10, x10, %[diffW_x_icV_bytes]\n\t"
-        // "add x10, x10, %[diffHW_x_icV_bytes]\n\t"
-        // "add x10, x10, %[inDiffH_x_inW_x_icV_bytes]\n\t"
 
         "b 4b\n\t"
 
@@ -590,8 +537,6 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC4_H1WX_F1_FUNC(OUT_TILE_W())(
     const uint32_t fuse_flag)
 {
 #define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
 
     // x9  : input 8-channel base pointer
     // x10 : input row base pointer

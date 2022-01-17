@@ -89,9 +89,15 @@ ppl::common::RetCode GemmKernel::DoExecute(KernelExecContext* ctx) {
     } else {
         fuse_type = ppl::kernel::arm_server::neon::gemm_fuse_flag::NONE;
     }
-
     void *src_C = nullptr;
     auto c_type = ppl::kernel::arm_server::neon::gemm_C_type::EMPTY;
+    // TODO: fully support gemm op
+    (void)trans_A;
+    (void)trans_B;
+    (void)isa_flag;
+    (void)fuse_type;
+    (void)c_type;
+
     auto ldc = 0;
     if (C != nullptr && !C->GetShape()->IsEmpty()) {
         src_C = C->GetBufferPtr<float>();
@@ -102,8 +108,6 @@ ppl::common::RetCode GemmKernel::DoExecute(KernelExecContext* ctx) {
             }
         }
     }
-
-
 
     if (data_type == ppl::common::DATATYPE_FLOAT32) {
         if (MayUseISA(ppl::common::ISA_ARMV8)) {

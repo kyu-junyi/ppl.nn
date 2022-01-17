@@ -326,7 +326,6 @@ static void PPL_ASK_FP16_CONV_GEN_DIRECT_KERNEL_OC16_OH1_EXTRACTION_LAYOUT_PAD_A
         IF_OW_GT(9, "fmla v29.8h, v31.8h, v9.h[7]\n\t")
 
         "ldr q31, [%[filterPtr]], #16\n\t"
-        // "subs x14, x14, #1\n\t"  // scheduled earlier
         "bne 5b\n\t"
 "2:\n\t"
         "subs x13, x13, #1\n\t"

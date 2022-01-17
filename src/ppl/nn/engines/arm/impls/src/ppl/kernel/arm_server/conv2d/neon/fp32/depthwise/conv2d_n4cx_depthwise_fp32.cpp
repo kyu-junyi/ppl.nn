@@ -34,24 +34,24 @@ static inline void conv_n4cx_depthwise_general_h1w1_kernel(
     float *output_ptr,
     float *sum_ptr,
     const float32x4_t vbias,
-    const int64_t inW,
-    const int64_t fltW,
+    const int64_t src_w,
+    const int64_t flt_w,
     const int64_t ih_base,
     const int64_t iw_base,
-    const int64_t fltH_start,
-    const int64_t fltH_end,
-    const int64_t fltW_start,
-    const int64_t fltW_end,
-    const int64_t dltnH,
-    const int64_t dltnW,
+    const int64_t flt_h_start,
+    const int64_t flt_h_end,
+    const int64_t flt_w_start,
+    const int64_t flt_w_end,
+    const int64_t dltn_h,
+    const int64_t dltn_w,
     const uint32_t fuse_flag)
 {
     float32x4_t vout = vbias;
-    for (int64_t fh = fltH_start; fh < fltH_end; fh++) {
-        const float *input_h_base  = input_ptr + fh * dltnH * inW * ICBLK();
-        const float *filter_h_base = cvt_filter_ptr + fh * fltW * CBLK();
-        for (int64_t fw = fltW_start; fw < fltW_end; fw++) {
-            float32x4_t vin  = vld1q_f32(input_h_base + fw * dltnW * ICBLK());
+    for (int64_t fh = flt_h_start; fh < flt_h_end; fh++) {
+        const float *input_h_base  = input_ptr + fh * dltn_h * src_w * ICBLK();
+        const float *filter_h_base = cvt_filter_ptr + fh * flt_w * CBLK();
+        for (int64_t fw = flt_w_start; fw < flt_w_end; fw++) {
+            float32x4_t vin  = vld1q_f32(input_h_base + fw * dltn_w * ICBLK());
             float32x4_t vflt = vld1q_f32(filter_h_base + fw * CBLK());
             vout             = vfmaq_f32(vout, vin, vflt);
         }
@@ -75,14 +75,14 @@ static inline void conv_n4cx_depthwise_general_h1w8_kernel(
     float *output_ptr,
     float *sum_ptr,
     const float32x4_t vbias,
-    const int64_t fltW,
-    const int64_t strdW,
+    const int64_t flt_w,
+    const int64_t strd_w,
     const int64_t ih_base,
     const int64_t iw_base,
-    const int64_t fltH_start,
-    const int64_t fltH_end,
-    const int64_t dltnH_x_inW,
-    const int64_t dltnW,
+    const int64_t flt_h_start,
+    const int64_t flt_h_end,
+    const int64_t dltn_h_x_src_w,
+    const int64_t dltn_w,
     const uint32_t fuse_flag)
 {
     float32x4_t vout0 = vbias;
@@ -94,21 +94,21 @@ static inline void conv_n4cx_depthwise_general_h1w8_kernel(
     float32x4_t vout6 = vbias;
     float32x4_t vout7 = vbias;
 
-    for (int64_t fh = fltH_start; fh < fltH_end; fh++) {
-        const float *filter_h_base = cvt_filter_ptr + fh * fltW * CBLK();
-        const float *input_h_base  = input_ptr + fh * dltnH_x_inW * ICBLK();
-        for (int64_t fw = 0; fw < fltW; fw++) {
-            const float *input_base = input_h_base + fw * dltnW * ICBLK();
+    for (int64_t fh = flt_h_start; fh < flt_h_end; fh++) {
+        const float *filter_h_base = cvt_filter_ptr + fh * flt_w * CBLK();
+        const float *input_h_base  = input_ptr + fh * dltn_h_x_src_w * ICBLK();
+        for (int64_t fw = 0; fw < flt_w; fw++) {
+            const float *input_base = input_h_base + fw * dltn_w * ICBLK();
             float32x4_t vflt        = vld1q_f32(filter_h_base + fw * CBLK());
 
             float32x4_t vin0 = vld1q_f32(input_base);
-            float32x4_t vin1 = vld1q_f32(input_base + strdW * OCBLK());
-            float32x4_t vin2 = vld1q_f32(input_base + strdW * OCBLK() * 2);
-            float32x4_t vin3 = vld1q_f32(input_base + strdW * OCBLK() * 3);
-            float32x4_t vin4 = vld1q_f32(input_base + strdW * OCBLK() * 4);
-            float32x4_t vin5 = vld1q_f32(input_base + strdW * OCBLK() * 5);
-            float32x4_t vin6 = vld1q_f32(input_base + strdW * OCBLK() * 6);
-            float32x4_t vin7 = vld1q_f32(input_base + strdW * OCBLK() * 7);
+            float32x4_t vin1 = vld1q_f32(input_base + strd_w * OCBLK());
+            float32x4_t vin2 = vld1q_f32(input_base + strd_w * OCBLK() * 2);
+            float32x4_t vin3 = vld1q_f32(input_base + strd_w * OCBLK() * 3);
+            float32x4_t vin4 = vld1q_f32(input_base + strd_w * OCBLK() * 4);
+            float32x4_t vin5 = vld1q_f32(input_base + strd_w * OCBLK() * 5);
+            float32x4_t vin6 = vld1q_f32(input_base + strd_w * OCBLK() * 6);
+            float32x4_t vin7 = vld1q_f32(input_base + strd_w * OCBLK() * 7);
 
             vout0 = vfmaq_f32(vout0, vin0, vflt);
             vout1 = vfmaq_f32(vout1, vin1, vflt);
@@ -170,10 +170,10 @@ void conv_n4cx_depthwise_f3sx_h1w4(
     float *output,
     float *sum,
     const int64_t fltC,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_batch,
     const uint32_t fuse_flag);
 
@@ -185,30 +185,30 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 1>(
     float *output,
     float *sum,
     const int64_t fltC,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_batch,
     const uint32_t fuse_flag)
 {
     PRAGMA_OMP_PARALLEL()
     {
-        int64_t outW_align4 = (outW & (~3));
+        int64_t dst_w_align4 = (dst_w & (~3));
 
         const int64_t fltC_pck            = CEIL4(fltC);
-        const int64_t inHW                = inH * inW;
-        const int64_t outHW               = outH * outW;
-        const int64_t input_batch_stride  = fltC_pck * inHW;
-        const int64_t output_batch_stride = fltC_pck * outHW;
+        const int64_t src_hW                = src_h * src_w;
+        const int64_t dst_hW               = dst_h * dst_w;
+        const int64_t input_batch_stride  = fltC_pck * src_hW;
+        const int64_t output_batch_stride = fltC_pck * dst_hW;
 
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < fltC; c += CBLK()) {
                 const float *converted_filter_c_base = converted_filter + c * 9;
                 const float *bias_c_base             = bias + c;
-                const float *input_c_base            = input + b * input_batch_stride + c * inHW;
-                float *output_c_base                 = output + b * output_batch_stride + c * outHW;
-                float *sum_c_base                    = sum + b * output_batch_stride + c * outHW;
+                const float *input_c_base            = input + b * input_batch_stride + c * src_hW;
+                float *output_c_base                 = output + b * output_batch_stride + c * dst_hW;
+                float *sum_c_base                    = sum + b * output_batch_stride + c * dst_hW;
 
                 float32x4_t vflt[9];
                 vflt[0]           = vld1q_f32(converted_filter_c_base + 0 * CBLK());
@@ -223,15 +223,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 1>(
                 float32x4_t vbias = vld1q_f32(bias_c_base);
 
                 PRAGMA_OMP_FOR_NOWAIT()
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    const float *input_h_base = input_c_base + oh * inW * ICBLK();
-                    float *output_h_base      = output_c_base + oh * outW * OCBLK();
-                    float *sum_h_base         = sum_c_base + oh * outW * OCBLK();
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK(), 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK() * 2, 0, 3);
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    const float *input_h_base = input_c_base + oh * src_w * ICBLK();
+                    float *output_h_base      = output_c_base + oh * dst_w * OCBLK();
+                    float *sum_h_base         = sum_c_base + oh * dst_w * OCBLK();
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK(), 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK() * 2, 0, 3);
 
-                    for (int64_t ow = 0; ow < outW_align4; ow += 4) {
+                    for (int64_t ow = 0; ow < dst_w_align4; ow += 4) {
                         const float *input_ptr = input_h_base + ow * ICBLK();
                         float *output_ptr      = output_h_base + ow * OCBLK();
                         __builtin_prefetch(output_ptr, 1, 2);
@@ -251,19 +251,19 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 1>(
                         vin[4] = vld1q_f32(input_ptr + ICBLK() * 4);
                         vin[5] = vld1q_f32(input_ptr + ICBLK() * 5);
 
-                        vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                        vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                        vin[8]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
-                        vin[9]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 3);
-                        vin[10] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 4);
-                        vin[11] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 5);
+                        vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                        vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                        vin[8]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
+                        vin[9]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 3);
+                        vin[10] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 4);
+                        vin[11] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 5);
 
-                        vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                        vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                        vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
-                        vin[15] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 3);
-                        vin[16] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 4);
-                        vin[17] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 5);
+                        vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                        vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                        vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
+                        vin[15] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 3);
+                        vin[16] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 4);
+                        vin[17] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 5);
 
                         vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                         vout[1] = vfmaq_f32(vout[1], vin[1], vflt[0]);
@@ -337,7 +337,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 1>(
                         vst1q_f32(output_ptr + OCBLK() * 2, vout[2]);
                         vst1q_f32(output_ptr + OCBLK() * 3, vout[3]);
                     }
-                    for (int64_t ow = outW_align4; ow < outW; ow++) {
+                    for (int64_t ow = dst_w_align4; ow < dst_w; ow++) {
                         const float *input_ptr = input_h_base + ow * ICBLK();
                         float *output_ptr      = output_h_base + ow * OCBLK();
 
@@ -350,13 +350,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 1>(
                         vin[1] = vld1q_f32(input_ptr + ICBLK() * 1);
                         vin[2] = vld1q_f32(input_ptr + ICBLK() * 2);
 
-                        vin[6] = vld1q_f32(input_ptr + inW * ICBLK());
-                        vin[7] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                        vin[8] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
+                        vin[6] = vld1q_f32(input_ptr + src_w * ICBLK());
+                        vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                        vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
 
-                        vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                        vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                        vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
+                        vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                        vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                        vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
 
                         vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                         vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
@@ -395,10 +395,10 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
     float *output,
     float *sum,
     const int64_t fltC,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_batch,
     const uint32_t fuse_flag)
 {
@@ -406,8 +406,8 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
     {
         const int64_t oh_inner_start = 1; // inclusive index
         const int64_t ow_inner_start = 1; // inclusive index
-        int64_t oh_inner_end         = inH - 1; // exclusive index
-        int64_t ow_inner_end         = inW - 1; // exclusive index
+        int64_t oh_inner_end         = src_h - 1; // exclusive index
+        int64_t ow_inner_end         = src_w - 1; // exclusive index
 
         oh_inner_end = std::max(oh_inner_end, oh_inner_start);
         ow_inner_end = std::max(ow_inner_end, ow_inner_start);
@@ -419,10 +419,10 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
         // std::cout << ow_inner_end << std::endl;
 
         const int64_t fltC_pck            = CEIL4(fltC);
-        const int64_t inHW                = inH * inW;
-        const int64_t outHW               = outH * outW;
-        const int64_t input_batch_stride  = fltC_pck * inHW;
-        const int64_t output_batch_stride = fltC_pck * outHW;
+        const int64_t src_hW                = src_h * src_w;
+        const int64_t dst_hW               = dst_h * dst_w;
+        const int64_t input_batch_stride  = fltC_pck * src_hW;
+        const int64_t output_batch_stride = fltC_pck * dst_hW;
 
         int64_t p_c = -1;
 
@@ -432,12 +432,12 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
         PRAGMA_OMP_FOR_COLLAPSE_NOWAIT(3)
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < fltC; c += CBLK()) {
-                for (int64_t oh = 0; oh < outH; oh++) {
+                for (int64_t oh = 0; oh < dst_h; oh++) {
                     const float *converted_filter_c_base = converted_filter + c * 9;
                     const float *bias_c_base             = bias + c;
-                    const float *input_c_base            = input + b * input_batch_stride + c * inHW;
-                    float *output_c_base                 = output + b * output_batch_stride + c * outHW;
-                    float *sum_c_base                    = sum + b * output_batch_stride + c * outHW;
+                    const float *input_c_base            = input + b * input_batch_stride + c * src_hW;
+                    float *output_c_base                 = output + b * output_batch_stride + c * dst_hW;
+                    float *sum_c_base                    = sum + b * output_batch_stride + c * dst_hW;
 
                     if (p_c != c) {
                         vflt[0] = vld1q_f32(converted_filter_c_base + 0 * CBLK());
@@ -453,24 +453,24 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                         p_c     = c;
                     }
 
-                    const float *input_h_base = input_c_base + (oh - 1) * inW * ICBLK();
-                    float *output_h_base      = output_c_base + oh * outW * OCBLK();
-                    float *sum_h_base         = sum_c_base + oh * outW * OCBLK();
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK(), 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK() * 2, 0, 3);
+                    const float *input_h_base = input_c_base + (oh - 1) * src_w * ICBLK();
+                    float *output_h_base      = output_c_base + oh * dst_w * OCBLK();
+                    float *sum_h_base         = sum_c_base + oh * dst_w * OCBLK();
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK(), 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK() * 2, 0, 3);
                     __builtin_prefetch(output_h_base, 1, 2);
 
-                    if (oh == 0 || oh == outH - 1) {
+                    if (oh == 0 || oh == dst_h - 1) {
                         bool ih0_valid = (oh >= 1);
-                        bool ih2_valid = (oh < inH - 1);
+                        bool ih2_valid = (oh < src_h - 1);
 
                         {
                             float32x4_t vin[18];
                             float32x4_t vout[4];
                             __builtin_prefetch(output_h_base, 1, 2);
                             const float *input_ptr = input_h_base;
-                            bool iw2_valid         = (1 < inW);
+                            bool iw2_valid         = (1 < src_w);
 
                             vout[0] = vbias;
 
@@ -481,14 +481,14 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                                 vout[0] = vfmaq_f32(vout[0], vin[2], vflt[2]);
                             }
 
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[8]  = (iw2_valid) ? vld1q_f32(input_ptr + inW * ICBLK() + ICBLK()) : vdupq_n_f32(0.0f);
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[8]  = (iw2_valid) ? vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK()) : vdupq_n_f32(0.0f);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
                             vout[0] = vfmaq_f32(vout[0], vin[8], vflt[5]);
 
                             if (ih2_valid) {
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[14] = (iw2_valid) ? vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK()) : vdupq_n_f32(0.0f);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[14] = (iw2_valid) ? vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK()) : vdupq_n_f32(0.0f);
                                 vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                                 vout[0] = vfmaq_f32(vout[0], vin[14], vflt[8]);
                             }
@@ -541,12 +541,12 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                                 vout[3] = vfmaq_f32(vout[3], vin[5], vflt[2]);
                             }
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                            vin[8]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
-                            vin[9]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 3);
-                            vin[10] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 4);
-                            vin[11] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 5);
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                            vin[8]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
+                            vin[9]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 3);
+                            vin[10] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 4);
+                            vin[11] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 5);
 
                             vout[0] = vfmaq_f32(vout[0], vin[6], vflt[3]);
                             vout[1] = vfmaq_f32(vout[1], vin[7], vflt[3]);
@@ -564,12 +564,12 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                             vout[3] = vfmaq_f32(vout[3], vin[11], vflt[5]);
 
                             if (ih2_valid) {
-                                vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
-                                vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
-                                vin[15] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 3);
-                                vin[16] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 4);
-                                vin[17] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 5);
+                                vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
+                                vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
+                                vin[15] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 3);
+                                vin[16] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 4);
+                                vin[17] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 5);
 
                                 vout[0] = vfmaq_f32(vout[0], vin[12], vflt[6]);
                                 vout[1] = vfmaq_f32(vout[1], vin[13], vflt[6]);
@@ -630,17 +630,17 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                                 vout[0] = vfmaq_f32(vout[0], vin[2], vflt[2]);
                             }
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
-                            vin[8]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
+                            vin[8]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
                             vout[0] = vfmaq_f32(vout[0], vin[6], vflt[3]);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
                             vout[0] = vfmaq_f32(vout[0], vin[8], vflt[5]);
 
                             if (ih2_valid) {
-                                vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
-                                vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
+                                vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
+                                vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
                                 vout[0] = vfmaq_f32(vout[0], vin[12], vflt[6]);
                                 vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                                 vout[0] = vfmaq_f32(vout[0], vin[14], vflt[8]);
@@ -659,8 +659,8 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
 
                             vst1q_f32(output_h_base + ow * OCBLK(), vout[0]);
                         }
-                        if (ow_inner_end < outW) {
-                            const float *input_ptr = input_h_base + (inW - 2) * ICBLK();
+                        if (ow_inner_end < dst_w) {
+                            const float *input_ptr = input_h_base + (src_w - 2) * ICBLK();
 
                             float32x4_t vin[18];
                             float32x4_t vout[1];
@@ -673,20 +673,20 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                                 vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
                             }
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
                             vout[0] = vfmaq_f32(vout[0], vin[6], vflt[3]);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
 
                             if (ih2_valid) {
-                                vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
+                                vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
                                 vout[0] = vfmaq_f32(vout[0], vin[12], vflt[6]);
                                 vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                             }
 
                             if (fuse_flag & conv_fuse_flag::SUM) {
-                                vout[0] = vaddq_f32(vout[0], vld1q_f32(sum_h_base + (outW - 1) * OCBLK()));
+                                vout[0] = vaddq_f32(vout[0], vld1q_f32(sum_h_base + (dst_w - 1) * OCBLK()));
                             }
                             if (fuse_flag & conv_fuse_flag::RELU) {
                                 vout[0] = vmaxq_f32(vout[0], vdupq_n_f32(0.0f));
@@ -695,13 +695,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                                 vout[0] = vminq_f32(vout[0], vdupq_n_f32(6.0f));
                             }
 
-                            vst1q_f32(output_c_base + oh * outW * OCBLK() + (outW - 1) * OCBLK(), vout[0]);
+                            vst1q_f32(output_c_base + oh * dst_w * OCBLK() + (dst_w - 1) * OCBLK(), vout[0]);
                         }
                     } else {
                         {
                             __builtin_prefetch(output_h_base, 1, 2);
                             const float *input_ptr = input_h_base;
-                            bool iw2_valid         = (1 < inW);
+                            bool iw2_valid         = (1 < src_w);
 
                             float32x4_t vin[18];
                             float32x4_t vout[1];
@@ -709,16 +709,16 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                             vout[0] = vbias;
 
                             vin[1]  = vld1q_f32(input_ptr);
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
                             vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
                             vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
 
                             if (iw2_valid) {
                                 vin[2]  = vld1q_f32(input_ptr + ICBLK());
-                                vin[8]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
-                                vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
+                                vin[8]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
+                                vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
 
                                 vout[0] = vfmaq_f32(vout[0], vin[2], vflt[2]);
                                 vout[0] = vfmaq_f32(vout[0], vin[8], vflt[5]);
@@ -758,19 +758,19 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                             vin[4] = vld1q_f32(input_ptr + ICBLK() * 4);
                             vin[5] = vld1q_f32(input_ptr + ICBLK() * 5);
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                            vin[8]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
-                            vin[9]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 3);
-                            vin[10] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 4);
-                            vin[11] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 5);
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                            vin[8]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
+                            vin[9]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 3);
+                            vin[10] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 4);
+                            vin[11] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 5);
 
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                            vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
-                            vin[15] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 3);
-                            vin[16] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 4);
-                            vin[17] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 5);
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                            vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
+                            vin[15] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 3);
+                            vin[16] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 4);
+                            vin[17] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 5);
 
                             vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                             vout[1] = vfmaq_f32(vout[1], vin[1], vflt[0]);
@@ -858,13 +858,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                             vin[1] = vld1q_f32(input_ptr + ICBLK() * 1);
                             vin[2] = vld1q_f32(input_ptr + ICBLK() * 2);
 
-                            vin[6] = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                            vin[8] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
+                            vin[6] = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                            vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
 
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                            vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                            vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
 
                             vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                             vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
@@ -889,9 +889,9 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
 
                             vst1q_f32(output_ptr, vout[0]);
                         }
-                        if (ow_inner_end < outW) {
-                            // ow = outW - 1 == inW - 1 (as outW == inW f3p1s1d1)
-                            const float *input_ptr = input_h_base + (inW - 2) * ICBLK();
+                        if (ow_inner_end < dst_w) {
+                            // ow = dst_w - 1 == src_w - 1 (as dst_w == src_w f3p1s1d1)
+                            const float *input_ptr = input_h_base + (src_w - 2) * ICBLK();
 
                             float32x4_t vin[18];
                             float32x4_t vout[1];
@@ -901,11 +901,11 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                             vin[0] = vld1q_f32(input_ptr);
                             vin[1] = vld1q_f32(input_ptr + ICBLK());
 
-                            vin[6] = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
+                            vin[6] = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
 
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
 
                             vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                             vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
@@ -915,7 +915,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                             vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
 
                             if (fuse_flag & conv_fuse_flag::SUM) {
-                                vout[0] = vaddq_f32(vout[0], vld1q_f32(sum_h_base + (outW - 1) * OCBLK()));
+                                vout[0] = vaddq_f32(vout[0], vld1q_f32(sum_h_base + (dst_w - 1) * OCBLK()));
                             }
                             if (fuse_flag & conv_fuse_flag::RELU) {
                                 vout[0] = vmaxq_f32(vout[0], vdupq_n_f32(0.0f));
@@ -924,7 +924,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
                                 vout[0] = vminq_f32(vout[0], vdupq_n_f32(6.0f));
                             }
 
-                            vst1q_f32(output_c_base + oh * outW * OCBLK() + (outW - 1) * OCBLK(), vout[0]);
+                            vst1q_f32(output_c_base + oh * dst_w * OCBLK() + (dst_w - 1) * OCBLK(), vout[0]);
                         }
                     }
                 }
@@ -941,30 +941,30 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
     float *output,
     float *sum,
     const int64_t fltC,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_batch,
     const uint32_t fuse_flag)
 {
     PRAGMA_OMP_PARALLEL()
     {
-        int64_t outW_align4 = (outW & (~3));
+        int64_t dst_w_align4 = (dst_w & (~3));
 
         const int64_t fltC_pck            = CEIL4(fltC);
-        const int64_t inHW                = inH * inW;
-        const int64_t outHW               = outH * outW;
-        const int64_t input_batch_stride  = fltC_pck * inHW;
-        const int64_t output_batch_stride = fltC_pck * outHW;
+        const int64_t src_hW                = src_h * src_w;
+        const int64_t dst_hW               = dst_h * dst_w;
+        const int64_t input_batch_stride  = fltC_pck * src_hW;
+        const int64_t output_batch_stride = fltC_pck * dst_hW;
 
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < fltC; c += CBLK()) {
                 const float *converted_filter_c_base = converted_filter + c * 9;
                 const float *bias_c_base             = bias + c;
-                const float *input_c_base            = input + b * input_batch_stride + c * inHW;
-                float *output_c_base                 = output + b * output_batch_stride + c * outHW;
-                float *sum_c_base                    = sum + b * output_batch_stride + c * outHW;
+                const float *input_c_base            = input + b * input_batch_stride + c * src_hW;
+                float *output_c_base                 = output + b * output_batch_stride + c * dst_hW;
+                float *sum_c_base                    = sum + b * output_batch_stride + c * dst_hW;
 
                 float32x4_t vflt[9];
                 vflt[0]           = vld1q_f32(converted_filter_c_base + 0 * CBLK());
@@ -979,18 +979,18 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
                 float32x4_t vbias = vld1q_f32(bias_c_base);
 
                 PRAGMA_OMP_FOR_NOWAIT()
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    const float *input_h_base = input_c_base + oh * 2 * inW * ICBLK();
-                    float *output_h_base      = output_c_base + oh * outW * OCBLK();
-                    float *sum_h_base         = sum_c_base + oh * outW * OCBLK();
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK(), 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK() * 2, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 4, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 4 + ICBLK(), 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 4 + ICBLK() * 2, 0, 3);
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    const float *input_h_base = input_c_base + oh * 2 * src_w * ICBLK();
+                    float *output_h_base      = output_c_base + oh * dst_w * OCBLK();
+                    float *sum_h_base         = sum_c_base + oh * dst_w * OCBLK();
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK(), 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK() * 2, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 4, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 4 + ICBLK(), 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 4 + ICBLK() * 2, 0, 3);
 
-                    for (int64_t ow = 0; ow < outW_align4; ow += 4) {
+                    for (int64_t ow = 0; ow < dst_w_align4; ow += 4) {
                         const float *input_ptr = input_h_base + ow * 2 * ICBLK();
                         float *output_ptr      = output_h_base + ow * OCBLK();
                         __builtin_prefetch(output_ptr, 1, 2);
@@ -1013,15 +1013,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
                         vin[7] = vld1q_f32(input_ptr + ICBLK() * 7);
                         vin[8] = vld1q_f32(input_ptr + ICBLK() * 8);
 
-                        vin[9]  = vld1q_f32(input_ptr + inW * ICBLK());
-                        vin[10] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                        vin[11] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
-                        vin[12] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 3);
-                        vin[13] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 4);
-                        vin[14] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 5);
-                        vin[15] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 6);
-                        vin[16] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 7);
-                        vin[17] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 8);
+                        vin[9]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                        vin[10] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                        vin[11] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
+                        vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 3);
+                        vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 4);
+                        vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 5);
+                        vin[15] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 6);
+                        vin[16] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 7);
+                        vin[17] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 8);
 
                         vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                         vout[1] = vfmaq_f32(vout[1], vin[2], vflt[0]);
@@ -1038,15 +1038,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
                         vout[2] = vfmaq_f32(vout[2], vin[6], vflt[2]);
                         vout[3] = vfmaq_f32(vout[3], vin[8], vflt[2]);
 
-                        vin[0] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                        vin[1] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                        vin[2] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
-                        vin[3] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 3);
-                        vin[4] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 4);
-                        vin[5] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 5);
-                        vin[6] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 6);
-                        vin[7] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 7);
-                        vin[8] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 8);
+                        vin[0] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                        vin[1] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                        vin[2] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
+                        vin[3] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 3);
+                        vin[4] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 4);
+                        vin[5] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 5);
+                        vin[6] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 6);
+                        vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 7);
+                        vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 8);
 
                         vout[0] = vfmaq_f32(vout[0], vin[9], vflt[3]);
                         vout[1] = vfmaq_f32(vout[1], vin[11], vflt[3]);
@@ -1105,7 +1105,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
                         vst1q_f32(output_ptr + OCBLK() * 2, vout[2]);
                         vst1q_f32(output_ptr + OCBLK() * 3, vout[3]);
                     }
-                    for (int64_t ow = outW_align4; ow < outW; ow++) {
+                    for (int64_t ow = dst_w_align4; ow < dst_w; ow++) {
                         const float *input_ptr = input_h_base + ow * 2 * ICBLK();
                         float *output_ptr      = output_h_base + ow * OCBLK();
 
@@ -1118,13 +1118,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<0, 2>(
                         vin[1] = vld1q_f32(input_ptr + ICBLK() * 1);
                         vin[2] = vld1q_f32(input_ptr + ICBLK() * 2);
 
-                        vin[6] = vld1q_f32(input_ptr + inW * ICBLK());
-                        vin[7] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                        vin[8] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
+                        vin[6] = vld1q_f32(input_ptr + src_w * ICBLK());
+                        vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                        vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
 
-                        vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                        vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                        vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
+                        vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                        vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                        vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
 
                         vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                         vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
@@ -1163,10 +1163,10 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
     float *output,
     float *sum,
     const int64_t fltC,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_batch,
     const uint32_t fuse_flag)
 {
@@ -1176,17 +1176,17 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
         int64_t ow_inner_start, ow_inner_end;
         oh_inner_start              = 1; // inclusive index
         ow_inner_start              = 1; // inclusive index
-        oh_inner_end                = (inH - 2) / 2 + 1; // exclusive index
-        ow_inner_end                = (inW - 2) / 2 + 1; // exclusive index
+        oh_inner_end                = (src_h - 2) / 2 + 1; // exclusive index
+        ow_inner_end                = (src_w - 2) / 2 + 1; // exclusive index
         oh_inner_end                = std::max(oh_inner_end, oh_inner_start);
         ow_inner_end                = std::max(ow_inner_end, ow_inner_start);
         int64_t ow_inner_end_align4 = ((ow_inner_end - ow_inner_start) & (~3)) + ow_inner_start;
 
         const int64_t fltC_pck            = CEIL4(fltC);
-        const int64_t inHW                = inH * inW;
-        const int64_t outHW               = outH * outW;
-        const int64_t input_batch_stride  = fltC_pck * inHW;
-        const int64_t output_batch_stride = fltC_pck * outHW;
+        const int64_t src_hW                = src_h * src_w;
+        const int64_t dst_hW               = dst_h * dst_w;
+        const int64_t input_batch_stride  = fltC_pck * src_hW;
+        const int64_t output_batch_stride = fltC_pck * dst_hW;
 
         int p_c = -1;
 
@@ -1196,12 +1196,12 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
         PRAGMA_OMP_FOR_COLLAPSE_NOWAIT(3)
         for (int64_t b = 0; b < num_batch; b++) {
             for (int64_t c = 0; c < fltC; c += CBLK()) {
-                for (int64_t oh = 0; oh < outH; oh++) {
+                for (int64_t oh = 0; oh < dst_h; oh++) {
                     const float *converted_filter_c_base = converted_filter + c * 9;
                     const float *bias_c_base             = bias + c;
-                    const float *input_c_base            = input + b * input_batch_stride + c * inHW;
-                    float *output_c_base                 = output + b * output_batch_stride + c * outHW;
-                    float *sum_c_base                    = sum + b * output_batch_stride + c * outHW;
+                    const float *input_c_base            = input + b * input_batch_stride + c * src_hW;
+                    float *output_c_base                 = output + b * output_batch_stride + c * dst_hW;
+                    float *sum_c_base                    = sum + b * output_batch_stride + c * dst_hW;
 
                     if (p_c != c) {
                         vflt[0] = vld1q_f32(converted_filter_c_base + 0 * CBLK());
@@ -1218,24 +1218,24 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                     }
 
                     const int64_t ih          = -1 + oh * 2;
-                    const float *input_h_base = input_c_base + ih * inW * ICBLK();
-                    float *output_h_base      = output_c_base + oh * outW * OCBLK();
-                    float *sum_h_base         = sum_c_base + oh * outW * OCBLK();
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK(), 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 3 + ICBLK() * 2, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 4, 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 4 + ICBLK(), 0, 3);
-                    __builtin_prefetch(input_h_base + inW * ICBLK() * 4 + ICBLK() * 2, 0, 3);
+                    const float *input_h_base = input_c_base + ih * src_w * ICBLK();
+                    float *output_h_base      = output_c_base + oh * dst_w * OCBLK();
+                    float *sum_h_base         = sum_c_base + oh * dst_w * OCBLK();
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK(), 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 3 + ICBLK() * 2, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 4, 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 4 + ICBLK(), 0, 3);
+                    __builtin_prefetch(input_h_base + src_w * ICBLK() * 4 + ICBLK() * 2, 0, 3);
 
                     if (oh == 0 || oh >= oh_inner_end) {
                         bool ih0_valid = (ih >= 0);
-                        bool ih2_valid = (ih + 2 < inH);
+                        bool ih2_valid = (ih + 2 < src_h);
 
                         {
                             __builtin_prefetch(output_h_base, 1, 2);
                             const float *input_ptr = input_h_base;
-                            bool iw2_valid         = (1 < inW);
+                            bool iw2_valid         = (1 < src_w);
 
                             float32x4_t vin[18];
                             float32x4_t vout[1];
@@ -1249,14 +1249,14 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                                 vout[0] = vfmaq_f32(vout[0], vin[2], vflt[2]);
                             }
 
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[8]  = (iw2_valid) ? vld1q_f32(input_ptr + inW * ICBLK() + ICBLK()) : vdupq_n_f32(0.0f);
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[8]  = (iw2_valid) ? vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK()) : vdupq_n_f32(0.0f);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
                             vout[0] = vfmaq_f32(vout[0], vin[8], vflt[5]);
 
                             if (ih2_valid) {
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[14] = (iw2_valid) ? vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK()) : vdupq_n_f32(0.0f);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[14] = (iw2_valid) ? vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK()) : vdupq_n_f32(0.0f);
                                 vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                                 vout[0] = vfmaq_f32(vout[0], vin[14], vflt[8]);
                             }
@@ -1312,15 +1312,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                                 vout[3] = vfmaq_f32(vout[3], vin[8], vflt[2]);
                             }
 
-                            vin[9]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[10] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                            vin[11] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 3);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 4);
-                            vin[14] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 5);
-                            vin[15] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 6);
-                            vin[16] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 7);
-                            vin[17] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 8);
+                            vin[9]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[10] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                            vin[11] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 3);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 4);
+                            vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 5);
+                            vin[15] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 6);
+                            vin[16] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 7);
+                            vin[17] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 8);
 
                             vout[0] = vfmaq_f32(vout[0], vin[9], vflt[3]);
                             vout[1] = vfmaq_f32(vout[1], vin[11], vflt[3]);
@@ -1338,15 +1338,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                             vout[3] = vfmaq_f32(vout[3], vin[17], vflt[5]);
 
                             if (ih2_valid) {
-                                vin[0] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[1] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                                vin[2] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
-                                vin[3] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 3);
-                                vin[4] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 4);
-                                vin[5] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 5);
-                                vin[6] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 6);
-                                vin[7] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 7);
-                                vin[8] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 8);
+                                vin[0] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[1] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                                vin[2] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
+                                vin[3] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 3);
+                                vin[4] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 4);
+                                vin[5] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 5);
+                                vin[6] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 6);
+                                vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 7);
+                                vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 8);
 
                                 vout[0] = vfmaq_f32(vout[0], vin[0], vflt[6]);
                                 vout[1] = vfmaq_f32(vout[1], vin[2], vflt[6]);
@@ -1408,17 +1408,17 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                                 vout[0] = vfmaq_f32(vout[0], vin[2], vflt[2]);
                             }
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
-                            vin[8]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
+                            vin[8]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
                             vout[0] = vfmaq_f32(vout[0], vin[6], vflt[3]);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
                             vout[0] = vfmaq_f32(vout[0], vin[8], vflt[5]);
 
                             if (ih2_valid) {
-                                vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
-                                vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
+                                vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
+                                vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
                                 vout[0] = vfmaq_f32(vout[0], vin[12], vflt[6]);
                                 vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                                 vout[0] = vfmaq_f32(vout[0], vin[14], vflt[8]);
@@ -1437,7 +1437,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
 
                             vst1q_f32(output_h_base + ow * OCBLK(), vout[0]);
                         }
-                        if (ow_inner_end < outW) { // NOTE: when in_size, k_size and stride are unmatched, the tail is no more than 1.
+                        if (ow_inner_end < dst_w) { // NOTE: when in_size, k_size and stride are unmatched, the tail is no more than 1.
                             const float *input_ptr = input_h_base + (ow_inner_end * 2 - 1) * ICBLK();
 
                             float32x4_t vin[18];
@@ -1451,14 +1451,14 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                                 vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
                             }
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
                             vout[0] = vfmaq_f32(vout[0], vin[6], vflt[3]);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
 
                             if (ih2_valid) {
-                                vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                                vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
+                                vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                                vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
                                 vout[0] = vfmaq_f32(vout[0], vin[12], vflt[6]);
                                 vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                             }
@@ -1473,13 +1473,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                                 vout[0] = vminq_f32(vout[0], vdupq_n_f32(6.0f));
                             }
 
-                            vst1q_f32(output_c_base + oh * outW * OCBLK() + ow_inner_end * OCBLK(), vout[0]);
+                            vst1q_f32(output_c_base + oh * dst_w * OCBLK() + ow_inner_end * OCBLK(), vout[0]);
                         }
                     } else {
                         {
                             __builtin_prefetch(output_h_base, 1, 2);
                             const float *input_ptr = input_h_base;
-                            bool iw2_valid         = (1 < inW);
+                            bool iw2_valid         = (1 < src_w);
 
                             float32x4_t vin[18];
                             float32x4_t vout[1];
@@ -1491,13 +1491,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                             vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
                             vout[0] = vfmaq_f32(vout[0], vin[2], vflt[2]);
 
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[8]  = (iw2_valid) ? vld1q_f32(input_ptr + inW * ICBLK() + ICBLK()) : vdupq_n_f32(0.0f);
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[8]  = (iw2_valid) ? vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK()) : vdupq_n_f32(0.0f);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
                             vout[0] = vfmaq_f32(vout[0], vin[8], vflt[5]);
 
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[14] = (iw2_valid) ? vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK()) : vdupq_n_f32(0.0f);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[14] = (iw2_valid) ? vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK()) : vdupq_n_f32(0.0f);
                             vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
                             vout[0] = vfmaq_f32(vout[0], vin[14], vflt[8]);
 
@@ -1536,15 +1536,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                             vin[7] = vld1q_f32(input_ptr + ICBLK() * 7);
                             vin[8] = vld1q_f32(input_ptr + ICBLK() * 8);
 
-                            vin[9]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[10] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                            vin[11] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 3);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 4);
-                            vin[14] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 5);
-                            vin[15] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 6);
-                            vin[16] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 7);
-                            vin[17] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 8);
+                            vin[9]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[10] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                            vin[11] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 3);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 4);
+                            vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 5);
+                            vin[15] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 6);
+                            vin[16] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 7);
+                            vin[17] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 8);
 
                             vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                             vout[1] = vfmaq_f32(vout[1], vin[2], vflt[0]);
@@ -1561,15 +1561,15 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                             vout[2] = vfmaq_f32(vout[2], vin[6], vflt[2]);
                             vout[3] = vfmaq_f32(vout[3], vin[8], vflt[2]);
 
-                            vin[0] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[1] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                            vin[2] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
-                            vin[3] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 3);
-                            vin[4] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 4);
-                            vin[5] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 5);
-                            vin[6] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 6);
-                            vin[7] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 7);
-                            vin[8] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 8);
+                            vin[0] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[1] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                            vin[2] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
+                            vin[3] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 3);
+                            vin[4] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 4);
+                            vin[5] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 5);
+                            vin[6] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 6);
+                            vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 7);
+                            vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 8);
 
                             vout[0] = vfmaq_f32(vout[0], vin[9], vflt[3]);
                             vout[1] = vfmaq_f32(vout[1], vin[11], vflt[3]);
@@ -1642,13 +1642,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                             vin[1] = vld1q_f32(input_ptr + ICBLK() * 1);
                             vin[2] = vld1q_f32(input_ptr + ICBLK() * 2);
 
-                            vin[6] = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 1);
-                            vin[8] = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK() * 2);
+                            vin[6] = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 1);
+                            vin[8] = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK() * 2);
 
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 1);
-                            vin[14] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK() * 2);
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 1);
+                            vin[14] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK() * 2);
 
                             vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                             vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
@@ -1673,7 +1673,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
 
                             vst1q_f32(output_ptr, vout[0]);
                         }
-                        if (ow_inner_end < outW) { // NOTE: when in_size, k_size and stride are unmatched, the tail is no more than 1.
+                        if (ow_inner_end < dst_w) { // NOTE: when in_size, k_size and stride are unmatched, the tail is no more than 1.
                             const float *input_ptr = input_h_base + (ow_inner_end * 2 - 1) * ICBLK();
 
                             float32x4_t vin[18];
@@ -1686,13 +1686,13 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                             vout[0] = vfmaq_f32(vout[0], vin[0], vflt[0]);
                             vout[0] = vfmaq_f32(vout[0], vin[1], vflt[1]);
 
-                            vin[6]  = vld1q_f32(input_ptr + inW * ICBLK());
-                            vin[7]  = vld1q_f32(input_ptr + inW * ICBLK() + ICBLK());
+                            vin[6]  = vld1q_f32(input_ptr + src_w * ICBLK());
+                            vin[7]  = vld1q_f32(input_ptr + src_w * ICBLK() + ICBLK());
                             vout[0] = vfmaq_f32(vout[0], vin[6], vflt[3]);
                             vout[0] = vfmaq_f32(vout[0], vin[7], vflt[4]);
 
-                            vin[12] = vld1q_f32(input_ptr + inW * ICBLK() * 2);
-                            vin[13] = vld1q_f32(input_ptr + inW * ICBLK() * 2 + ICBLK());
+                            vin[12] = vld1q_f32(input_ptr + src_w * ICBLK() * 2);
+                            vin[13] = vld1q_f32(input_ptr + src_w * ICBLK() * 2 + ICBLK());
                             vout[0] = vfmaq_f32(vout[0], vin[12], vflt[6]);
                             vout[0] = vfmaq_f32(vout[0], vin[13], vflt[7]);
 
@@ -1706,7 +1706,7 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 2>(
                                 vout[0] = vminq_f32(vout[0], vdupq_n_f32(6.0f));
                             }
 
-                            vst1q_f32(output_c_base + oh * outW * OCBLK() + ow_inner_end * OCBLK(), vout[0]);
+                            vst1q_f32(output_c_base + oh * dst_w * OCBLK() + ow_inner_end * OCBLK(), vout[0]);
                         }
                     }
                 }
@@ -1721,10 +1721,10 @@ void conv_n4cx_depthwise_f3sx_convolution(
     const float *input,
     float *output,
     float *sum,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t fltC,
     const int64_t padding,
     const int64_t stride,
@@ -1742,10 +1742,10 @@ void conv_n4cx_depthwise_f3sx_convolution(
                 output,
                 sum,
                 fltC,
-                inH,
-                inW,
-                outH,
-                outW,
+                src_h,
+                src_w,
+                dst_h,
+                dst_w,
                 num_batch,
                 fuse_flag);
             return;
@@ -1758,10 +1758,10 @@ void conv_n4cx_depthwise_f3sx_convolution(
                 output,
                 sum,
                 fltC,
-                inH,
-                inW,
-                outH,
-                outW,
+                src_h,
+                src_w,
+                dst_h,
+                dst_w,
                 num_batch,
                 fuse_flag);
             return;
@@ -1774,10 +1774,10 @@ void conv_n4cx_depthwise_f3sx_convolution(
                 output,
                 sum,
                 fltC,
-                inH,
-                inW,
-                outH,
-                outW,
+                src_h,
+                src_w,
+                dst_h,
+                dst_w,
                 num_batch,
                 fuse_flag);
             return;
@@ -1790,10 +1790,10 @@ void conv_n4cx_depthwise_f3sx_convolution(
                 output,
                 sum,
                 fltC,
-                inH,
-                inW,
-                outH,
-                outW,
+                src_h,
+                src_w,
+                dst_h,
+                dst_w,
                 num_batch,
                 fuse_flag);
             return;
@@ -1809,85 +1809,83 @@ void conv_n4cx_depthwise_general_convolution(
     const float *input,
     float *output,
     float *sum,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t fltC,
-    const int64_t fltH,
-    const int64_t fltW,
-    const int64_t padH,
-    const int64_t padW,
-    const int64_t strdH,
-    const int64_t strdW,
-    const int64_t dltnH,
-    const int64_t dltnW,
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t pad_h,
+    const int64_t pad_w,
+    const int64_t strd_h,
+    const int64_t strd_w,
+    const int64_t dltn_h,
+    const int64_t dltn_w,
     const int64_t num_batch,
     const uint32_t fuse_flag)
 {
-    int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((padW - 0 * dltnW), strdW)); // inclusive
-    int64_t ow_inner_end   = std::min((int64_t)outW, DIV_CEIL((inW + padW - (fltW - 1) * dltnW), strdW)); // exclusive
-    ow_inner_start         = std::min(ow_inner_start, outW);
+    int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((pad_w - 0 * dltn_w), strd_w)); // inclusive
+    int64_t ow_inner_end   = std::min((int64_t)dst_w, DIV_CEIL((src_w + pad_w - (flt_w - 1) * dltn_w), strd_w)); // exclusive
+    ow_inner_start         = std::min(ow_inner_start, dst_w);
     ow_inner_end           = std::max(ow_inner_end, ow_inner_start);
 
     constexpr int otw          = 8;
     int64_t ow_inner_end_align = ((ow_inner_end - ow_inner_start) / otw * otw) + ow_inner_start;
 
     const int64_t fltC_pck            = CEIL4(fltC);
-    const int64_t inHW                = inH * inW;
-    const int64_t outHW               = outH * outW;
-    const int64_t input_batch_stride  = fltC_pck * inHW;
-    const int64_t output_batch_stride = fltC_pck * outHW;
+    const int64_t src_hW                = src_h * src_w;
+    const int64_t dst_hW               = dst_h * dst_w;
+    const int64_t input_batch_stride  = fltC_pck * src_hW;
+    const int64_t output_batch_stride = fltC_pck * dst_hW;
 
     PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
     for (int64_t b = 0; b < num_batch; b++) {
         for (int64_t c = 0; c < fltC_pck; c += CBLK()) {
-            for (int64_t oh = 0; oh < outH; oh++) {
-                const float *cvt_filter_c_base = converted_filter + c * fltH * fltW;
+            for (int64_t oh = 0; oh < dst_h; oh++) {
+                const float *cvt_filter_c_base = converted_filter + c * flt_h * flt_w;
                 float32x4_t vbias              = vld1q_f32(bias + c);
-                const float *input_c_base      = input + b * input_batch_stride + c * inHW;
-                float *output_c_base           = output + b * output_batch_stride + c * outHW;
-                float *sum_c_base              = sum + b * output_batch_stride + c * outHW;
+                const float *input_c_base      = input + b * input_batch_stride + c * src_hW;
+                float *output_c_base           = output + b * output_batch_stride + c * dst_hW;
+                float *sum_c_base              = sum + b * output_batch_stride + c * dst_hW;
 
-                const int64_t ih_base = -padH + oh * strdH;
+                const int64_t ih_base = -pad_h + oh * strd_h;
 
-                const int64_t fltH_start = std::max(-ih_base + dltnH - 1, (int64_t)0) / dltnH; // inclusive
-                const int64_t fltH_end   = std::min(fltH, (inH - ih_base + dltnH - 1) / dltnH); // exclusive
-                if (fltH_end - fltH_start <= 0) continue;
+                const int64_t flt_h_start = std::max(-ih_base + dltn_h - 1, (int64_t)0) / dltn_h; // inclusive
+                const int64_t flt_h_end   = std::min(flt_h, (src_h - ih_base + dltn_h - 1) / dltn_h); // exclusive
+                if (flt_h_end - flt_h_start <= 0) continue;
 
-                const float *input_h_base = input_c_base + ih_base * inW * ICBLK();
-                float *output_h_base      = output_c_base + oh * outW * OCBLK();
-                float *sum_h_base         = sum_c_base + oh * outW * OCBLK();
+                const float *input_h_base = input_c_base + ih_base * src_w * ICBLK();
+                float *output_h_base      = output_c_base + oh * dst_w * OCBLK();
+                float *sum_h_base         = sum_c_base + oh * dst_w * OCBLK();
 
                 for (int64_t ow = 0; ow < ow_inner_start; ow++) {
-                    int64_t iw_base    = -padW + ow * strdW;
-                    int64_t fltW_start = std::max(-iw_base + dltnW - 1, (int64_t)0) / dltnW; // inclusive
-                    int64_t fltW_end   = std::min(fltW, (inW - iw_base + dltnW - 1) / dltnW); // exclusive
+                    int64_t iw_base    = -pad_w + ow * strd_w;
+                    int64_t flt_w_start = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                    int64_t flt_w_end   = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                     conv_n4cx_depthwise_general_h1w1_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, inW, fltW, ih_base, iw_base, fltH_start, fltH_end, fltW_start, fltW_end, dltnH, dltnW, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, flt_w_start, flt_w_end, dltn_h, dltn_w, fuse_flag);
                 }
                 for (int64_t ow = ow_inner_start; ow < ow_inner_end_align; ow += otw) {
-                    int64_t iw_base = -padW + ow * strdW;
+                    int64_t iw_base = -pad_w + ow * strd_w;
 
                     conv_n4cx_depthwise_general_h1w8_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, fltW, strdW, ih_base, iw_base, fltH_start, fltH_end, dltnH * inW, dltnW, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, flt_w, strd_w, ih_base, iw_base, flt_h_start, flt_h_end, dltn_h * src_w, dltn_w, fuse_flag);
                 }
-                // TODO(kyu): use h1wx function
                 for (int64_t ow = ow_inner_end_align; ow < ow_inner_end; ow++) {
-                    int64_t iw_base = -padW + ow * strdW;
+                    int64_t iw_base = -pad_w + ow * strd_w;
 
                     conv_n4cx_depthwise_general_h1w1_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, inW, fltW, ih_base, iw_base, fltH_start, fltH_end, 0, fltW, dltnH, dltnW, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, 0, flt_w, dltn_h, dltn_w, fuse_flag);
                 }
-                for (int64_t ow = ow_inner_end; ow < outW; ow++) {
-                    int64_t iw_base    = -padW + ow * strdW;
-                    // TODO(kyu): check if fltW_start is always 0.
-                    int64_t fltW_start = std::max(-iw_base + dltnW - 1, (int64_t)0) / dltnW; // inclusive
-                    int64_t fltW_end   = std::min(fltW, (inW - iw_base + dltnW - 1) / dltnW); // exclusive
+                for (int64_t ow = ow_inner_end; ow < dst_w; ow++) {
+                    int64_t iw_base    = -pad_w + ow * strd_w;
+                    int64_t flt_w_start = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                    int64_t flt_w_end   = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                     conv_n4cx_depthwise_general_h1w1_kernel(
-                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, inW, fltW, ih_base, iw_base, fltH_start, fltH_end, fltW_start, fltW_end, dltnH, dltnW, fuse_flag);
+                        cvt_filter_c_base, input_h_base + iw_base * ICBLK(), output_h_base + ow * OCBLK(), sum_h_base + ow * OCBLK(), vbias, src_w, flt_w, ih_base, iw_base, flt_h_start, flt_h_end, flt_w_start, flt_w_end, dltn_h, dltn_w, fuse_flag);
                 }
             }
         }
@@ -1924,38 +1922,38 @@ ppl::common::RetCode conv2d_n4cx_depthwise_fp32_runtime_executor::execute()
     float *output                 = (float *)dst_;
     float *sum                    = (float *)sum_;
 
-    const int64_t inH       = src_shape_->GetDim(2);
-    const int64_t inW       = src_shape_->GetDim(3);
-    const int64_t outC      = cp.num_output;
-    const int64_t outH      = dst_shape_->GetDim(2);
-    const int64_t outW      = dst_shape_->GetDim(3);
-    const int64_t fltH      = cp.kernel_h;
-    const int64_t fltW      = cp.kernel_w;
-    const int64_t padH      = cp.pad_h;
-    const int64_t padW      = cp.pad_w;
-    const int64_t strdH     = cp.stride_h;
-    const int64_t strdW     = cp.stride_w;
-    const int64_t dltnH     = cp.dilation_h;
-    const int64_t dltnW     = cp.dilation_w;
+    const int64_t src_h       = src_shape_->GetDim(2);
+    const int64_t src_w       = src_shape_->GetDim(3);
+    const int64_t num_output      = cp.num_output;
+    const int64_t dst_h      = dst_shape_->GetDim(2);
+    const int64_t dst_w      = dst_shape_->GetDim(3);
+    const int64_t flt_h      = cp.kernel_h;
+    const int64_t flt_w      = cp.kernel_w;
+    const int64_t pad_h      = cp.pad_h;
+    const int64_t pad_w      = cp.pad_w;
+    const int64_t strd_h     = cp.stride_h;
+    const int64_t strd_w     = cp.stride_w;
+    const int64_t dltn_h     = cp.dilation_h;
+    const int64_t dltn_w     = cp.dilation_w;
     const int64_t num_batch = src_shape_->GetDim(0);
 
-    if (fltH == 3 && fltW == 3 &&
-        padH < 2 && padH == padW &&
-        strdH < 3 && strdH == strdW &&
-        dltnH == 1 && dltnW == 1) {
+    if (flt_h == 3 && flt_w == 3 &&
+        pad_h < 2 && pad_h == pad_w &&
+        strd_h < 3 && strd_h == strd_w &&
+        dltn_h == 1 && dltn_w == 1) {
         conv_n4cx_depthwise_f3sx_convolution(
             converted_filter,
             bias,
             input,
             output,
             sum,
-            inH,
-            inW,
-            outH,
-            outW,
-            outC,
-            padH,
-            strdH,
+            src_h,
+            src_w,
+            dst_h,
+            dst_w,
+            num_output,
+            pad_h,
+            strd_h,
             num_batch,
             cp.fuse_flag);
     } else {
@@ -1965,19 +1963,19 @@ ppl::common::RetCode conv2d_n4cx_depthwise_fp32_runtime_executor::execute()
             input,
             output,
             sum,
-            inH,
-            inW,
-            outH,
-            outW,
-            outC,
-            fltH,
-            fltW,
-            padH,
-            padW,
-            strdH,
-            strdW,
-            dltnH,
-            dltnW,
+            src_h,
+            src_w,
+            dst_h,
+            dst_w,
+            num_output,
+            flt_h,
+            flt_w,
+            pad_h,
+            pad_w,
+            strd_h,
+            strd_w,
+            dltn_h,
+            dltn_w,
             num_batch,
             cp.fuse_flag);
     }
@@ -1985,40 +1983,40 @@ ppl::common::RetCode conv2d_n4cx_depthwise_fp32_runtime_executor::execute()
 }
 
 size_t conv_n4cx_depthwise_get_converted_filter_size(
-    const int64_t c_out,
-    const int64_t h_flt,
-    const int64_t w_flt)
+    const int64_t num_output,
+    const int64_t flt_h,
+    const int64_t flt_w)
 {
-    return CEIL128(CEIL4(c_out) * h_flt * w_flt * sizeof(float));
+    return CEIL128(CEIL4(num_output) * flt_h * flt_w * sizeof(float));
 }
 
 void conv_n4cx_depthwise_convert_filter(
     const float *filter,
     float *converted_filter,
-    const int64_t c_out,
-    const int64_t h_flt,
-    const int64_t w_flt)
+    const int64_t num_output,
+    const int64_t flt_h,
+    const int64_t flt_w)
 {
-    const int64_t oc_pck    = CEIL4(c_out);
-    const int64_t oc_floor4 = FLOOR4(c_out);
-    const int64_t hw_flt    = h_flt * w_flt;
+    const int64_t oc_pck    = CEIL4(num_output);
+    const int64_t oc_floor4 = FLOOR4(num_output);
+    const int64_t flt_hw    = flt_h * flt_w;
 
     for (int64_t c = 0; c < oc_floor4; c += CBLK()) {
-        for (int64_t idx = 0; idx < hw_flt; idx++) {
+        for (int64_t idx = 0; idx < flt_hw; idx++) {
             for (int64_t c_in = 0; c_in < CBLK(); c_in++) {
-                converted_filter[hw_flt * c + idx * CBLK() + c_in] = filter[hw_flt * c + c_in * hw_flt + idx];
+                converted_filter[flt_hw * c + idx * CBLK() + c_in] = filter[flt_hw * c + c_in * flt_hw + idx];
             }
         }
     }
 
     const int64_t oc_tail = oc_pck - oc_floor4;
     if (oc_tail) {
-        for (int64_t idx = 0; idx < hw_flt; idx++) {
+        for (int64_t idx = 0; idx < flt_hw; idx++) {
             for (int64_t c = 0; c < oc_tail; c++) {
-                converted_filter[hw_flt * oc_floor4 + idx * CBLK() + c] = filter[hw_flt * oc_floor4 + c * hw_flt + idx];
+                converted_filter[flt_hw * oc_floor4 + idx * CBLK() + c] = filter[flt_hw * oc_floor4 + c * flt_hw + idx];
             }
             for (int64_t c = oc_tail; c < CBLK(); c++) {
-                converted_filter[hw_flt * oc_floor4 + idx * CBLK() + c] = 0.0f;
+                converted_filter[flt_hw * oc_floor4 + idx * CBLK() + c] = 0.0f;
             }
         }
     }

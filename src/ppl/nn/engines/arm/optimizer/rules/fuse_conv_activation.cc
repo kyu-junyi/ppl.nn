@@ -27,9 +27,7 @@ bool FuseConvActivationRule::ApplySingleInputOutputActivationNode(const OptKerne
     bool graph_changed = false;
 
     auto graph_topo = options.graph_topo;
-    auto graph_data = options.graph_data;
     auto info = options.info;
-    auto& tensors = *options.tensors;
 
     for (auto it = graph_topo->CreateNodeIter(); it->IsValid(); it->Forward()) {
         auto node = it->Get();

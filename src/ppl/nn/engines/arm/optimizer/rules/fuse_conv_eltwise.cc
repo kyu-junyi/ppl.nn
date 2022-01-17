@@ -28,7 +28,6 @@ bool FuseConvEltwiseRule::Apply(const OptKernelOptions& options) {
     bool graph_changed = false;
 
     auto graph_topo = options.graph_topo;
-    auto graph_data = options.graph_data;
     auto info = options.info;
     auto& tensors = *options.tensors;
 

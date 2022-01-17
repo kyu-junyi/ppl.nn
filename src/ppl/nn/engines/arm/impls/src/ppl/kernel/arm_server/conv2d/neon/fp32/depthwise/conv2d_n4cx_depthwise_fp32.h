@@ -57,9 +57,9 @@ public:
         : conv2d_offline_manager(param, allocator) {}
     bool is_supported() override;
     // initialize scheduling params, e.g., block size, correspoding temp buffer size, etc.
-    // TODO for fast algo selection
+    // for fast algo selection
     ppl::common::RetCode fast_init_schedule_param() override;
-    // TODO for offline selecting best algo
+    // for offline selecting best algo
     ppl::common::RetCode pick_best_schedule_param(const ppl::nn::TensorShape &src_shape, double &run_time, bool tune_blocksize) override;
     // convert filter according to scheduling params.
     ppl::common::RetCode gen_cvt_weights(const void *filter, const void *bias) override;

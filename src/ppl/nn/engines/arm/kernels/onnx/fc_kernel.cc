@@ -28,6 +28,7 @@ ppl::common::RetCode FCKernel::DoExecute(KernelExecContext* ctx) {
     int64_t num_out = executor_->fc_param()->num_output;
     int64_t num_batch = A->GetShape()->GetDim(0);
     uint32_t fuse_type = executor_->fc_param()->fuse_flag;
+    (void)fuse_type;
 
     PPLNN_ARM_DEBUG_TRACE("Op: %s\n", GetName().c_str());
     PPLNN_ARM_DEBUG_TRACE("Input [A]:\n");

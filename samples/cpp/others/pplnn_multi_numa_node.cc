@@ -187,10 +187,8 @@ static inline int32_t GetNumaNodeNum(void) {
 
 /* -------------------------------------------------------------------------- */
 
-#ifdef PPLNN_USE_ARM
-
+#ifdef PPLNN_USE_AARCH64
 Define_bool_opt("--use-arm", g_flag_use_arm, false, "use arm engine");
-
 Define_bool_opt("--use-fp16", g_flag_use_fp16, false, "infer with armv8.2 fp16");
 Define_int32_opt("--wg-level", g_flag_wg_level, 1, "select winograd level[0-3]. 0: wingorad off. 1: turn on winograd and automatically select block size. 2: use winograd block 2 if possible. 3: use winograd block 4 if possible");
 Define_int32_opt("--tuning-level", g_flag_tuning_level, 1, "select conv algo dynamic tuning level[0-1]. 0: off. 1: on");
@@ -223,7 +221,7 @@ static inline bool RegisterArmEngine(vector<unique_ptr<Engine>>* engines, const 
 #endif
 
 static inline bool RegisterEngines(vector<unique_ptr<Engine>>* engines, const int32_t numa_node_id) {
-#ifdef PPLNN_USE_ARM
+#ifdef PPLNN_USE_AARCH64
     if (g_flag_use_arm) {
         bool ok = RegisterArmEngine(engines, numa_node_id);
         if (!ok) {

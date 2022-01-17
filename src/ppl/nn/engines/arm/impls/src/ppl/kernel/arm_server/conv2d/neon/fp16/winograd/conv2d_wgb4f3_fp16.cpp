@@ -1732,9 +1732,9 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
         dst[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
 
-    std::vector<uint64_t> candidate_oc_blk_list   = {1024};
-    std::vector<uint64_t> candidate_ic_blk_list   = {192};
-    std::vector<uint64_t> candidate_tile_blk_list = {140};
+    std::vector<int64_t> candidate_oc_blk_list   = {1024};
+    std::vector<int64_t> candidate_ic_blk_list   = {192};
+    std::vector<int64_t> candidate_tile_blk_list = {140};
 
     int64_t ic_blk_est   = 192;
     int64_t tile_blk_est = 140;

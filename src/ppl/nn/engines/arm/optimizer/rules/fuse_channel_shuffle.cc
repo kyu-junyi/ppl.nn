@@ -76,7 +76,6 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
 
     auto graph_topo = options.graph_topo;
     auto graph_data = options.graph_data;
-    auto info = options.info;
     auto& tensors = *options.tensors;
 
     for (auto it = graph_topo->CreateNodeIter(); it->IsValid(); it->Forward()) {
@@ -86,7 +85,6 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
             /** 1. check topo **/
             // find 1st Reshape node
             auto reshape1_node = node;
-            auto reshape1_node_id = reshape1_node->GetId();
             auto reshape1_output_edge_id = reshape1_node->GetOutput(0);
             auto reshape1_output_edge = graph_topo->GetEdgeById(reshape1_output_edge_id);
 
@@ -124,7 +122,6 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
                 continue;
             }
             auto reshape2_node = successor_node;
-            auto reshape2_node_id = reshape2_node->GetId();
             auto reshape2_output_edge_id = reshape2_node->GetOutput(0);
             auto reshape2_output_edge = graph_topo->GetEdgeById(reshape2_output_edge_id);
             if (IsGraphInput(graph_topo, reshape2_output_edge_id) ||
@@ -136,8 +133,6 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
             // check reshape input[1] kind
             auto shape1_edge_id = reshape1_node->GetInput(1);
             auto shape2_edge_id = reshape2_node->GetInput(1);
-            auto shape1_edge = graph_topo->GetEdgeById(shape1_edge_id);
-            auto shape2_edge = graph_topo->GetEdgeById(shape2_edge_id);
             if (graph_data->constants.find(shape1_edge_id) == graph_data->constants.end() ||
                 graph_data->constants.find(shape2_edge_id) == graph_data->constants.end()) {
                 continue;
@@ -223,7 +218,7 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
                 auto reshape2_next_node = reshape2_next_nodes[0];
                 if (reshape2_next_node != nullptr && reshape2_next_node->GetType().domain == "" &&
                     reshape2_next_node->GetType().name == "Split" &&
-                    reshape2_next_node->GetOutputCount() == group) // only support 2 output split
+                    reshape2_next_node->GetOutputCount() == (uint32_t)group) // only support 2 output split
                 {
                     auto split_param = (common::SplitParam*)attrs[reshape2_next_node->GetId()].get();
                     if (split_param->axis == 1) {

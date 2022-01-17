@@ -434,8 +434,6 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC4_H1WX_FUNC(OUT_TILE_W())(
     const uint32_t fuse_flag)
 {
 #define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
 
     // x9  : input 8-channel base pointer
     // x10 : input row base pointer
@@ -554,7 +552,6 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC4_H1WX_FUNC(OUT_TILE_W())(
         
         "ldr q31, [x9], #32\n\t"
 
-        // "subs x14, x14, #1\n\t"  // scheduled earlier
         "bne 5b\n\t"
 "2:\n\t"
         "subs x13, x13, #1\n\t"

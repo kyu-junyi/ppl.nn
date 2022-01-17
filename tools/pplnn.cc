@@ -371,7 +371,7 @@ static inline bool RegisterRiscvEngine(vector<unique_ptr<Engine>>* engines) {
 
 #endif
 
-#ifdef PPLNN_USE_ARM
+#ifdef PPLNN_USE_AARCH64
 
 Define_bool_opt("--use-arm", g_flag_use_arm, false, "use arm engine");
 
@@ -438,7 +438,7 @@ static inline bool RegisterEngines(vector<unique_ptr<Engine>>* engines) {
     }
 #endif
 
-#ifdef PPLNN_USE_ARM
+#ifdef PPLNN_USE_AARCH64
     if (g_flag_use_arm) {
         bool ok = RegisterArmEngine(engines);
         if (!ok) {
