@@ -38,15 +38,10 @@ ppl::common::RetCode WhereKernel::DoExecute(KernelExecContext* ctx) {
     PPLNN_ARM_DEBUG_TRACE("isa: %u\n", GetISA());
 
     const auto data_type = x->GetShape()->GetDataType();
-    if (data_type == ppl::common::DATATYPE_FLOAT16 && !MayUseISA(ppl::common::ISA_ARMV8_2)) {
-        LOG(ERROR) << "fp16 needs isa >= armv8.2.";
-        return ppl::common::RC_UNSUPPORTED;
-    }
 
-    return ppl::kernel::arm_server::neon::where(cond->GetShape(), x->GetShape(), y->GetShape(),
-                                                output->GetShape(), cond->GetBufferPtr<void>(),
-                                                x->GetBufferPtr<void>(), y->GetBufferPtr<void>(),
-                                                output->GetBufferPtr<void>());
+    return ppl::kernel::arm_server::neon::where(cond->GetShape(), x->GetShape(), y->GetShape(), output->GetShape(),
+                                                cond->GetBufferPtr<void>(), x->GetBufferPtr<void>(),
+                                                y->GetBufferPtr<void>(), output->GetBufferPtr<void>());
 }
 
 }}} // namespace ppl::nn::arm

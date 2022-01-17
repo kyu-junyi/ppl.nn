@@ -21,7 +21,6 @@
 namespace ppl { namespace nn { namespace arm {
 
 ppl::common::RetCode ExpandKernel::DoExecute(KernelExecContext* ctx) {
-
     auto input = ctx->GetInput<TensorImpl>(0);
     auto shape = ctx->GetInput<TensorImpl>(1);
     auto output = ctx->GetOutput<TensorImpl>(0);
@@ -40,14 +39,9 @@ ppl::common::RetCode ExpandKernel::DoExecute(KernelExecContext* ctx) {
     if (data_format != ppl::common::DATAFORMAT_NDARRAY) {
         return ppl::common::RC_UNSUPPORTED;
     }
-    if (data_type == ppl::common::DATATYPE_FLOAT16 && !MayUseISA(ppl::common::ISA_ARMV8_2)) {
-        LOG(ERROR) << "fp16 needs isa >= armv8.2.";
-        return ppl::common::RC_UNSUPPORTED;
-    }
 
-    return ppl::kernel::arm_server::neon::expand(input->GetShape(), output->GetShape(),
-                                                input->GetBufferPtr<void>(), output->GetBufferPtr<void>());
-
+    return ppl::kernel::arm_server::neon::expand(input->GetShape(), output->GetShape(), input->GetBufferPtr<void>(),
+                                                 output->GetBufferPtr<void>());
 }
 
 bool ExpandKernel::CanDoExecute(const KernelExecContext& ctx) const {

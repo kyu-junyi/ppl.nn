@@ -26,10 +26,13 @@ ppl::common::RetCode relu_fp32(
     const ppl::nn::TensorShape *in_shape,
     const float *input,
     float *output);
+
+#ifdef PPL_USE_ARM_SERVER_FP16
 ppl::common::RetCode relu_fp16(
     const ppl::nn::TensorShape *in_shape,
     const __fp16 *input,
     __fp16 *output);
+#endif
 
 }}}}; // namespace ppl::kernel::arm_server::neon
 

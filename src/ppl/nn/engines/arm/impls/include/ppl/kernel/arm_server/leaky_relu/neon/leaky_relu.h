@@ -28,11 +28,13 @@ ppl::common::RetCode leaky_relu_fp32(
     const float alpha,
     float *dst);
 
+#ifdef PPL_USE_ARM_SERVER_FP16
 ppl::common::RetCode leaky_relu_fp16(
     const ppl::nn::TensorShape *src_shape,
     const __fp16 *src,
     const float alpha,
     __fp16 *dst);
+#endif
 
 }}}}; // namespace ppl::kernel::arm_server::neon
 

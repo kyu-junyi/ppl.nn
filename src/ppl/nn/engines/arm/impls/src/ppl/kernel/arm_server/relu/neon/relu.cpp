@@ -27,7 +27,7 @@ ppl::common::RetCode relu_fp32(
     const float *input,
     float *output)
 {
-    int64_t num_elmt = in_shape->GetElementsIncludingPadding();
+    int64_t num_elmt               = in_shape->GetElementsIncludingPadding();
     const int64_t num_elmt_round16 = (num_elmt & (~15));
 
     if (num_elmt_round16 > 0) {
@@ -37,18 +37,18 @@ ppl::common::RetCode relu_fp32(
             PRAGMA_OMP_FOR()
             for (int64_t idx = 0; idx < num_elmt_round16; idx += 16) {
                 const float *input_base = input + idx;
-                float *output_base = output + idx;
-                float32x4_t vin0 = vld1q_f32(input_base     );
-                float32x4_t vin1 = vld1q_f32(input_base + 4 );
-                float32x4_t vin2 = vld1q_f32(input_base + 8 );
-                float32x4_t vin3 = vld1q_f32(input_base + 12);
-                vin0 = vmaxq_f32(vin0, vzeros);
-                vin1 = vmaxq_f32(vin1, vzeros);
-                vin2 = vmaxq_f32(vin2, vzeros);
-                vin3 = vmaxq_f32(vin3, vzeros);
-                vst1q_f32(output_base     , vin0);
-                vst1q_f32(output_base + 4 , vin1);
-                vst1q_f32(output_base + 8 , vin2);
+                float *output_base      = output + idx;
+                float32x4_t vin0        = vld1q_f32(input_base + 0);
+                float32x4_t vin1        = vld1q_f32(input_base + 4);
+                float32x4_t vin2        = vld1q_f32(input_base + 8);
+                float32x4_t vin3        = vld1q_f32(input_base + 12);
+                vin0                    = vmaxq_f32(vin0, vzeros);
+                vin1                    = vmaxq_f32(vin1, vzeros);
+                vin2                    = vmaxq_f32(vin2, vzeros);
+                vin3                    = vmaxq_f32(vin3, vzeros);
+                vst1q_f32(output_base + 0, vin0);
+                vst1q_f32(output_base + 4, vin1);
+                vst1q_f32(output_base + 8, vin2);
                 vst1q_f32(output_base + 12, vin3);
             }
         }
@@ -66,7 +66,7 @@ ppl::common::RetCode relu_fp16(
     const __fp16 *input,
     __fp16 *output)
 {
-    int64_t num_elmt = in_shape->GetElementsIncludingPadding();
+    int64_t num_elmt               = in_shape->GetElementsIncludingPadding();
     const int64_t num_elmt_round32 = (num_elmt & (~31));
 
     if (num_elmt_round32 > 0) {
@@ -76,17 +76,17 @@ ppl::common::RetCode relu_fp16(
             PRAGMA_OMP_FOR()
             for (int64_t idx = 0; idx < num_elmt_round32; idx += 32) {
                 const __fp16 *input_base = input + idx;
-                __fp16 *output_base = output + idx;
-                float16x8_t vin0 = vld1q_f16(input_base     );
-                float16x8_t vin1 = vld1q_f16(input_base + 8 );
-                float16x8_t vin2 = vld1q_f16(input_base + 16);
-                float16x8_t vin3 = vld1q_f16(input_base + 24);
-                vin0 = vmaxq_f16(vin0, vzeros);
-                vin1 = vmaxq_f16(vin1, vzeros);
-                vin2 = vmaxq_f16(vin2, vzeros);
-                vin3 = vmaxq_f16(vin3, vzeros);
-                vst1q_f16(output_base     , vin0);
-                vst1q_f16(output_base + 8 , vin1);
+                __fp16 *output_base      = output + idx;
+                float16x8_t vin0         = vld1q_f16(input_base + 0);
+                float16x8_t vin1         = vld1q_f16(input_base + 8);
+                float16x8_t vin2         = vld1q_f16(input_base + 16);
+                float16x8_t vin3         = vld1q_f16(input_base + 24);
+                vin0                     = vmaxq_f16(vin0, vzeros);
+                vin1                     = vmaxq_f16(vin1, vzeros);
+                vin2                     = vmaxq_f16(vin2, vzeros);
+                vin3                     = vmaxq_f16(vin3, vzeros);
+                vst1q_f16(output_base + 0, vin0);
+                vst1q_f16(output_base + 8, vin1);
                 vst1q_f16(output_base + 16, vin2);
                 vst1q_f16(output_base + 24, vin3);
             }

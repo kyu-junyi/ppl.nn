@@ -39,14 +39,9 @@ ppl::common::RetCode TileKernel::DoExecute(KernelExecContext* ctx) {
     if (data_format != ppl::common::DATAFORMAT_NDARRAY) {
         return ppl::common::RC_UNSUPPORTED;
     }
-    if (data_type == ppl::common::DATATYPE_FLOAT16 && !MayUseISA(ppl::common::ISA_ARMV8_2)) {
-        LOG(ERROR) << "fp16 needs isa >= armv8.2.";
-        return ppl::common::RC_UNSUPPORTED;
-    }
 
     return ppl::kernel::arm_server::neon::tile(x->GetShape(), output->GetShape(), x->GetBufferPtr<void>(),
-                                        y->GetBufferPtr<void>(), output->GetBufferPtr<void>());
-
+                                               y->GetBufferPtr<void>(), output->GetBufferPtr<void>());
 }
 
 }}} // namespace ppl::nn::arm

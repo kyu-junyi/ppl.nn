@@ -38,12 +38,16 @@ ppl::common::RetCode SigmoidKernel::DoExecute(KernelExecContext* ctx) {
             return ppl::kernel::arm_server::neon::sigmoid_fp32(input->GetShape(), input->GetBufferPtr<float>(),
                                                                output->GetBufferPtr<float>());
         }
-    } else if (data_type == ppl::common::DATATYPE_FLOAT16) {
+    }
+#ifdef PPL_USE_ARM_SERVER_FP16
+    else if (data_type == ppl::common::DATATYPE_FLOAT16) {
         if (MayUseISA(ppl::common::ISA_ARMV8_2)) {
             return ppl::kernel::arm_server::neon::sigmoid_fp16(input->GetShape(), input->GetBufferPtr<__fp16>(),
                                                                output->GetBufferPtr<__fp16>());
         }
-    } else {
+    }
+#endif
+    else {
         LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << ".";
     }
 

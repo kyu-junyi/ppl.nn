@@ -15,8 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
-#include<math.h>
+#include <math.h>
 
 #include "ppl/kernel/arm_server/common/type_traits.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
@@ -54,7 +53,7 @@ ppl::common::RetCode sqrt_fp32(
         y[i] = sqrt(x[i]);
     }
 
-    return ppl::common::RC_SUCCESS;   
+    return ppl::common::RC_SUCCESS;
 }
 
 #ifdef PPL_USE_ARM_SERVER_FP16
@@ -89,9 +88,8 @@ ppl::common::RetCode sqrt_fp16(
         y[i] = sqrt(x[i]);
     }
 
-    return ppl::common::RC_SUCCESS;   
+    return ppl::common::RC_SUCCESS;
 }
 #endif
-
 
 }}}}; // namespace ppl::kernel::arm_server::neon

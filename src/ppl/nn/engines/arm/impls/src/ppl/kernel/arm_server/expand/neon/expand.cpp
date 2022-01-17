@@ -15,10 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 #include "ppl/kernel/arm_server/common/internal_include.h"
 #include "ppl/kernel/arm_server/expand/neon/expand_common.h"
-
 
 namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
@@ -30,16 +28,14 @@ ppl::common::RetCode expand(
 {
     const auto data_type = src_shape->GetDataType();
 
-    switch (data_type)
-    {
-    case ppl::common::DATATYPE_FLOAT32: return expand_ndarray_common<float>(src_shape, dst_shape, (const float*)src, (float *)dst);
-    case ppl::common::DATATYPE_INT64:   return expand_ndarray_common<int64_t>(src_shape, dst_shape, (const int64_t*)src, (int64_t *)dst);
-#ifdef PPL_USE_ARM_SERVER_FP16
-    case ppl::common::DATATYPE_FLOAT16: return expand_ndarray_common<__fp16>(src_shape, dst_shape, (const __fp16*)src, (__fp16 *)dst);
-#endif
-    default: break;
+    switch (ppl::common::GetSizeOfDataType(data_type)) {
+        case 1: return expand_ndarray_common<uint8_t>(src_shape, dst_shape, (const uint8_t *)src, (uint8_t *)dst);
+        case 2: return expand_ndarray_common<uint16_t>(src_shape, dst_shape, (const uint16_t *)src, (uint16_t *)dst);
+        case 4: return expand_ndarray_common<uint32_t>(src_shape, dst_shape, (const uint32_t *)src, (uint32_t *)dst);
+        case 8: return expand_ndarray_common<uint64_t>(src_shape, dst_shape, (const uint64_t *)src, (uint64_t *)dst);
+        default: break;
     }
-    
+
     return ppl::common::RC_UNSUPPORTED;
 }
 

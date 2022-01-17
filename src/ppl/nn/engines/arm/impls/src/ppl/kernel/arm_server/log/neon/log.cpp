@@ -15,13 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include<math.h>
+#include <math.h>
 
 #include "ppl/kernel/arm_server/common/type_traits.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
 namespace ppl { namespace kernel { namespace arm_server { namespace neon {
-
 
 ppl::common::RetCode log_fp32(
     const ppl::nn::TensorShape *x_shape,
@@ -30,7 +29,7 @@ ppl::common::RetCode log_fp32(
 {
 #define _OP_SS(Y, X) \
     do {             \
-        Y = log(X); \
+        Y = log(X);  \
     } while (0)
 
     const int64_t n_elem      = x_shape->GetElementsIncludingPadding();
@@ -71,7 +70,7 @@ ppl::common::RetCode log_fp16(
 {
 #define _OP_SS(Y, X) \
     do {             \
-        Y = log(X); \
+        Y = log(X);  \
     } while (0)
 
     const int64_t n_elem      = x_shape->GetElementsIncludingPadding();

@@ -27,10 +27,12 @@ ppl::common::RetCode exp_fp32(
     const float *x,
     float *y);
 
+#ifdef PPL_USE_ARM_SERVER_FP16
 ppl::common::RetCode exp_fp16(
     const ppl::nn::TensorShape *x_shape,
     const __fp16 *x,
     __fp16 *y);
+#endif
 
 }}}}; // namespace ppl::kernel::arm_server::neon
 

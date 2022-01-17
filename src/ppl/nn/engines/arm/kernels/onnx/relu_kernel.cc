@@ -35,24 +35,21 @@ ppl::common::RetCode ReluKernel::DoExecute(KernelExecContext* ctx) {
     if (data_type == ppl::common::DATATYPE_FLOAT32) {
         // TODO: add neon opt
         if (MayUseISA(ppl::common::ISA_ARMV8)) {
-            return ppl::kernel::arm_server::neon::relu_fp32(
-                input->GetShape(),
-                input->GetBufferPtr<const float>(),
-                output->GetBufferPtr<float>());
+            return ppl::kernel::arm_server::neon::relu_fp32(input->GetShape(), input->GetBufferPtr<const float>(),
+                                                            output->GetBufferPtr<float>());
         }
     }
+#ifdef PPL_USE_ARM_SERVER_FP16
     else if (data_type == ppl::common::DATATYPE_FLOAT16) {
         if (MayUseISA(ppl::common::ISA_ARMV8_2)) {
-            return ppl::kernel::arm_server::neon::relu_fp16(
-                input->GetShape(),
-                input->GetBufferPtr<const __fp16>(),
-                output->GetBufferPtr<__fp16>());
-        }
-        else {
-            LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type)
-                       << "with isa " << GetISA() << ".";
+            return ppl::kernel::arm_server::neon::relu_fp16(input->GetShape(), input->GetBufferPtr<const __fp16>(),
+                                                            output->GetBufferPtr<__fp16>());
+        } else {
+            LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << "with isa " << GetISA()
+                       << ".";
         }
     }
+#endif
     else {
         LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << ".";
     }

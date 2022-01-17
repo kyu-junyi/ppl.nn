@@ -15,19 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#ifndef __ST_PPL_KERNEL_ARM_SERVER_FP16_MAX_POOL_H_
-#define __ST_PPL_KERNEL_ARM_SERVER_FP16_MAX_POOL_H_
+#ifndef __ST_PPL_KERNEL_ARM_SERVER_FP16_MAXPOOL_H_
+#define __ST_PPL_KERNEL_ARM_SERVER_FP16_MAXPOOL_H_
 
 #include <string>
 
 #include "ppl/kernel/arm_server/common/general_include.h"
-#include "ppl/common/allocator.h"
-#include "ppl/common/arm/sysinfo.h"
-#include "ppl/common/sys.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
-ppl::common::RetCode maxpool_n4cx_fp32(
+ppl::common::RetCode maxpool2d_n4cx_fp32(
     const float *src,
     float *dst,
     const int32_t src_n,
@@ -46,7 +43,8 @@ ppl::common::RetCode maxpool_n4cx_fp32(
     const int32_t dilation_w,
     const int32_t global_pooling);
 
-ppl::common::RetCode maxpool_n8cx_fp16(
+#ifdef PPL_USE_ARM_SERVER_FP16
+ppl::common::RetCode maxpool2d_n8cx_fp16(
     const __fp16 *src,
     __fp16 *dst,
     const int32_t src_n,
@@ -64,7 +62,8 @@ ppl::common::RetCode maxpool_n8cx_fp16(
     const int32_t dilation_h,
     const int32_t dilation_w,
     const int32_t global_pooling);
+#endif
 
-}}}; // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

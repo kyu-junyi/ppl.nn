@@ -38,12 +38,16 @@ ppl::common::RetCode LeakyReLUKernel::DoExecute(KernelExecContext* ctx) {
             return ppl::kernel::arm_server::neon::leaky_relu_fp32(x->GetShape(), x->GetBufferPtr<float>(),
                                                                   param_->alpha, y->GetBufferPtr<float>());
         }
-    } else if (data_type == ppl::common::DATATYPE_FLOAT16) {
+    } 
+#ifdef PPL_USE_ARM_SERVER_FP16
+    else if (data_type == ppl::common::DATATYPE_FLOAT16) {
         if (MayUseISA(ppl::common::ISA_ARMV8_2)) {
             return ppl::kernel::arm_server::neon::leaky_relu_fp16(x->GetShape(), x->GetBufferPtr<__fp16>(),
                                                                   param_->alpha, y->GetBufferPtr<__fp16>());
         }
-    } else {
+    } 
+#endif
+    else {
         LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << ".";
     }
 

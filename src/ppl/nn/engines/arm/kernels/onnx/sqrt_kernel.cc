@@ -33,26 +33,26 @@ ppl::common::RetCode SqrtKernel::DoExecute(KernelExecContext* ctx) {
 
     const auto data_type = input->GetShape()->GetDataType();
 
-    if (data_type == ppl::common::DATATYPE_FLOAT32){
-        if(MayUseISA(ppl::common::ISA_ARMV8)) {
+    if (data_type == ppl::common::DATATYPE_FLOAT32) {
+        if (MayUseISA(ppl::common::ISA_ARMV8)) {
             return ppl::kernel::arm_server::neon::sqrt_fp32(input->GetShape(), input->GetBufferPtr<float>(),
-                                                    output->GetBufferPtr<float>());
+                                                            output->GetBufferPtr<float>());
         }
-    }else if (data_type == ppl::common::DATATYPE_FLOAT16)
-    {
-        if (MayUseISA(ppl::common::ISA_ARMV8))
-        {
-           return ppl::kernel::arm_server::neon::sqrt_fp16(input->GetShape(), input->GetBufferPtr<__fp16>(),
-                                                    output->GetBufferPtr<__fp16>());
+    }
+#ifdef PPL_USE_ARM_SERVER_FP16
+    else if (data_type == ppl::common::DATATYPE_FLOAT16) {
+        if (MayUseISA(ppl::common::ISA_ARMV8)) {
+            return ppl::kernel::arm_server::neon::sqrt_fp16(input->GetShape(), input->GetBufferPtr<__fp16>(),
+                                                            output->GetBufferPtr<__fp16>());
         }
 
-    }else {
+    }
+#endif
+    else {
         LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << ".";
     }
 
-
     return ppl::common::RC_UNSUPPORTED;
-
 }
 
 }}} // namespace ppl::nn::arm

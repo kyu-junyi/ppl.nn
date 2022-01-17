@@ -91,6 +91,6 @@ static ppl::common::RetCode tile_ndarray_common(
     return tile_ndarray_recursive<eT>(src_shape, dst_shape, src, repeats, 0, false, dst);
 }
 
-}}}}; // namespace ppl::kernel::arm_serve::eon
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif // __ST_PPL_KERNEL_ARM_SERVER_TILE_NEON_TILE_COMMON_H_

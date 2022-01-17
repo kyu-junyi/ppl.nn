@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 #include "ppl/kernel/arm_server/common/internal_include.h"
 #include "ppl/kernel/arm_server/where/neon/where_common.h"
 
@@ -44,9 +43,8 @@ ppl::common::RetCode where_common(
         return where_ndarray_common<eT>(cond_shape, src0_shape, src1_shape, dst_shape, cond, src0, src1, dst);
     }
 
-    return ppl::common::RC_UNSUPPORTED; 
+    return ppl::common::RC_UNSUPPORTED;
 }
-
 
 ppl::common::RetCode where(
     const ppl::nn::TensorShape *cond_shape,
@@ -59,19 +57,16 @@ ppl::common::RetCode where(
     void *dst)
 {
     const auto data_type = src0_shape->GetDataType();
-    switch (data_type)
-    {
-        case ppl::common::DATATYPE_BOOL:
-            return where_common<bool>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t*)cond, (const bool*)src0, (const bool*)src1, (bool*)dst);
-        case ppl::common::DATATYPE_FLOAT32:
-            return where_common<float>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t*)cond, (const float*)src0, (const float*)src1, (float*)dst);
-#ifdef PPL_USE_ARM_SERVER_FP16
-        case ppl::common::DATATYPE_FLOAT16:
-            return where_common<__fp16>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t*)cond, (const __fp16*)src0, (const __fp16*)src1, (__fp16*)dst);
-#endif            
+
+    switch (ppl::common::GetSizeOfDataType(data_type)) {
+        case 1: return where_common<uint8_t>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t *)cond, (const uint8_t *)src0, (const uint8_t *)src1, (uint8_t *)dst);
+        case 2: return where_common<uint16_t>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t *)cond, (const uint16_t *)src0, (const uint16_t *)src1, (uint16_t *)dst);
+        case 4: return where_common<uint32_t>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t *)cond, (const uint32_t *)src0, (const uint32_t *)src1, (uint32_t *)dst);
+        case 8: return where_common<uint64_t>(cond_shape, src0_shape, src1_shape, dst_shape, (const uint8_t *)cond, (const uint64_t *)src0, (const uint64_t *)src1, (uint64_t *)dst);
         default: break;
     }
-    return ppl::common::RC_UNSUPPORTED; 
+
+    return ppl::common::RC_UNSUPPORTED;
 }
 
 }}}}; // namespace ppl::kernel::arm_server::neon

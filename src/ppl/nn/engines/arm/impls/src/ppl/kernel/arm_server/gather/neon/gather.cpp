@@ -34,7 +34,7 @@ static ppl::common::RetCode gather_ndarray_common(
     eT *dst)
 {
     if (inner_dim >= 4) {
-        PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
+        PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(3)
         for (int64_t o = 0; o < outer_dim; ++o) {
             for (int64_t k = 0; k < num_indices; ++k) {
                 for (int64_t i = 0; i < indices_dim; ++i) {

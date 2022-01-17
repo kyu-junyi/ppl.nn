@@ -140,7 +140,7 @@ inline __fp16 min(const __fp16 a, const __fp16 b)
 template <>
 inline __fp16 numeric_max(void)
 {
-    return (__fp16)(6.5504e+4); // TODO: modified here
+    return (__fp16)(6.5504e+4);
 }
 
 template <>

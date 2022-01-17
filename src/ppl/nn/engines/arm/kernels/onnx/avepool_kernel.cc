@@ -73,7 +73,7 @@ ppl::common::RetCode AvePoolKernel::DoExecute(KernelExecContext* ctx) {
     if (data_format == ppl::common::DATAFORMAT_N4CX) {
         if (data_type == ppl::common::DATATYPE_FLOAT32) {
             if (MayUseISA(ppl::common::ISA_ARMV8)) {
-                return ppl::kernel::arm_server::avepool_n4cx_fp32(
+                return ppl::kernel::arm_server::neon::avepool2d_n4cx_fp32(
                     indata->GetBufferPtr<const float>(), outdata->GetBufferPtr<float>(), src_n, src_c, src_h, src_w,
                     dst_h, dst_w, kernel_h, kernel_w, stride_h, stride_w, pad_h, pad_w, dilation_h, dilation_w,
                     param_->global_pooling, include_pads);
@@ -84,9 +84,10 @@ ppl::common::RetCode AvePoolKernel::DoExecute(KernelExecContext* ctx) {
             }
         }
     } else if (data_format == ppl::common::DATAFORMAT_N8CX) {
+#ifdef PPL_USE_ARM_SERVER_FP16
         if (data_type == ppl::common::DATATYPE_FLOAT16) {
             if (MayUseISA(ppl::common::ISA_ARMV8_2)) {
-                return ppl::kernel::arm_server::avepool_n8cx_fp16(
+                return ppl::kernel::arm_server::neon::avepool2d_n8cx_fp16(
                     indata->GetBufferPtr<const __fp16>(), outdata->GetBufferPtr<__fp16>(), src_n, src_c, src_h, src_w,
                     dst_h, dst_w, kernel_h, kernel_w, stride_h, stride_w, pad_h, pad_w, dilation_h, dilation_w,
                     param_->global_pooling, include_pads);
@@ -96,6 +97,7 @@ ppl::common::RetCode AvePoolKernel::DoExecute(KernelExecContext* ctx) {
                 return ppl::common::RC_UNSUPPORTED;
             }
         }
+#endif
     }
 
     LOG(ERROR) << "unsupported data type: " << ppl::common::GetDataTypeStr(data_type) << ".";

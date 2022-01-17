@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 #include "ppl/kernel/arm_server/common/internal_include.h"
 #include "ppl/kernel/arm_server/tile/neon/tile_common.h"
 
@@ -30,20 +29,15 @@ ppl::common::RetCode tile(
 {
     const auto data_type = src_shape->GetDataType();
 
-    switch (data_type)
-    {
-    case ppl::common::DATATYPE_FLOAT32: return tile_ndarray_common<float>(src_shape, dst_shape, (const float*)src, (const int64_t*)repeats,(float *)dst);
-    case ppl::common::DATATYPE_INT64:   return tile_ndarray_common<int64_t>(src_shape, dst_shape, (const int64_t*)src, (const int64_t*) repeats,(int64_t *)dst);
-#ifdef PPL_USE_ARM_SERVER_FP16
-    case ppl::common::DATATYPE_FLOAT16: return tile_ndarray_common<__fp16>(src_shape, dst_shape, (const __fp16*)src, (const int64_t*)repeats, (__fp16 *)dst);
-#endif
-    default: break;
+    switch (ppl::common::GetSizeOfDataType(data_type)) {
+        case 1: return tile_ndarray_common<uint8_t>(src_shape, dst_shape, (const uint8_t *)src, (const int64_t *)repeats, (uint8_t *)dst);
+        case 2: return tile_ndarray_common<uint16_t>(src_shape, dst_shape, (const uint16_t *)src, (const int64_t *)repeats, (uint16_t *)dst);
+        case 4: return tile_ndarray_common<uint32_t>(src_shape, dst_shape, (const uint32_t *)src, (const int64_t *)repeats, (uint32_t *)dst);
+        case 8: return tile_ndarray_common<uint64_t>(src_shape, dst_shape, (const uint64_t *)src, (const int64_t *)repeats, (uint64_t *)dst);
+        default: break;
     }
-    
-    return ppl::common::RC_UNSUPPORTED;    
+
+    return ppl::common::RC_UNSUPPORTED;
 }
-
-
-
 
 }}}}; // namespace ppl::kernel::arm_server::neon
