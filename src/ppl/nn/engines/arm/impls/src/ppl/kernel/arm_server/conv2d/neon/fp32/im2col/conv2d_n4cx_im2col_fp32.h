@@ -43,12 +43,6 @@ typedef struct {
     int64_t hw_block2;
     int64_t batch_block3;
     int64_t group_block3;
-
-    // int64_t input_gbuf_offset;
-    // int64_t output_gbuf_offset;
-
-    // bool use_in_gbuf;
-    // bool use_out_gbuf;
     bool use_im2col;
 } conv2d_n4cx_im2col_fp32_schedule_param;
 
@@ -97,9 +91,9 @@ public:
         : conv2d_offline_manager(param, allocator) {}
     bool is_supported() override;
     // initialize scheduling params, e.g., block size, correspoding temp buffer size, etc.
-    // TODO for fast algo selection
+    // fast algo selection
     ppl::common::RetCode fast_init_schedule_param() override;
-    // TODO for offline selecting best algo
+    // offline selecting best algo
     ppl::common::RetCode pick_best_schedule_param(const ppl::nn::TensorShape &src_shape, double &run_time, bool tune_blocksize) override;
     // convert filter according to scheduling params.
     ppl::common::RetCode gen_cvt_weights(const void *filter, const void *bias) override;

@@ -528,7 +528,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
 
         const int64_t k_tile_l2 = tile_l2_size;
 
-        const int64_t k_in_wg_set_offset  = k_in_channel_section * k_tile_l2;
+        const int64_t k_in_wg_set_offset = k_in_channel_section * k_tile_l2;
 
         // TODO: make sure buffer sizes are valid.
         /* Inner parallel mode */
@@ -863,7 +863,7 @@ void conv_wgb2f3_convert_filter_fp32(
             const float *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             float *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
 
-            ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_outer<N4cxSgemmBlockingOrd::M_N_K>(
+            sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
                 aux_filter_base,
                 converted_filter_base,
                 ic_g_pck,

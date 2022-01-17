@@ -38,9 +38,6 @@ void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<N_BLOCK0(), INI
     const int64_t lddx,
     const int64_t ldc)
 {
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) << std::endl;
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(INIT_T()) << std::endl;
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(FUSE_T()) << std::endl;
 #define IF_N_GT(N0, INSTRUCTION) ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " > " #N0 "\n\t  " INSTRUCTION ".endif\n\t"
 
     asm volatile (
@@ -55,8 +52,6 @@ void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<N_BLOCK0(), INI
         "subs %[k], %[k], #4\n\t"
         
 ".if " PPL_ARM_SERVER_KERNEL_STR(INIT_T()) " == 0\n\t"
-        // "ldr q12, [x9]\n\t"  // scheduled earlier
-                    // "ldr  q0,     [x10]\n\t"  //scheduled earlier
                     "fmul v12.4s, v10.4s, v0.s[0]\n\t"
         IF_N_GT(1 , "ldr  q1, [x10, #16 ]\n\t")
         IF_N_GT(1 , "fmul v13.4s, v10.4s, v1.s[0]\n\t")
@@ -88,8 +83,6 @@ void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<N_BLOCK0(), INI
         IF_N_GT(8 , "fmul v30.4s, v11.4s, v8.s[0]\n\t")
         IF_N_GT(9 , "fmul v31.4s, v11.4s, v9.s[0]\n\t")
 ".else\n\t.if " PPL_ARM_SERVER_KERNEL_STR(INIT_T()) " == 1\n\t"
-        // "ldr q12, [x9]\n\t"  // scheduled earlier
-                    // "ldr  q0,     [x10]\n\t"  //scheduled earlier
                     "ldr  q12,    [%[const_ptr]]\n\t"
                     "ldr  q22,    [%[const_ptr], #16]\n\t"
         IF_N_GT(1 , "ldr  q1, [x10, #16 ]\n\t")
@@ -141,8 +134,6 @@ void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<N_BLOCK0(), INI
         IF_N_GT(9 , "fmla v31.4s, v11.4s, v9.s[0]\n\t")
                     "fmla v22.4s, v11.4s, v0.s[0]\n\t"
 ".else\n\t.if " PPL_ARM_SERVER_KERNEL_STR(INIT_T()) " == 2\n\t"
-        // "ldr q12, [x9]\n\t"  // scheduled earlier
-                    // "ldr  q0,     [x10]\n\t"  //scheduled earlier
                     "ldr  q12   , [x11      ]\n\t"
                     "fmla v12.4s, v10.4s, v0.s[0]\n\t"
         IF_N_GT(1 , "ldr  q1, [x10, #16 ]\n\t")
@@ -219,7 +210,6 @@ void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<N_BLOCK0(), INI
         IF_N_GT(9 , "fmla v31.4s, v11.4s, v9.s[1]\n\t")
         "ld1 {v11.16b}, [x9], #16\n\t"
 
-        // "subs %[k], %[k], #4\n\t"  // scheduled earlier
         "beq 2f\n\t"
 
         ".align 3\n\t"
@@ -326,14 +316,11 @@ void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m8nx_func<N_BLOCK0(), INI
         IF_N_GT(8 , "fmla v30.4s, v11.4s, v8.s[1]\n\t")
         IF_N_GT(9 , "fmla v31.4s, v11.4s, v9.s[1]\n\t")
         "ld1 {v11.16b}, [x9], #16\n\t"
-        // "subs %[k], %[k], #4\n\t"  // scheduled earlier
+
         "bgt 1b\n\t"
         
         ".align 3\n\t"
     "2:\n\t"
-        // "prfm pstl1strm, [x11]\n\t"
-        // IF_N_GT(4 , "prfm pstl1strm, [x11, #64]\n\t")
-        // IF_N_GT(8 , "prfm pstl1strm, [x11, #128]\n\t")
 
                     "fmla v12.4s, v10.4s, v0.s[2]\n\t"
         IF_N_GT(1 , "fmla v13.4s, v10.4s, v1.s[2]\n\t")

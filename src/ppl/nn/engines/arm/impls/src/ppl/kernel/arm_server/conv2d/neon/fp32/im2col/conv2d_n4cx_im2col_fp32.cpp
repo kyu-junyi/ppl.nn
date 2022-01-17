@@ -15,19 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "ppl/kernel/arm_server/conv2d/neon/fp32/im2col/conv2d_n4cx_im2col_fp32.h"
-
 #include <arm_neon.h>
-#include <new>
-#include <string.h>
 #include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
 
-#include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
-
+#include "ppl/kernel/arm_server/conv2d/neon/fp32/im2col/conv2d_n4cx_im2col_fp32.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/n4cx_sgemm/n4cx_sgemm.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/utils/conv2d_utils_fp32.h"
 
@@ -170,11 +162,8 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                             if (in_hid < 0 || in_hid >= h_in ||
                                 in_wid < 0 || in_wid >= w_in) {
                                 src_ofs[j] = -1;
-                                // vst1q_f32(i2c_buf_kw_base + j * ICBLK(), vzeros);
                             } else {
                                 src_ofs[j] = in_hid * w_in_cblk + in_wid * ICBLK();
-                                // vst1q_f32(i2c_buf_kw_base + j * ICBLK(),
-                                // vld1q_f32(in_c_base + in_hid * w_in_cblk + in_wid * ICBLK()));
                             }
                         }
 
@@ -198,25 +187,7 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
             const int64_t m_l1_align8 = FLOOR8(CEIL4(m_l1));
             // make FMA chains evenly distributed
             int64_t n10_block0        = k_n10_block0;
-            // if (n_l1 % k_n10_block0 != 0) {
-            //     int64_t tmp_n_block0 = n10_block0 - 2;
-            //     if ( (n_l1 + n10_block0 - 1) / n10_block0 == (n_l1 + tmp_n_block0 - 1) / tmp_n_block0 ) {
-            //         n10_block0 = tmp_n_block0;
-            //     }
-            //     else if ( (n_l1 + n10_block0 - 1) / n10_block0 == (n_l1 + tmp_n_block0) / (tmp_n_block0+1) ) {
-            //         n10_block0 = tmp_n_block0 + 1;
-            //     }
-            // }
             int64_t n12_block0        = k_n12_block0;
-            // if (n_l1 % k_n12_block0 != 0) {
-            //     int64_t tmp_n_block0 = n12_block0 - 2;
-            //     if ( (n_l1 + n12_block0 - 1) / n12_block0 == (n_l1 + tmp_n_block0 - 1) / tmp_n_block0 ) {
-            //         n12_block0 = tmp_n_block0;
-            //     }
-            //     else if ( (n_l1 + n12_block0 - 1) / n12_block0 == (n_l1 + tmp_n_block0) / (tmp_n_block0+1) ) {
-            //         n12_block0 = tmp_n_block0 + 1;
-            //     }
-            // }
 
             for (int64_t p2 = 0; p2 < k; p2 += k_block1) {
                 const bool is_first_k = (p2 == 0);
@@ -231,14 +202,12 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                 float *c_ptr            = sgemm_output_oc_hw_base + i2 * ldc + j2 * CBLK();
 
                 uint32_t init_id = (is_first_k) ? ((bias_oc_base) ? 1 : 0) : 2;
-                // std::cout << "INIT: " << init_id << std::endl;
                 uint32_t fuse_id = (is_last_k) ? fuse_type : 0;
-                // std::cout << "FUSE: " << fuse_id << std::endl;
 
                 for (int64_t i = 0; i < m_l1_align8; i += k_m8_block0) {
                     for (int64_t j = 0; j < n_l1; j += n10_block0) {
-                        const int64_t m_l0 = std::min((m_l1_align8 - i), k_m8_block0);
-                        const int64_t n_l0 = std::min((n_l1 - j), n10_block0);
+                        const int64_t m_l0 = std::min(m_l1_align8 - i, k_m8_block0);
+                        const int64_t n_l0 = std::min(n_l1 - j, n10_block0);
 
                         n4cx_sgemm_m8nx_kernel_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
@@ -259,8 +228,8 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                     a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
                     for (int64_t i = m_l1_align8; i < CEIL4(m_l1); i += k_m4_block0) {
                         for (int64_t j = 0; j < n_l1; j += n12_block0) {
-                            const int64_t m_l0 = std::min((CEIL4(m_l1) - i), k_m4_block0);
-                            const int64_t n_l0 = std::min((n_l1 - j), n12_block0);
+                            const int64_t m_l0 = std::min(CEIL4(m_l1) - i, k_m4_block0);
+                            const int64_t n_l0 = std::min(n_l1 - j, n12_block0);
 
                             n4cx_sgemm_m4nx_kernel_func_table[n_l0 - 1][init_id][fuse_id](
                                 a_ptr + i * lda,
@@ -315,11 +284,10 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::adjust_schedule_param()
     const int64_t hw_in     = src_shape_->GetDim(2) * src_shape_->GetDim(3);
     const int64_t hw_out    = dst_shape_->GetDim(2) * dst_shape_->GetDim(3);
 
-    const int64_t k_input_g_stride      = ic_group * hw_in;
-    const int64_t k_output_g_stride     = oc_group * hw_out;
-    const int64_t kk                    = ic_g_pck * cp.kernel_h * cp.kernel_w;
+    const int64_t k_input_g_stride  = ic_group * hw_in;
+    const int64_t k_output_g_stride = oc_group * hw_out;
+    const int64_t kk                = ic_g_pck * cp.kernel_h * cp.kernel_w;
 
-    // int64_t l3_cache_size = (ppl::common::GetCpuCacheL3() == 0) ? (kp.target_l3_cache_size * num_threads) : ppl::common::GetCpuCacheL3();
     int64_t l3_cache_size = (kp.target_l3_cache_size * num_threads);
     int64_t bl3           = 1;
     while (bl3 < num_batch && bl3 < num_threads &&
@@ -334,15 +302,8 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::adjust_schedule_param()
         ++gl3;
     }
     sched_param_.group_block3 = gl3;
-
-    // sched_param_.hw_block2 = kp.sgemm_n_block1 * 4;
-    // const int64_t num_hw_l2_blocks = DIV_CEIL(hw_out, sched_param_.hw_block2);
-    // sched_param_.oc_block2 = oc_g_pck;
-    // if (num_hw_l2_blocks * gl3 * bl3 < num_threads * 0.8) {
-    //     sched_param_.oc_block2 = CEIL(std::max((int64_t)1, oc_g_pck / DIV_CEIL(num_threads, num_hw_l2_blocks * gl3 * bl3)), kp.sgemm_m_block0);
-    // }
-    sched_param_.hw_block2 = kp.sgemm_n_block1;
-    sched_param_.oc_block2 = kp.sgemm_m_block1;
+    sched_param_.hw_block2    = kp.sgemm_n_block1;
+    sched_param_.oc_block2    = kp.sgemm_m_block1;
 
     sched_param_.use_im2col = (cp.kernel_h != 1 || cp.kernel_w != 1 ||
                                cp.pad_h != 0 || cp.pad_w != 0 ||
@@ -358,9 +319,6 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_runtime_executor::prepare()
     }
 
     adjust_schedule_param();
-    // LOG(INFO) << "populate sp param m: " << ker_param_.sgemm_m_block1;
-    // LOG(INFO) << "populate sp param n: " << ker_param_.sgemm_n_block1;
-    // LOG(INFO) << "populate sp param k: " << ker_param_.sgemm_k_block1;
     return ppl::common::RC_SUCCESS;
 }
 
@@ -427,11 +385,11 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_runtime_executor::execute()
         const int64_t hw_in  = h_in * w_in;
         const int64_t hw_out = h_out * w_out;
 
-        const int64_t k_input_b_stride      = ic_pck * hw_in;
-        const int64_t k_output_b_stride     = oc_pck * hw_out;
-        const int64_t k_input_g_stride      = ic_group * hw_in;
-        const int64_t k_output_g_stride     = oc_group * hw_out;
-        const int64_t kk                    = ic_g_pck * h_flt * w_flt;
+        const int64_t k_input_b_stride  = ic_pck * hw_in;
+        const int64_t k_output_b_stride = oc_pck * hw_out;
+        const int64_t k_input_g_stride  = ic_group * hw_in;
+        const int64_t k_output_g_stride = oc_group * hw_out;
+        const int64_t kk                = ic_g_pck * h_flt * w_flt;
 
         const int64_t input_gbuf_offset  = batch_block3 * group_block3 * ic_g_pck * hw_in;
         const int64_t output_gbuf_offset = batch_block3 * group_block3 * oc_g_pck * hw_out;
@@ -488,8 +446,6 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_runtime_executor::execute()
                     for (int64_t b = 0; b < num_batch_l3; b++) {
                         for (int64_t hw_l2 = 0; hw_l2 < hw_out; hw_l2 += hw_block2) {
                             for (int64_t oc_l2 = 0; oc_l2 < oc_g_pck; oc_l2 += oc_block2) {
-                                // std::cout << "hwl2: " << hw_l2 << std::endl;
-                                // std::cout << "ocl2: " << oc_l2 << std::endl;
                                 const int64_t hw_block2_valid = std::min(hw_block2, hw_out - hw_l2);
                                 const int64_t oc_block2_valid = std::min(oc_block2, oc_g_pck - oc_l2);
 
@@ -702,7 +658,6 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::pick_best_schedule
                 auto end_ts = std::chrono::system_clock::now();
 
                 int64_t elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_ts - begin_ts).count();
-                // LOG(INFO) << "using time: " << elapsed_time / num_benchmark_iter / 1000 << " ms";
                 if (elapsed_time < best_run_time) {
                     best_m_blk    = m_blk;
                     best_n_blk    = n_blk;
