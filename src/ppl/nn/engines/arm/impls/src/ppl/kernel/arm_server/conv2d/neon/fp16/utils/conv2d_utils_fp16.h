@@ -18,8 +18,8 @@
 #ifndef __ST_PPL_KERNEL_ARM_SERVER_CONV2D_NEON_FP16_UTILS_CONV2D_UTILS_FP16_H_
 #define __ST_PPL_KERNEL_ARM_SERVER_CONV2D_NEON_FP16_UTILS_CONV2D_UTILS_FP16_H_
 
-#include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
+#include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 
 namespace ppl { namespace kernel { namespace arm_server {
 

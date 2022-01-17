@@ -24,7 +24,6 @@
 #include <iostream>
 
 #include "ppl/common/arm/sysinfo.h"
-#include "ppl/kernel/arm_server/common/internal_include.h"
 
 #define CBLK()  8
 #define ICBLK() CBLK()
@@ -51,7 +50,6 @@ void conv2d_n8cx_load_group_fp16(
             const __fp16 *input_base = input_b_base + idx * ICBLK();
             __fp16 *input_gbuf_base  = input_gbuf_g_base + ic * hw_in + idx * ICBLK();
 
-            // TODO: vectorization
             for (int64_t lane = 0; lane < ICBLK(); lane++) {
                 int src_idx           = FLOOR8(channel_base + lane) * hw_in + (channel_base + lane) % ICBLK();
                 input_gbuf_base[lane] = input_base[src_idx];
@@ -67,7 +65,6 @@ void conv2d_n8cx_load_group_fp16(
             const __fp16 *input_base = input_b_base + idx * ICBLK();
             __fp16 *input_gbuf_base  = input_gbuf_g_base + ic_group_align * hw_in + idx * ICBLK();
 
-            // TODO: vectorization
             for (int64_t lane = 0; lane < ic_tail; lane++) {
                 int src_idx           = FLOOR8(channel_base + lane) * hw_in + (channel_base + lane) % ICBLK();
                 input_gbuf_base[lane] = input_base[src_idx];

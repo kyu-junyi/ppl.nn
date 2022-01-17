@@ -55,7 +55,6 @@ struct conv2d_param {
 
     float sparse_level() const
     {
-        // TODO: are there any better index for sparse_level?
         const int32_t sparse_h = stride_h * dilation_h;
         const int32_t sparse_w = stride_w * dilation_w;
         return float(sparse_h * sparse_w) / float(kernel_h * kernel_w);
@@ -81,17 +80,6 @@ struct conv2d_param {
                !is_depthwise();
     }
 };
-
-//ppl::common::RetCode conv2d_ref_fp16(
-//    const ppl::nn::TensorShape *src_shape,
-//    const ppl::nn::TensorShape *sum_src_shape,
-//    const ppl::nn::TensorShape *dst_shape,
-//    const void *src,
-//    const void *sum_src,
-//    const void *filter,
-//    const void *bias,
-//    const conv2d_fp16_param &param,
-//    void *dst);
 
 typedef uint32_t conv2d_algo_t;
 
@@ -349,7 +337,7 @@ public:
     };
     // schedule param setting rule is simple but fast.
     virtual ppl::common::RetCode fast_init_schedule_param()                                                                            = 0;
-    // run all possible schedule param and choose the best.
+    // run all possible schedule params and choose the best.
     virtual ppl::common::RetCode pick_best_schedule_param(const ppl::nn::TensorShape &src_shape, double &runtime, bool tune_blocksize) = 0;
     virtual bool is_supported()                                                                                                        = 0;
     virtual ppl::common::RetCode gen_cvt_weights(const void *filter, const void *bias)                                                 = 0;
