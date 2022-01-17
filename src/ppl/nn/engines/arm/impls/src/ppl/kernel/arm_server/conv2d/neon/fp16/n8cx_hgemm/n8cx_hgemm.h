@@ -39,6 +39,7 @@ void ppl_arm_server_kernel_fp16_n8cx_hgemm_blocking_an_outer(
     const int64_t k_block1);
 
 #include "n8cx_hgemm_header.inc"
+#include "n8cx_hgemm_m16n10_header.inc"
 
 typedef void (*ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_func_t)(
     const __fp16 *A,
@@ -272,7 +273,270 @@ const ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_func_t n8cx_hgemm_kernel
       ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m8nx_func<12, 2, 5>,
       ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m8nx_func<12, 2, 6>}}};
 
-template <>
+const ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_func_t n8cx_hgemm_m16nx_kernel_func_table[10][3][6] = {
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<1, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<2, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<3, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<4, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<5, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<6, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<7, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<8, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<9, 2, 6>
+        }
+    },
+    {
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 0, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 0, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 0, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 0, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 0, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 0, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 1, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 1, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 1, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 1, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 1, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 1, 6>
+        },
+        {
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 2, 0>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 2, 1>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 2, 2>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 2, 4>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 2, 5>,
+            ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<10, 2, 6>
+        }
+    },
+};
+
+template<>
 void ppl_arm_server_kernel_fp16_n8cx_hgemm_blocking_an_outer<N8cxHgemmBlockingOrd::M_N_K>(
     const __fp16 *a,
     __fp16 *converted_a,

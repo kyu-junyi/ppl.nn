@@ -471,15 +471,7 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         algo = ppl::kernel::arm_server::conv2d_algo::winograd_b4f3;
         candidate_algo_list.push_back(algo);
     }
-    if (!(param.kernel_h == 3 &&
-          param.kernel_w == 3 &&
-          param.stride_h == 1 &&
-          param.stride_w == 1 &&
-          param.dilation_h == 1 &&
-          param.dilation_w == 1 &&
-          param.channels >= 64 &&
-          param.num_output >= 64 &&
-          param.group == 1)) {
+    if (1) {
         auto algo = ppl::kernel::arm_server::conv2d_algo::direct;
         candidate_algo_list.push_back(algo);
         algo = ppl::kernel::arm_server::conv2d_algo::tile_gemm;

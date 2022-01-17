@@ -31,8 +31,8 @@ typedef struct {
     int32_t hgemm_m_block0 = 8;
     int32_t hgemm_n_block0 = 12;
     // tuned for l1 cache
-    int32_t hgemm_m_block1 = 64;
-    int32_t hgemm_n_block1 = 72;
+    int32_t hgemm_m_block1 = 80;
+    int32_t hgemm_n_block1 = 108;
     int32_t hgemm_k_block1 = 128;
 
     int64_t target_l3_cache_size = 32 * 1024 * 1024;

@@ -896,7 +896,6 @@ uint64_t conv2d_wgb4f3_fp32_runtime_executor::cal_temp_buffer_size()
 
 void conv2d_wgb4f3_fp32_runtime_executor::adjust_schedule_param()
 {
-    // sched_param_.tile_blk = 128;
     return;
 }
 
@@ -1644,19 +1643,10 @@ bool conv2d_wgb4f3_fp32_offline_manager::is_supported()
 
 ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::fast_init_schedule_param()
 {
-    sched_param_.oc_blk   = 1024;
+    sched_param_.oc_blk   = 40;
     sched_param_.ic_blk   = 128;
-    sched_param_.tile_blk = 128;
+    sched_param_.tile_blk = 108;
 
-    if (sched_param_.oc_blk != 1024) {
-        return ppl::common::RC_INVALID_VALUE;
-    }
-    // if (sched_param_.ic_blk != 64) {
-    //     return ppl::common::RC_INVALID_VALUE;
-    // }
-    // if (sched_param_.tile_blk != 128) {
-    //     return ppl::common::RC_INVALID_VALUE;
-    // }
     return ppl::common::RC_SUCCESS;
 }
 
@@ -1701,8 +1691,8 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
     }
 
     std::vector<int64_t> candidate_oc_blk_list   = {40};
-    std::vector<int64_t> candidate_ic_blk_list   = {132};
-    std::vector<int64_t> candidate_tile_blk_list = {60};
+    std::vector<int64_t> candidate_ic_blk_list   = {128};
+    std::vector<int64_t> candidate_tile_blk_list = {108};
     // int64_t tile_l2_est = (int64_t)(((double)64*1024/sizeof(float)-(double)ic_g_pck*oc_g_pck)/((double)ic_g_pck+oc_g_pck));
     // if (tile_l2_est >= 60) {
     //     if (tile_l2_est % 10 < 9) {
@@ -1723,9 +1713,9 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
         candidate_tile_blk_list = {32, 64, 128, 256, /*384, 512*/};
     }
 
-    int64_t best_oc_blk   = 1024;
-    int64_t best_ic_blk   = 64;
-    int64_t best_tile_blk = 128;
+    int64_t best_oc_blk   = 40;
+    int64_t best_ic_blk   = 128;
+    int64_t best_tile_blk = 108;
     int64_t best_run_time = std::numeric_limits<int64_t>::max();
 
     const int num_warmup_iter    = 1;

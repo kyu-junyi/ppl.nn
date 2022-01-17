@@ -864,7 +864,596 @@ void ppl_arm_server_kernel_fp16_n8cx_hgemm_blocking_an_outer<N8cxHgemmBlockingOr
 #undef INIT_T
 #undef FUSE_T
 
-template <>
+#define FUSE_T() 0
+#define INIT_T() 0
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 1
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 2
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#undef FUSE_T
+#define FUSE_T() 1
+#define INIT_T() 0
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 1
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 2
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#undef FUSE_T
+#define FUSE_T() 2
+#define INIT_T() 0
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 1
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 2
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#undef FUSE_T
+#define FUSE_T() 4
+#define INIT_T() 0
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 1
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 2
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#undef FUSE_T
+#define FUSE_T() 5
+#define INIT_T() 0
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 1
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 2
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#undef FUSE_T
+#define FUSE_T() 6
+#define INIT_T() 0
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 1
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#define INIT_T() 2
+#define N_BLOCK0() 10
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 9
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 8
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 7
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 6
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 5
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 4
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 3
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 2
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#define N_BLOCK0() 1
+#include "n8cx_hgemm_m16n10_kernel.inc"
+#undef N_BLOCK0
+#undef INIT_T
+#undef FUSE_T
+
+template<>
 void ppl_arm_server_kernel_fp16_n8cx_hgemm<N8cxHgemmBlockingOrd::M_N_K>(
     const __fp16 *a,
     const __fp16 *b,
