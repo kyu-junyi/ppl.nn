@@ -17,7 +17,7 @@
 
 #ifndef PP_PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC
 #define PP_PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0, INIT_T, FUSE_T) \
-    ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m8nx_func<N_BLOCK0, INIT_T,FUSE_T>
+    hgemm_n8cx_kernel_m8nx_fp16_func<N_BLOCK0, INIT_T,FUSE_T>
 #endif
 #ifndef PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC
 #define PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0, INIT_T, FUSE_T) \
@@ -46,9 +46,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0(), INI
     const int64_t lddx,
     const int64_t ldc)
 {
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) << std::endl;
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(INIT_T()) << std::endl;
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(FUSE_T()) << std::endl;
 #define IF_N_GT(N0, INSTRUCTION) ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " > " #N0 "\n\t  " INSTRUCTION ".endif\n\t"
 
     asm volatile (
@@ -63,8 +60,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0(), INI
         "subs %[k], %[k], #8\n\t"
         
 ".if " PPL_ARM_SERVER_KERNEL_STR(INIT_T()) " == 0\n\t"
-        // "ldr q12, [x9]\n\t"  // scheduled earlier
-                    // "ldr  q0,     [x10]\n\t"  //scheduled earlier
                     "fmul v20.8h, v12.8h, v0.h[0]\n\t"
         IF_N_GT(1 , "ldr  q1,     [x10, #16]\n\t")
         IF_N_GT(1 , "fmul v21.8h, v12.8h, v1.h[0]\n\t")
@@ -89,8 +84,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0(), INI
         IF_N_GT(11, "ldr  q11,    [x10, #176]\n\t")
         IF_N_GT(11, "fmul v31.8h, v12.8h, v11.h[0]\n\t")
 ".else\n\t.if " PPL_ARM_SERVER_KERNEL_STR(INIT_T()) " == 1\n\t"
-        // "ldr q12, [x9]\n\t"  // scheduled earlier
-                    // "ldr  q0,     [x10]\n\t"  //scheduled earlier
                     "ldr  q20,    [%[const_ptr]]\n\t"
         IF_N_GT(1 , "ldr  q1,     [x10, #16]\n\t")
         IF_N_GT(1 , "mov  v21.16b, v20.16b\n\t")
@@ -127,8 +120,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0(), INI
         IF_N_GT(11, "fmla v31.8h, v12.8h, v11.h[0]\n\t")
                     "fmla v20.8h, v12.8h, v0.h[0]\n\t"
 ".else\n\t.if " PPL_ARM_SERVER_KERNEL_STR(INIT_T()) " == 2\n\t"
-        // "ldr q12, [x9]\n\t"  // scheduled earlier
-                    // "ldr  q0,     [x10]\n\t"  //scheduled earlier
                     "ldr  q20,    [x11]\n\t"
                     "fmla v20.8h, v12.8h, v0.h[0]\n\t"
         IF_N_GT(1 , "ldr  q1,     [x10, #16]\n\t")
@@ -211,7 +202,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0(), INI
         IF_N_GT(10, "fmla v30.8h, v15.8h, v10.h[3]\n\t")
         IF_N_GT(11, "fmla v31.8h, v15.8h, v11.h[3]\n\t")
 
-        // "subs %[k], %[k], #8\n\t"  // scheduled earlier
         "beq 2f\n\t"
 
         ".align 3\n\t"
@@ -346,7 +336,7 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M8NX_FUNC(N_BLOCK0(), INI
         IF_N_GT(9 , "fmla v29.8h, v15.8h, v9.h[3]\n\t")
         IF_N_GT(10, "fmla v30.8h, v15.8h, v10.h[3]\n\t")
         IF_N_GT(11, "fmla v31.8h, v15.8h, v11.h[3]\n\t")
-        // "subs %[k], %[k], #8\n\t"  // scheduled earlier
+
         "bgt 1b\n\t"
         
         ".align 3\n\t"

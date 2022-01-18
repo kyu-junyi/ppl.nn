@@ -141,7 +141,6 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
         for (int64_t i2 = 0; i2 < m; i2 += m_block1) {
             const int64_t m_l1 = std::min(m - i2, m_block1);
             const int64_t n_l1 = std::min(n - j2, n_block1);
-            // std::cout << "nl1: " << n_l1 << std::endl;
 
             __fp16 *i2c_local_base = input_im2col_buffer + j2 * ic_g_pck * hw_flt;
             if (renew_tile_im2col && prv_j2 != j2) {
@@ -214,7 +213,7 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
                         const int64_t m_l0 = std::min((m_l1_align16-i), (int64_t)16);
                         const int64_t n_l0 = std::min((n_l1-j), (int64_t)10);
             
-                        n8cx_hgemm_m16nx_kernel_func_table[n_l0-1][init_id][fuse_id](
+                        hgemm_n8cx_kernel_m16nx_fp16_func_table[n_l0-1][init_id][fuse_id](
                             a_ptr + i * lda,
                             b_ptr + j * CBLK(), 
                             const_ptr + i,
@@ -231,7 +230,7 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
                         const int64_t m_l0 = std::min((m_l1-i), (int64_t)8);
                         const int64_t n_l0 = std::min((n_l1-j), (int64_t)12);
             
-                        n8cx_hgemm_kernel_func_table[n_l0-1][init_id][fuse_id](
+                        hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0-1][init_id][fuse_id](
                             a_ptr + i * lda,
                             b_ptr + j * CBLK(), 
                             const_ptr + i,

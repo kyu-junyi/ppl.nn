@@ -16,7 +16,7 @@
 // under the License.
 
 template<const uint32_t n_block, const uint32_t init_type, const uint32_t fuse_type>
-void ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func( 
+void hgemm_n8cx_kernel_m16nx_fp16_func( 
     const __fp16 * A,    
     const __fp16 * B,
     const __fp16 * constant,    
@@ -30,10 +30,10 @@ void ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func(
     const int64_t lddx, 
     const int64_t ldc);
 
-#ifndef PP_PPL_ARM_SERVER_KERNEL_FP32_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC_SIGNATURE
-#define PP_PPL_ARM_SERVER_KERNEL_FP32_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC_SIGNATURE(N_BLOCK0, INIT_T, FUSE_T) \
+#ifndef HGEMM_N8CX_KERNEL_M16NX_FP16_FUNC_SIGNATURE
+#define HGEMM_N8CX_KERNEL_M16NX_FP16_FUNC_SIGNATURE(N_BLOCK0, INIT_T, FUSE_T) \
     template<> \
-    void ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<N_BLOCK0, INIT_T, FUSE_T>( \
+    void hgemm_n8cx_kernel_m16nx_fp16_func<N_BLOCK0, INIT_T, FUSE_T>( \
         const __fp16 * A,    \
         const __fp16 * B,    \
         const __fp16 * constant,    \
@@ -49,7 +49,7 @@ void ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func(
 #endif
 #ifndef PPL_ARM_SERVER_KERNEL_FP32_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC_SIGNATURE
 #define PPL_ARM_SERVER_KERNEL_FP32_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC_SIGNATURE(N_BLOCK0, INIT_T, FUSE_T) \
-    PP_PPL_ARM_SERVER_KERNEL_FP32_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC_SIGNATURE(N_BLOCK0, INIT_T, FUSE_T)
+    HGEMM_N8CX_KERNEL_M16NX_FP16_FUNC_SIGNATURE(N_BLOCK0, INIT_T, FUSE_T)
 #endif
 
 #define FUSE_T() 0

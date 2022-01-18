@@ -17,7 +17,7 @@
 
 #ifndef PP_PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC
 #define PP_PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC(N_BLOCK0, INIT_T, FUSE_T) \
-    ppl_arm_server_kernel_fp16_conv_n8cx_hgemm_kernel_m16nx_func<N_BLOCK0, INIT_T, FUSE_T>
+    hgemm_n8cx_kernel_m16nx_fp16_func<N_BLOCK0, INIT_T, FUSE_T>
 #endif
 #ifndef PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC
 #define PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC(N_BLOCK0, INIT_T, FUSE_T) \
@@ -46,9 +46,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC(N_BLOCK0(), IN
     const int64_t lddx,
     const int64_t ldc)
 {
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) << std::endl;
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(INIT_T()) << std::endl;
-    // std::cout << PPL_ARM_SERVER_KERNEL_STR(FUSE_T()) << std::endl;
 #define IF_N_GT(N0, INSTRUCTION) ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " > " #N0 "\n\t  " INSTRUCTION ".endif\n\t"
 
     asm volatile (
@@ -267,7 +264,6 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC(N_BLOCK0(), IN
         IF_N_GT(9 , "fmla v31.8h, v11.8h, v9.h[3]\n\t")
         "ld1 {v11.16b}, [x9], #16\n\t"
 
-        // "subs %[k], %[k], #8\n\t"  // scheduled earlier
         "beq 2f\n\t"
 
         ".align 3\n\t"
@@ -466,7 +462,7 @@ void PPL_ARM_SERVER_KERNEL_FP16_CONV_N8CX_HGEMM_KERNEL_M16NX_FUNC(N_BLOCK0(), IN
         IF_N_GT(8 , "fmla v30.8h, v11.8h, v8.h[3]\n\t")
         IF_N_GT(9 , "fmla v31.8h, v11.8h, v9.h[3]\n\t")
         "ld1 {v11.16b}, [x9], #16\n\t"
-        // "subs %[k], %[k], #8\n\t"  // scheduled earlier
+
         "bgt 1b\n\t"
         
         ".align 3\n\t"

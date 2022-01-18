@@ -49,7 +49,7 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define WGB2F3_NSET() WINOGRAD_B2F3_NUM_SET()
 
 #define N8CX_HGEMM_N_BLOCK0() 12
-#define LLC_CACHELINE_SIZE() 128
+#define LLC_CACHELINE_SIZE()  128
 
 size_t conv_wgb2f3_get_input_buffer_size_fp16(
     const int64_t inC,
@@ -638,7 +638,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
 
                                     const int32_t init_id = (is_first_ic) ? 0 : 2;
                                     const int64_t fini_id = 0;
-                                    n8cx_hgemm_kernel_func_table[n_l0 - 1][init_id][fini_id](
+                                    hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL8(in_channel_section),
                                         pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICVL(),
                                         nullptr, /* constant:bias */
@@ -915,7 +915,7 @@ static void conv_wgb2f3_convert_filter_fp16(
             const __fp16 *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             __fp16 *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
 
-            ppl_arm_server_kernel_fp16_n8cx_hgemm_blocking_an_outer<N8cxHgemmBlockingOrd::M_N_K>(
+            hgemm_n8cx_blocking_fp16<N8cxHgemmBlockingOrd::M_N_K>(
                 aux_filter_base,
                 converted_filter_base,
                 ic_g_pck,
