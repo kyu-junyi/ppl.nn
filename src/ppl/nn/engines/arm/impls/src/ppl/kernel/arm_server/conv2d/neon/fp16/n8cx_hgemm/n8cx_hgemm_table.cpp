@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "n8cx_hgemm.h"
+#include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
 
 namespace ppl { namespace kernel { namespace arm_server {
 

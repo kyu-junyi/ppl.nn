@@ -19,14 +19,9 @@
 
 #include <arm_neon.h>
 #include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
 #include <malloc.h>
 
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
-
-#include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
 namespace ppl { namespace kernel { namespace arm_server {
@@ -51,7 +46,7 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define N8CX_HGEMM_N_BLOCK0() 12
 #define LLC_CACHELINE_SIZE()  128
 
-size_t conv_wgb2f3_get_input_buffer_size_fp16(
+size_t conv2d_n8cx_wgb2f3_get_input_buffer_size_fp16(
     const int64_t inC,
     const int64_t tile_l2_size)
 {
@@ -61,7 +56,7 @@ size_t conv_wgb2f3_get_input_buffer_size_fp16(
     return input_buffer_size;
 }
 
-size_t conv_wgb2f3_get_output_buffer_size_fp16(
+size_t conv2d_n8cx_wgb2f3_get_output_buffer_size_fp16(
     const int64_t outC,
     const int64_t tile_l2_size)
 {
@@ -71,7 +66,7 @@ size_t conv_wgb2f3_get_output_buffer_size_fp16(
     return output_buffer_size;
 }
 
-static inline void conv_wgb2f3_prep_input_block_fp16(
+static inline void conv2d_n8cx_wgb2f3_prep_input_block_fp16(
     const __fp16 *input_block,
     const float16x8_t &vzeros,
     __fp16 *prep_input_block,
@@ -207,7 +202,7 @@ static inline void conv_wgb2f3_prep_input_block_fp16(
     vst1q_f16(prep_input_block + 15 * in_wg_set_offset, v[15]);
 }
 
-static inline void conv_wgb2f3_postp_output_block_fp16(
+static inline void conv2d_n8cx_wgb2f3_postp_output_block_fp16(
     const __fp16 *raw_output_block,
     const float16x8_t &vbias,
     __fp16 *output_block, // oc_start biased, oh_start, ow_start biased
@@ -219,7 +214,6 @@ static inline void conv_wgb2f3_postp_output_block_fp16(
     const uint32_t fuse_flag)
 {
     float16x8_t vr[16];
-    // float16x8_t vs[4];
     if (num_valid_oh == 2 && num_valid_ow == 2) {
         vr[0]  = vld1q_f16(raw_output_block + 0 * wg_out_set_offset);
         vr[1]  = vld1q_f16(raw_output_block + 1 * wg_out_set_offset);
@@ -449,7 +443,6 @@ static inline void conv_wgb2f3_postp_output_block_fp16(
         }
 
         vst1q_f16(output_block, vr[0]);
-        // std::cout << "Half on ow-b2. Half on oh-b2." << std::endl;
     }
 }
 
@@ -457,9 +450,9 @@ uint64_t conv2d_wgb2f3_fp16_runtime_executor::cal_temp_buffer_size()
 {
     const conv2d_param &cp                      = *conv_param_;
     const conv2d_wgb2f3_fp16_schedule_param &sp = sched_param_;
-    size_t input_buffer_size                    = conv_wgb2f3_get_input_buffer_size_fp16(
+    size_t input_buffer_size                    = conv2d_n8cx_wgb2f3_get_input_buffer_size_fp16(
         cp.channels, sp.tile_blk);
-    size_t output_buffer_size = conv_wgb2f3_get_output_buffer_size_fp16(
+    size_t output_buffer_size = conv2d_n8cx_wgb2f3_get_output_buffer_size_fp16(
         cp.num_output, sp.tile_blk);
 
     sched_param_.input_buffer_size  = input_buffer_size;
@@ -471,7 +464,6 @@ uint64_t conv2d_wgb2f3_fp16_runtime_executor::cal_temp_buffer_size()
 
 void conv2d_wgb2f3_fp16_runtime_executor::adjust_schedule_param()
 {
-    sched_param_.tile_blk = 128;
     return;
 }
 
@@ -530,7 +522,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
         const int64_t k_in_wg_set_offset  = k_in_channel_section * k_tile_l2;
         const int64_t k_out_wg_set_offset = oc_g_packed * k_tile_l2;
 
-        // TODO: make sure buffer sizes are valid.
         /* Inner parallel mode */
         __fp16 *pre_proc_buffer  = tmp_buffer;
         __fp16 *post_proc_buffer = pre_proc_buffer + input_prep_buffer_size / sizeof(__fp16);
@@ -563,7 +554,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
 
                 // Note: using `ic_group` in the loop is the same with using `ic_g_packed`.
                 for (int64_t ic_l2 = 0; ic_l2 < ic_g_packed; ic_l2 += k_in_channel_section) {
-                    // std::cerr << "IC: " << ic_l2 << std::endl;
                     const bool is_first_ic           = (ic_l2 == 0);
                     const bool is_last_ic            = (ic_l2 + k_in_channel_section >= ic_g_packed);
                     const int64_t in_channel_section = std::min(ic_g_packed - ic_l2, k_in_channel_section);
@@ -595,8 +585,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                             ih_valid[2] = (ih2 >= 0 && ih2 < inH);
                             ih_valid[3] = (ih3 >= 0 && ih3 < inH);
 
-                            // std::cerr << "Prep: oh " << oh << ", ow " << ow << std::endl;
-                            // int64_t wg_block_idx = oh / WGB2F3_OBLK() * wg_w_blocks + ow / WGB2F3_OBLK();
                             int64_t wg_block_idx  = tile_l0;
                             __fp16 *prep_in_block = prep_in_c_base + wg_block_idx * ICVL();
 
@@ -611,7 +599,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                             iw_valid[2] = (iw2 >= 0 && iw2 < inW);
                             iw_valid[3] = (iw3 >= 0 && iw3 < inW);
 
-                            conv_wgb2f3_prep_input_block_fp16(
+                            conv2d_n8cx_wgb2f3_prep_input_block_fp16(
                                 input_c_base + ih0 * inW * ICVL() + iw0 * ICVL(),
                                 vzeros,
                                 prep_in_block,
@@ -624,7 +612,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
 
                     // Note: using `oc_group` in the loop is the same with using `oc_g_packed`.
                     for (int64_t oc_l2 = 0; oc_l2 < oc_g_packed; oc_l2 += k_out_channel_section) {
-                        // std::cerr << "OC: " << oc_l2 << std::endl;
                         const int64_t out_channel_section = std::min(oc_g_packed - oc_l2, k_out_channel_section);
                         const __fp16 *cvt_filter_cc_base  = filter_g_base + oc_l2 * ic_g_packed + ic_l2 * CEIL8(out_channel_section); // pack to 4:OCVL()
                         __fp16 *raw_out_cl2_base          = post_proc_buffer + oc_l2 * wg_blocks;
@@ -678,7 +665,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                                     const int64_t oh = tile_h_id * WGB2F3_OBLK();
                                     const int64_t ow = tile_w_id * WGB2F3_OBLK();
 
-                                    conv_wgb2f3_postp_output_block_fp16(
+                                    conv2d_n8cx_wgb2f3_postp_output_block_fp16(
                                         raw_output_c_base + tile_l0 * OCVL(),
                                         vbias,
                                         output_oc_base + batch_id * output_b_stride + (oh * outW + ow) * OCVL(),
@@ -692,7 +679,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                             } // close loop over oc(register)
                         }
                     } // close loop over oc(l2)
-
                 } // close loop over ic(l2)
             } // close loop over batch-outH-outW
         } // close loop over group
@@ -700,7 +686,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
     return ppl::common::RC_SUCCESS;
 }
 
-static size_t conv_wgb2f3_get_converted_filter_size_fp16(
+static size_t conv2d_n8cx_wgb2f3_get_converted_filter_size_fp16(
     const int64_t c_in,
     const int64_t c_out,
     const int64_t num_group)
@@ -711,7 +697,7 @@ static size_t conv_wgb2f3_get_converted_filter_size_fp16(
     return converted_filter_size;
 }
 
-static void conv_wgb2f3_convert_filter_fp16(
+static void conv2d_n8cx_wgb2f3_convert_filter_fp16(
     const __fp16 *filter,
     __fp16 *converted_filter,
     __fp16 *aux_filter_buffer,
@@ -738,7 +724,7 @@ static void conv_wgb2f3_convert_filter_fp16(
         __fp16 *converted_filter_g_base = converted_filter + g * WGB2F3_NSET() * filter_wg_set_offset;
 
         // first pass
-        //     note: pack c_in to 4c_in
+        // note: pack c_in to 4c_in
         __fp16 *aux_filter = aux_filter_buffer;
         float g_ic_pck[9 * ICVL()];
         for (int64_t oc = 0; oc < oc_group; oc++) {
@@ -910,7 +896,7 @@ static void conv_wgb2f3_convert_filter_fp16(
         }
 
         // second pass
-        //     note: pack c_out to 8c_out
+        // note: pack c_out to 8c_out
         for (int64_t set_id = 0; set_id < WGB2F3_NSET(); set_id++) {
             const __fp16 *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             __fp16 *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
@@ -979,7 +965,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::pick_best_schedule_para
     ppl::nn::TensorShape dst_shape;
     dst_shape.Reshape({num_batch, num_output, dst_h, dst_w});
 
-    uint64_t cvt_filter_size = conv_wgb2f3_get_converted_filter_size_fp16(
+    uint64_t cvt_filter_size = conv2d_n8cx_wgb2f3_get_converted_filter_size_fp16(
         channels, num_output, param_.group);
     uint64_t cvt_bias_size = CEIL8(num_output) * sizeof(__fp16);
     uint64_t src_size      = num_batch * CEIL8(channels) * src_h * src_w * sizeof(__fp16);
@@ -1007,10 +993,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::pick_best_schedule_para
     std::vector<int64_t> candidate_tile_blk_list = {128};
 
     if (tune_blocksize) {
-        // candidate_oc_blk_list = {/*64, 128, 192, 256, 384, 512, 640, 768, 896, */1024};
-        // candidate_ic_blk_list = {32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, /*384, 512*/};
-        // candidate_tile_blk_list = {32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, /*384, 512*/};
-
         candidate_oc_blk_list   = {/*64, 128, 192, 256, 384, 512, 640, 768, 896, */ 1024};
         candidate_ic_blk_list   = {32, 64, 128, 256, /*384, 512*/};
         candidate_tile_blk_list = {32, 64, 128, 256, /*384, 512*/};
@@ -1053,7 +1035,6 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::pick_best_schedule_para
                 auto end_ts = std::chrono::system_clock::now();
 
                 int64_t elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_ts - begin_ts).count();
-                // LOG(INFO) << "run time: " << elapsed_time / num_benchmark_iter / 1000  << " ms";
                 if (elapsed_time < best_run_time) {
                     best_oc_blk   = oc_blk;
                     best_ic_blk   = ic_blk;
@@ -1105,7 +1086,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::gen_cvt_weights(const v
     memcpy(cvt_bias_, bias, padding_offset_bytes);
     memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
-    cvt_filter_size_ = conv_wgb2f3_get_converted_filter_size_fp16(
+    cvt_filter_size_ = conv2d_n8cx_wgb2f3_get_converted_filter_size_fp16(
         channels, num_output, param_.group);
     cvt_filter_ = (__fp16 *)allocator_->Alloc(cvt_filter_size_);
 
@@ -1114,7 +1095,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_offline_manager::gen_cvt_weights(const v
     size_t buffer_size     = WGB2F3_NSET() * CEIL8(ic_group) * CEIL8(oc_group) * sizeof(__fp16);
     __fp16 *aux_buffer     = (__fp16 *)allocator_->Alloc(buffer_size);
 
-    conv_wgb2f3_convert_filter_fp16(
+    conv2d_n8cx_wgb2f3_convert_filter_fp16(
         (const __fp16 *)filter,
         (__fp16 *)cvt_filter_,
         aux_buffer,

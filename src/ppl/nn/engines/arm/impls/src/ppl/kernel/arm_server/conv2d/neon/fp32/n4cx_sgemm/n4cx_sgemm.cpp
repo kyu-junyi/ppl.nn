@@ -38,14 +38,14 @@ namespace ppl { namespace kernel { namespace arm_server {
         v[3]     = vcombine_f32(vget_high_f32(vpf32[0].val[1]), vget_high_f32(vpf32[1].val[1])); \
     } while (0)
 
-static void sgemm_kernel_n4cx_inner_blocking_4x4_fp32(
+static void sgemm_n4cx_inner_blocking_4x4_fp32(
     const float *a,
     float *converted_a,
     const int64_t lda,
     const int64_t m,
     const int64_t k)
 {
-    (void)sgemm_kernel_n4cx_inner_blocking_4x4_fp32;
+    (void)sgemm_n4cx_inner_blocking_4x4_fp32;
     const float32x4_t vzeros = vdupq_n_f32(0.0f);
 
     for (int64_t i = 0; i < m; i += 4) {
@@ -120,7 +120,7 @@ void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
             const int64_t m_l1 = std::min(m - i, m_block1);
             const int64_t k_l1 = std::min(k - p, k_block1);
 
-            sgemm_kernel_n4cx_inner_blocking_4x4_fp32(
+            sgemm_n4cx_inner_blocking_4x4_fp32(
                 a + i * lda + p,
                 converted_a + i * CEIL4(k) + p * CEIL4(m_l1),
                 lda,
@@ -146,7 +146,7 @@ void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::N_K_M>(
             const int64_t m_l1 = std::min(m - i, m_block1);
             const int64_t k_l1 = std::min(k - p, k_block1);
 
-            sgemm_kernel_n4cx_inner_blocking_4x4_fp32(
+            sgemm_n4cx_inner_blocking_4x4_fp32(
                 a + i * lda + p,
                 converted_a + p * CEIL4(m) + i * CEIL4(k_l1),
                 lda,
