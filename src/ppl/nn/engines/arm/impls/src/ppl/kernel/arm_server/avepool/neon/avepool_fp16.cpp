@@ -160,9 +160,9 @@ static void avepool2d_n8cx_global_fp16(
     PRAGMA_OMP_PARALLEL()
     {
         const int64_t num_channel_ceil8 = CEIL8(num_channel);
-        const float16x8_t vzero         = vdupq_n_f16(0.0f);
-        const __fp16 in_size_recp       = 1.0f / (inH * inW);
-        float16x8_t vave_coeff          = vdupq_n_f16(in_size_recp);
+        const float32x4_t vzero         = vdupq_n_f32(0.0f);
+        const float in_size_recp        = 1.0f / (inH * inW);
+        float32x4_t vave_coeff          = vdupq_n_f32(in_size_recp);
 
         for (int64_t n = 0; n < num_batch; n++) {
             const __fp16 *input_b_base = input + n * num_channel_ceil8 * inH * inW;
@@ -171,14 +171,21 @@ static void avepool2d_n8cx_global_fp16(
             for (int64_t c = 0; c < num_channel_ceil8; c += CVL()) {
                 const __fp16 *input_c_base = input_b_base + c * inH * inW;
 
-                float16x8_t vout = vzero;
+                float32x4_t vout_fp32_0 = vzero;
+                float32x4_t vout_fp32_1 = vzero;
                 for (int64_t idx = 0; idx < inH * inW; idx++) {
-                    float16x8_t vin = vld1q_f16(input_c_base + idx * CVL());
-                    vout            = vaddq_f16(vout, vin);
-                }
-                vout = vmulq_f16(vout, vave_coeff);
+                    float16x8_t vin_fp16   = vld1q_f16(input_c_base + idx * CVL());
+                    float32x4_t vin_fp32_0 = vcvt_f32_f16(vget_low_f16(vin_fp16));
+                    float32x4_t vin_fp32_1 = vcvt_f32_f16(vget_high_f16(vin_fp16));
 
-                vst1q_f16(output_b_base + c, vout);
+                    vout_fp32_0 = vaddq_f32(vout_fp32_0, vin_fp32_0);
+                    vout_fp32_1 = vaddq_f32(vout_fp32_1, vin_fp32_1);
+                }
+                vout_fp32_0 = vmulq_f32(vout_fp32_0, vave_coeff);
+                vout_fp32_1 = vmulq_f32(vout_fp32_1, vave_coeff);
+
+                float16x8_t vout_fp16 = vcombine_f16(vcvt_f16_f32(vout_fp32_0), vcvt_f16_f32(vout_fp32_1));
+                vst1q_f16(output_b_base + c, vout_fp16);
             }
         }
     }
