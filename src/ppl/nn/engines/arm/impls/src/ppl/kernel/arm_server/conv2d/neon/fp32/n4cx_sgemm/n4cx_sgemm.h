@@ -36,7 +36,7 @@ enum class N4cxSgemmFusionOp {
 };
 
 template <N4cxSgemmBlockingOrd order>
-void sgemm_kernel_n4cx_blocking_fp32(
+void sgemm_n4cx_blocking_fp32(
     const float *a,
     float *converted_a,
     const int64_t lda,
@@ -46,7 +46,7 @@ void sgemm_kernel_n4cx_blocking_fp32(
     const int64_t k_block1);
 
 template <N4cxSgemmBlockingOrd order, N4cxSgemmFusionOp fusion>
-void sgemm_kernel_n4cx_fp32(
+void sgemm_n4cx_fp32(
     const float *a,
     const float *b,
     const float *vc,
@@ -61,7 +61,7 @@ void sgemm_kernel_n4cx_fp32(
     const int64_t N_blocksize,
     const int64_t K_blocksize);
 
-typedef void (*ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t)(
+typedef void (*sgemm_n4cx_kernel_func_t)(
     const float *A,
     const float *B,
     const float *constant,
@@ -75,11 +75,11 @@ typedef void (*ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t)(
     const int64_t lddx,
     const int64_t ldc);
 
-extern const ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t n4cx_sgemm_m4nx_kernel_func_table[12][3][6];
-extern const ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_func_t n4cx_sgemm_m8nx_kernel_func_table[10][3][6];
+extern const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m4nx_fp32_func_table[12][3][6];
+extern const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m8nx_fp32_func_table[10][3][6];
 
 template <>
-void sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
+void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const float *a,
     float *converted_a,
     const int64_t lda,
@@ -89,7 +89,7 @@ void sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const int64_t k_block1);
 
 template <N4cxSgemmBlockingOrd order>
-void sgemm_kernel_n4cx_fp32(
+void sgemm_n4cx_fp32(
     const float *a,
     const float *b,
     const float *contant,
@@ -108,7 +108,7 @@ void sgemm_kernel_n4cx_fp32(
     const uint32_t fuse_type);
 
 template <>
-void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
+void sgemm_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const float *a,
     const float *b,
     const float *contant,
@@ -127,7 +127,7 @@ void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const uint32_t fuse_type);
 
 template <>
-void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::N_M_K>(
+void sgemm_n4cx_fp32<N4cxSgemmBlockingOrd::N_M_K>(
     const float *a,
     const float *b,
     const float *contant,

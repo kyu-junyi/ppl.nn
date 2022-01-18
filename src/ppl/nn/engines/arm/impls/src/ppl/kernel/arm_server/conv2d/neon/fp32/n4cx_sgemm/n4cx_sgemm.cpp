@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "n4cx_sgemm.h"
+#include "ppl/kernel/arm_server/conv2d/neon/fp32/n4cx_sgemm/n4cx_sgemm.h"
 
 #include <algorithm>
 #include <arm_neon.h>
@@ -106,7 +106,7 @@ static void sgemm_kernel_n4cx_inner_blocking_4x4_fp32(
 }
 
 template <>
-void sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
+void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const float *a,
     float *converted_a,
     const int64_t lda,
@@ -132,7 +132,7 @@ void sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
 }
 
 template <>
-void sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::N_K_M>(
+void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::N_K_M>(
     const float *a,
     float *converted_a,
     const int64_t lda,
@@ -158,7 +158,7 @@ void sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::N_K_M>(
 }
 
 template <>
-void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
+void sgemm_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const float *a,
     const float *b,
     const float *constant_data,
@@ -190,7 +190,6 @@ void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
                 const int64_t n_l1    = std::min(n - j2, n_block1);
                 const int64_t k_l1    = std::min(k - p2, k_block1);
 
-                // TODO: distribute FMA chains evenly
                 int64_t n_block0 = k_n_block0;
 
                 const float *a_ptr     = a + i2 * lda + p2 * CEIL4(m_l1);
@@ -207,7 +206,7 @@ void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
                         const int64_t m_l0 = std::min(m_l1 - i, k_m_block0);
                         const int64_t n_l0 = std::min(n_l1 - j, n_block0);
 
-                        n4cx_sgemm_m4nx_kernel_func_table[n_l0 - 1][init_id][fuse_id](
+                        sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * CEIL4(k_l1),
                             b_ptr + j * CVL(),
                             const_ptr + i,
@@ -228,7 +227,7 @@ void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
 }
 
 template <>
-void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::N_M_K>(
+void sgemm_n4cx_fp32<N4cxSgemmBlockingOrd::N_M_K>(
     const float *a,
     const float *b,
     const float *constant_data,
@@ -276,7 +275,7 @@ void sgemm_kernel_n4cx_fp32<N4cxSgemmBlockingOrd::N_M_K>(
                         const int64_t m_l0 = std::min(m_l1 - i, k_m_block0);
                         const int64_t n_l0 = std::min(n_l1 - j, n_block0);
 
-                        n4cx_sgemm_m4nx_kernel_func_table[n_l0 - 1][init_id][fuse_id](
+                        sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * CEIL4(k_l1),
                             b_ptr + j * CVL(),
                             const_ptr,

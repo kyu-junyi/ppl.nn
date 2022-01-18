@@ -1074,7 +1074,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
                                 for (int64_t block = 0; block < wg_blocks; block += 10) {
                                     const int64_t m_l0 = std::min((int64_t)2 * OCVL(), out_channel_section_align_2ocblk - oc);
                                     const int64_t n_l0 = std::min((int64_t)10, wg_blocks - block);
-                                    n4cx_sgemm_m8nx_kernel_func_table[n_l0 - 1][init_id][fini_id](
+                                    sgemm_n4cx_kernel_m8nx_fp32_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL4(in_channel_section),
                                         pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICVL(),
                                         nullptr, /* constant:bias */
@@ -1094,7 +1094,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
                                 for (int64_t block = 0; block < wg_blocks; block += 12) {
                                     const int64_t m_l0 = std::min((int64_t)OCVL(), out_channel_section - oc);
                                     const int64_t n_l0 = std::min((int64_t)12, wg_blocks - block);
-                                    n4cx_sgemm_m4nx_kernel_func_table[n_l0 - 1][init_id][fini_id](
+                                    sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL4(in_channel_section),
                                         pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICVL(),
                                         nullptr, /* constant:bias */

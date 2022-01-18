@@ -23,7 +23,7 @@
 #endif
 
 template<>
-void ppl_arm_server_kernel_fp32_conv_n4cx_sgemm_kernel_m4nx_func<N_BLOCK0(), INIT_T(), FUSE_T()> (
+void sgemm_n4cx_kernel_m4nx_fp32_func<N_BLOCK0(), INIT_T(), FUSE_T()> (
     const float* A,
     const float* B,
     const float* constant,

@@ -638,7 +638,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
                                     const int64_t m_l0 = std::min((int64_t)OCVL(), out_channel_section - oc);
                                     const int64_t n_l0 = std::min((int64_t)N4CX_SGEMM_N_BLOCK0(), wg_blocks - block);
 
-                                    n4cx_sgemm_m4nx_kernel_func_table[n_l0 - 1][init_id][fini_id](
+                                    sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL4(in_channel_section),
                                         pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICVL(),
                                         nullptr, /* constant:bias */
@@ -863,7 +863,7 @@ void conv_wgb2f3_convert_filter_fp32(
             const float *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             float *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
 
-            sgemm_kernel_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
+            sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
                 aux_filter_base,
                 converted_filter_base,
                 ic_g_pck,

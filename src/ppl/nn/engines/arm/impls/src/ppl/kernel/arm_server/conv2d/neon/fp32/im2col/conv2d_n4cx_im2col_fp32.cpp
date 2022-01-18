@@ -209,7 +209,7 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                         const int64_t m_l0 = std::min(m_l1_align8 - i, k_m8_block0);
                         const int64_t n_l0 = std::min(n_l1 - j, n10_block0);
 
-                        n4cx_sgemm_m8nx_kernel_func_table[n_l0 - 1][init_id][fuse_id](
+                        sgemm_n4cx_kernel_m8nx_fp32_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
                             b_ptr + j * CBLK(),
                             const_ptr + i,
@@ -231,7 +231,7 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                             const int64_t m_l0 = std::min(CEIL4(m_l1) - i, k_m4_block0);
                             const int64_t n_l0 = std::min(n_l1 - j, n12_block0);
 
-                            n4cx_sgemm_m4nx_kernel_func_table[n_l0 - 1][init_id][fuse_id](
+                            sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fuse_id](
                                 a_ptr + i * lda,
                                 b_ptr + j * CBLK(),
                                 const_ptr + i,
