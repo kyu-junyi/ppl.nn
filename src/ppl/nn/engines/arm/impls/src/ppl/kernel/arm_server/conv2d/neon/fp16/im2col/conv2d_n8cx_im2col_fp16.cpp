@@ -296,15 +296,8 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
         ++gl3;
     }
     sched_param_.group_block3 = gl3;
-
-    sched_param_.hw_block2         = kp.hgemm_n_block1 * 4;
-    const int64_t num_hw_l2_blocks = DIV_CEIL(hw_out, sched_param_.hw_block2);
-    sched_param_.oc_block2         = oc_g_pck;
-    if (num_hw_l2_blocks * gl3 * bl3 < num_threads * 0.8) {
-        sched_param_.oc_block2 = CEIL(std::max((int64_t)1, oc_g_pck / DIV_CEIL(num_threads, num_hw_l2_blocks * gl3 * bl3)), kp.hgemm_m_block0);
-    }
-    // sched_param_.hw_block2 = kp.hgemm_n_block1;
-    // sched_param_.oc_block2 = kp.hgemm_m_block1;
+    sched_param_.hw_block2 = kp.hgemm_n_block1;
+    sched_param_.oc_block2 = kp.hgemm_m_block1;
 
     sched_param_.use_im2col = (cp.kernel_h != 1 || cp.kernel_w != 1 ||
                                cp.pad_h != 0 || cp.pad_w != 0 ||
