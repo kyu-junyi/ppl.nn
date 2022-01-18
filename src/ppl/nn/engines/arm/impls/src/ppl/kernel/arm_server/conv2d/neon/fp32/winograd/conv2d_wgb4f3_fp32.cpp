@@ -1635,6 +1635,8 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
     const int64_t num_output = param_.num_output;
     const int64_t channels   = param_.channels;
 
+    const int64_t ic_g_pck = CEIL8(channels / param_.group);
+    
     if (src_shape.GetDimCount() < 4) {
         return ppl::common::RC_INVALID_VALUE;
     }
@@ -1670,9 +1672,9 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
         dst[idx] = float(rand()) / float((RAND_MAX)) - 0.5;
     }
 
-    std::vector<int64_t> candidate_oc_blk_list   = {40};
-    std::vector<int64_t> candidate_ic_blk_list   = {128};
-    std::vector<int64_t> candidate_tile_blk_list = {108};
+    std::vector<int64_t> candidate_oc_blk_list   = {128};
+    std::vector<int64_t> candidate_ic_blk_list   = {256};
+    std::vector<int64_t> candidate_tile_blk_list = {68};
 
     if (tune_blocksize) {
         candidate_oc_blk_list   = {64, 128, 192, 256, 384, 512, 640, 768, 896, 1024};

@@ -134,65 +134,20 @@ void ppl_arm_server_kernel_fp32_fc_convert_weights(
     const int64_t num_in,
     const int64_t num_out) 
 {
-    const int64_t num_out_align = num_out & (~3);
-    const int64_t num_in_align  = num_in & (~3);
+    const int64_t num_out_align = num_out & (~(16 * VBLOCK()-1));
+    const int64_t num_in_align  = num_in & (~(VBLOCK()-1));
 
-    for (int64_t i = 0; i < num_out_align; i += VBLOCK()) {
-        for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
-            const float *weights_ptr = weights + i * num_in + j;
-            float32x4_t v[4];
-            v[0] = vld1q_f32(weights_ptr + 0 * num_in);
-            v[1] = vld1q_f32(weights_ptr + 1 * num_in);
-            v[2] = vld1q_f32(weights_ptr + 2 * num_in);
-            v[3] = vld1q_f32(weights_ptr + 3 * num_in);
-
-            V_TRANSPOSE_FP32_4x4(v);
-            
-            float *cvt_weights_ptr = cvt_weights + i * num_in + j * VBLOCK();
-            vst1q_f32(cvt_weights_ptr + 0 * VBLOCK(), v[0]);
-            vst1q_f32(cvt_weights_ptr + 1 * VBLOCK(), v[1]);
-            vst1q_f32(cvt_weights_ptr + 2 * VBLOCK(), v[2]);
-            vst1q_f32(cvt_weights_ptr + 3 * VBLOCK(), v[3]);
+    const int64_t num_out_tail  = num_out - num_out_align;
+    const int64_t num_out_tail_blocks  = DIV_CEIL(num_out_tail, VBLOCK());
+    for (int64_t ic = 0; ic < num_in; ic++) {
+        for (int64_t oc = 0; oc < num_out_align; oc++) {
+            cvt_weights[ (oc/(16*VBLOCK())*num_in)*(16*VBLOCK()) + ic*(16*VBLOCK()) + oc%(16*VBLOCK()) ] = weights[oc*num_in+ic];
         }
-        for (int64_t j = num_in_align; j < num_in; j++) {
-            const float *weights_ptr = weights + i * num_in + j;
-            float *cvt_weights_ptr = cvt_weights + i * num_in + j * VBLOCK();
-            cvt_weights_ptr[0] = weights_ptr[0 * num_in];
-            cvt_weights_ptr[1] = weights_ptr[1 * num_in]; 
-            cvt_weights_ptr[2] = weights_ptr[2 * num_in];
-            cvt_weights_ptr[3] = weights_ptr[3 * num_in];
+        for (int64_t oc = num_out_align; oc < num_out; oc++) {
+            cvt_weights[ num_out_align*num_in + ic*(num_out_tail_blocks*VBLOCK()) + oc-num_out_align ] = weights[oc*num_in+ic];
         }
-    }
-    if (num_out_align < num_out) {
-        const int64_t num_out_tail = num_out - num_out_align;
-        for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
-            const float *weights_ptr = weights + num_out_align * num_in + j;
-            float32x4_t v[4];
-            for (int64_t ii = 0; ii < num_out_tail; ii++) {
-                v[ii] = vld1q_f32(weights_ptr + ii * num_in);
-            }
-            for (int64_t ii = num_out_tail; ii < VBLOCK(); ii++) {
-                v[ii] = vdupq_n_f32(0.0f);
-            }
-
-            V_TRANSPOSE_FP32_4x4(v);
-            
-            float *cvt_weights_ptr = cvt_weights + num_out_align * num_in + j * VBLOCK();
-            vst1q_f32(cvt_weights_ptr + 0 * VBLOCK(), v[0]);
-            vst1q_f32(cvt_weights_ptr + 1 * VBLOCK(), v[1]);
-            vst1q_f32(cvt_weights_ptr + 2 * VBLOCK(), v[2]);
-            vst1q_f32(cvt_weights_ptr + 3 * VBLOCK(), v[3]);
-        }
-        for (int64_t j = num_in_align; j < num_in; j++) {
-            const float *weights_ptr = weights + num_out_align * num_in + j;
-            float *cvt_weights_ptr = cvt_weights + num_out_align * num_in + j * VBLOCK();
-
-            for (int64_t ii = 0; ii < num_out_tail; ii++) {
-                cvt_weights_ptr[ii] = weights_ptr[ii * num_in];
-            }
-            for (int64_t ii = num_out_tail; ii < VBLOCK(); ii++) {
-                cvt_weights_ptr[ii] = 0.0f;
-            }
+        for (int64_t oc = num_out; oc < CEIL4(num_out); oc++) {
+            cvt_weights[ num_out_align*num_in + ic*(num_out_tail_blocks*VBLOCK()) + oc-num_out_align ] = 0.0f;
         }
     }
 }
@@ -206,209 +161,245 @@ static void ppl_arm_server_kernel_fp32_fc_single_batch(
     const int64_t num_in,
     const int64_t num_out)
 {
-    const int64_t num_out_align64 = (num_out & (~(int64_t)63));
-    const int64_t num_out_tail64 = num_out - num_out_align64;
+    const int64_t num_out_align_16block = num_out & (~(int64_t)(16 * VBLOCK()-1));
+    const int64_t num_out_tail_16block = num_out - num_out_align_16block;
 
-    const int64_t num_in_align4 = (num_in & (~3));
+    const int64_t num_in_align = num_in & (~(VBLOCK()-1));
 
 PRAGMA_OMP_PARALLEL()
 {
     PRAGMA_OMP_FOR_NOWAIT()
-    for (int64_t j_l1 = 0; j_l1 < num_out_align64; j_l1 += 64) {
+    for (int64_t j_l1 = 0; j_l1 < num_out_align_16block; j_l1 += 16 * VBLOCK()) {
         float32x4_t vc[16];
         const float *bias_base = cvt_bias + j_l1;
-        vc[0]  = vld1q_f32(bias_base + 0 );
-        vc[1]  = vld1q_f32(bias_base + 4 );
-        vc[2]  = vld1q_f32(bias_base + 8 );
-        vc[3]  = vld1q_f32(bias_base + 12);
-        vc[4]  = vld1q_f32(bias_base + 16);
-        vc[5]  = vld1q_f32(bias_base + 20);
-        vc[6]  = vld1q_f32(bias_base + 24);
-        vc[7]  = vld1q_f32(bias_base + 28);
-        vc[8]  = vld1q_f32(bias_base + 32);
-        vc[9]  = vld1q_f32(bias_base + 36);
-        vc[10] = vld1q_f32(bias_base + 40);
-        vc[11] = vld1q_f32(bias_base + 44);
-        vc[12] = vld1q_f32(bias_base + 48);
-        vc[13] = vld1q_f32(bias_base + 52);
-        vc[14] = vld1q_f32(bias_base + 56);
-        vc[15] = vld1q_f32(bias_base + 60);
-        for (int64_t p_l1 = 0; p_l1 < num_in_align4; p_l1 += 4) {
+        vc[0]  = vld1q_f32(bias_base + 0  * VBLOCK());
+        vc[1]  = vld1q_f32(bias_base + 1  * VBLOCK());
+        vc[2]  = vld1q_f32(bias_base + 2  * VBLOCK());
+        vc[3]  = vld1q_f32(bias_base + 3  * VBLOCK());
+        vc[4]  = vld1q_f32(bias_base + 4  * VBLOCK());
+        vc[5]  = vld1q_f32(bias_base + 5  * VBLOCK());
+        vc[6]  = vld1q_f32(bias_base + 6  * VBLOCK());
+        vc[7]  = vld1q_f32(bias_base + 7  * VBLOCK());
+        vc[8]  = vld1q_f32(bias_base + 8  * VBLOCK());
+        vc[9]  = vld1q_f32(bias_base + 9  * VBLOCK());
+        vc[10] = vld1q_f32(bias_base + 10 * VBLOCK());
+        vc[11] = vld1q_f32(bias_base + 11 * VBLOCK());
+        vc[12] = vld1q_f32(bias_base + 12 * VBLOCK());
+        vc[13] = vld1q_f32(bias_base + 13 * VBLOCK());
+        vc[14] = vld1q_f32(bias_base + 14 * VBLOCK());
+        vc[15] = vld1q_f32(bias_base + 15 * VBLOCK());
+        for (int64_t p_l1 = 0; p_l1 < num_in_align; p_l1 += 4) {
             float32x4_t va = vld1q_f32(input + p_l1);
-            float32x4_t vb;
-            const float *weights_base = cvt_weights + j_l1 * num_in + p_l1 * 4;
-            vb     = vld1q_f32(weights_base + 0  * num_in);
-            vc[0]  = vfmaq_laneq_f32(vc[0],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 4  * num_in);
-            vc[1]  = vfmaq_laneq_f32(vc[1],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 8  * num_in);
-            vc[2]  = vfmaq_laneq_f32(vc[2],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 12 * num_in);
-            vc[3]  = vfmaq_laneq_f32(vc[3],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 16 * num_in);
-            vc[4]  = vfmaq_laneq_f32(vc[4],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 20 * num_in);
-            vc[5]  = vfmaq_laneq_f32(vc[5],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 24 * num_in);
-            vc[6]  = vfmaq_laneq_f32(vc[6],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 28 * num_in);
-            vc[7]  = vfmaq_laneq_f32(vc[7],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 32 * num_in);
-            vc[8]  = vfmaq_laneq_f32(vc[8],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 36 * num_in);
-            vc[9]  = vfmaq_laneq_f32(vc[9],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 40 * num_in);
-            vc[10] = vfmaq_laneq_f32(vc[10], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 44 * num_in);
-            vc[11] = vfmaq_laneq_f32(vc[11], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 48 * num_in);
-            vc[12] = vfmaq_laneq_f32(vc[12], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 52 * num_in);
-            vc[13] = vfmaq_laneq_f32(vc[13], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 56 * num_in);
-            vc[14] = vfmaq_laneq_f32(vc[14], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 60 * num_in);
-            vc[15] = vfmaq_laneq_f32(vc[15], vb, va, 0);
+            float32x4_t vb0[4];
+            float32x4_t vb1[4];
+            const float *weights_base = cvt_weights + j_l1 * num_in + p_l1 * 16 * VBLOCK();
+            vb0[0] = vld1q_f32(weights_base + 0  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 1  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 2  * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 3  * VBLOCK());
 
-            weights_base += 4;
-            vb     = vld1q_f32(weights_base + 0  * num_in);
-            vc[0]  = vfmaq_laneq_f32(vc[0],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 4  * num_in);
-            vc[1]  = vfmaq_laneq_f32(vc[1],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 8  * num_in);
-            vc[2]  = vfmaq_laneq_f32(vc[2],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 12 * num_in);
-            vc[3]  = vfmaq_laneq_f32(vc[3],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 16 * num_in);
-            vc[4]  = vfmaq_laneq_f32(vc[4],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 20 * num_in);
-            vc[5]  = vfmaq_laneq_f32(vc[5],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 24 * num_in);
-            vc[6]  = vfmaq_laneq_f32(vc[6],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 28 * num_in);
-            vc[7]  = vfmaq_laneq_f32(vc[7],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 32 * num_in);
-            vc[8]  = vfmaq_laneq_f32(vc[8],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 36 * num_in);
-            vc[9]  = vfmaq_laneq_f32(vc[9],  vb,  va, 1);
-            vb     = vld1q_f32(weights_base + 40 * num_in);
-            vc[10] = vfmaq_laneq_f32(vc[10], vb, va, 1);
-            vb     = vld1q_f32(weights_base + 44 * num_in);
-            vc[11] = vfmaq_laneq_f32(vc[11], vb, va, 1);
-            vb     = vld1q_f32(weights_base + 48 * num_in);
-            vc[12] = vfmaq_laneq_f32(vc[12], vb, va, 1);
-            vb     = vld1q_f32(weights_base + 52 * num_in);
-            vc[13] = vfmaq_laneq_f32(vc[13], vb, va, 1);
-            vb     = vld1q_f32(weights_base + 56 * num_in);
-            vc[14] = vfmaq_laneq_f32(vc[14], vb, va, 1);
-            vb     = vld1q_f32(weights_base + 60 * num_in);
-            vc[15] = vfmaq_laneq_f32(vc[15], vb, va, 1);
+            vb1[0] = vld1q_f32(weights_base + 4  * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 5  * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 6  * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 7  * VBLOCK());
 
-            weights_base += 4;
-            vb     = vld1q_f32(weights_base + 0  * num_in);
-            vc[0]  = vfmaq_laneq_f32(vc[0],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 4  * num_in);
-            vc[1]  = vfmaq_laneq_f32(vc[1],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 8  * num_in);
-            vc[2]  = vfmaq_laneq_f32(vc[2],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 12 * num_in);
-            vc[3]  = vfmaq_laneq_f32(vc[3],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 16 * num_in);
-            vc[4]  = vfmaq_laneq_f32(vc[4],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 20 * num_in);
-            vc[5]  = vfmaq_laneq_f32(vc[5],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 24 * num_in);
-            vc[6]  = vfmaq_laneq_f32(vc[6],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 28 * num_in);
-            vc[7]  = vfmaq_laneq_f32(vc[7],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 32 * num_in);
-            vc[8]  = vfmaq_laneq_f32(vc[8],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 36 * num_in);
-            vc[9]  = vfmaq_laneq_f32(vc[9],  vb,  va, 2);
-            vb     = vld1q_f32(weights_base + 40 * num_in);
-            vc[10] = vfmaq_laneq_f32(vc[10], vb, va, 2);
-            vb     = vld1q_f32(weights_base + 44 * num_in);
-            vc[11] = vfmaq_laneq_f32(vc[11], vb, va, 2);
-            vb     = vld1q_f32(weights_base + 48 * num_in);
-            vc[12] = vfmaq_laneq_f32(vc[12], vb, va, 2);
-            vb     = vld1q_f32(weights_base + 52 * num_in);
-            vc[13] = vfmaq_laneq_f32(vc[13], vb, va, 2);
-            vb     = vld1q_f32(weights_base + 56 * num_in);
-            vc[14] = vfmaq_laneq_f32(vc[14], vb, va, 2);
-            vb     = vld1q_f32(weights_base + 60 * num_in);
-            vc[15] = vfmaq_laneq_f32(vc[15], vb, va, 2);
+            vc[0]  = vfmaq_laneq_f32(vc[0],  vb0[0], va, 0);
+            vc[1]  = vfmaq_laneq_f32(vc[1],  vb0[1], va, 0);
+            vc[2]  = vfmaq_laneq_f32(vc[2],  vb0[2], va, 0);
+            vc[3]  = vfmaq_laneq_f32(vc[3],  vb0[3], va, 0);
 
-            weights_base += 4;
-            vb     = vld1q_f32(weights_base + 0  * num_in);
-            vc[0]  = vfmaq_laneq_f32(vc[0],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 4  * num_in);
-            vc[1]  = vfmaq_laneq_f32(vc[1],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 8  * num_in);
-            vc[2]  = vfmaq_laneq_f32(vc[2],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 12 * num_in);
-            vc[3]  = vfmaq_laneq_f32(vc[3],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 16 * num_in);
-            vc[4]  = vfmaq_laneq_f32(vc[4],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 20 * num_in);
-            vc[5]  = vfmaq_laneq_f32(vc[5],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 24 * num_in);
-            vc[6]  = vfmaq_laneq_f32(vc[6],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 28 * num_in);
-            vc[7]  = vfmaq_laneq_f32(vc[7],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 32 * num_in);
-            vc[8]  = vfmaq_laneq_f32(vc[8],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 36 * num_in);
-            vc[9]  = vfmaq_laneq_f32(vc[9],  vb,  va, 3);
-            vb     = vld1q_f32(weights_base + 40 * num_in);
-            vc[10] = vfmaq_laneq_f32(vc[10], vb, va, 3);
-            vb     = vld1q_f32(weights_base + 44 * num_in);
-            vc[11] = vfmaq_laneq_f32(vc[11], vb, va, 3);
-            vb     = vld1q_f32(weights_base + 48 * num_in);
-            vc[12] = vfmaq_laneq_f32(vc[12], vb, va, 3);
-            vb     = vld1q_f32(weights_base + 52 * num_in);
-            vc[13] = vfmaq_laneq_f32(vc[13], vb, va, 3);
-            vb     = vld1q_f32(weights_base + 56 * num_in);
-            vc[14] = vfmaq_laneq_f32(vc[14], vb, va, 3);
-            vb     = vld1q_f32(weights_base + 60 * num_in);
-            vc[15] = vfmaq_laneq_f32(vc[15], vb, va, 3);
+            vb0[0] = vld1q_f32(weights_base + 8  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 9  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 10 * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 11 * VBLOCK());
+
+            vc[4]  = vfmaq_laneq_f32(vc[4],  vb1[0], va, 0);
+            vc[5]  = vfmaq_laneq_f32(vc[5],  vb1[1], va, 0);
+            vc[6]  = vfmaq_laneq_f32(vc[6],  vb1[2], va, 0);
+            vc[7]  = vfmaq_laneq_f32(vc[7],  vb1[3], va, 0);
+
+            vb1[0] = vld1q_f32(weights_base + 12 * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 13 * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 14 * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 15 * VBLOCK());
+
+            vc[8]  = vfmaq_laneq_f32(vc[8],  vb0[0], va, 0);
+            vc[9]  = vfmaq_laneq_f32(vc[9],  vb0[1], va, 0);
+            vc[10] = vfmaq_laneq_f32(vc[10], vb0[2], va, 0);
+            vc[11] = vfmaq_laneq_f32(vc[11], vb0[3], va, 0);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f32(weights_base + 0  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 1  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 2  * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 3  * VBLOCK());
+
+            vc[12] = vfmaq_laneq_f32(vc[12], vb1[0], va, 0);
+            vc[13] = vfmaq_laneq_f32(vc[13], vb1[1], va, 0);
+            vc[14] = vfmaq_laneq_f32(vc[14], vb1[2], va, 0);
+            vc[15] = vfmaq_laneq_f32(vc[15], vb1[3], va, 0);
+
+            vb1[0] = vld1q_f32(weights_base + 4  * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 5  * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 6  * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 7  * VBLOCK());
+
+            vc[0]  = vfmaq_laneq_f32(vc[0],  vb0[0], va, 1);
+            vc[1]  = vfmaq_laneq_f32(vc[1],  vb0[1], va, 1);
+            vc[2]  = vfmaq_laneq_f32(vc[2],  vb0[2], va, 1);
+            vc[3]  = vfmaq_laneq_f32(vc[3],  vb0[3], va, 1);
+
+            vb0[0] = vld1q_f32(weights_base + 8  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 9  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 10 * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 11 * VBLOCK());
+
+            vc[4]  = vfmaq_laneq_f32(vc[4],  vb1[0], va, 1);
+            vc[5]  = vfmaq_laneq_f32(vc[5],  vb1[1], va, 1);
+            vc[6]  = vfmaq_laneq_f32(vc[6],  vb1[2], va, 1);
+            vc[7]  = vfmaq_laneq_f32(vc[7],  vb1[3], va, 1);
+
+            vb1[0] = vld1q_f32(weights_base + 12 * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 13 * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 14 * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 15 * VBLOCK());
+
+            vc[8]  = vfmaq_laneq_f32(vc[8],  vb0[0], va, 1);
+            vc[9]  = vfmaq_laneq_f32(vc[9],  vb0[1], va, 1);
+            vc[10] = vfmaq_laneq_f32(vc[10], vb0[2], va, 1);
+            vc[11] = vfmaq_laneq_f32(vc[11], vb0[3], va, 1);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f32(weights_base + 0  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 1  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 2  * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 3  * VBLOCK());
+
+            vc[12] = vfmaq_laneq_f32(vc[12], vb1[0], va, 1);
+            vc[13] = vfmaq_laneq_f32(vc[13], vb1[1], va, 1);
+            vc[14] = vfmaq_laneq_f32(vc[14], vb1[2], va, 1);
+            vc[15] = vfmaq_laneq_f32(vc[15], vb1[3], va, 1);
+
+            vb1[0] = vld1q_f32(weights_base + 4  * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 5  * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 6  * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 7  * VBLOCK());
+
+            vc[0]  = vfmaq_laneq_f32(vc[0],  vb0[0], va, 2);
+            vc[1]  = vfmaq_laneq_f32(vc[1],  vb0[1], va, 2);
+            vc[2]  = vfmaq_laneq_f32(vc[2],  vb0[2], va, 2);
+            vc[3]  = vfmaq_laneq_f32(vc[3],  vb0[3], va, 2);
+
+            vb0[0] = vld1q_f32(weights_base + 8  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 9  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 10 * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 11 * VBLOCK());
+
+            vc[4]  = vfmaq_laneq_f32(vc[4],  vb1[0], va, 2);
+            vc[5]  = vfmaq_laneq_f32(vc[5],  vb1[1], va, 2);
+            vc[6]  = vfmaq_laneq_f32(vc[6],  vb1[2], va, 2);
+            vc[7]  = vfmaq_laneq_f32(vc[7],  vb1[3], va, 2);
+
+            vb1[0] = vld1q_f32(weights_base + 12 * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 13 * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 14 * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 15 * VBLOCK());
+
+            vc[8]  = vfmaq_laneq_f32(vc[8],  vb0[0], va, 2);
+            vc[9]  = vfmaq_laneq_f32(vc[9],  vb0[1], va, 2);
+            vc[10] = vfmaq_laneq_f32(vc[10], vb0[2], va, 2);
+            vc[11] = vfmaq_laneq_f32(vc[11], vb0[3], va, 2);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f32(weights_base + 0  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 1  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 2  * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 3  * VBLOCK());
+
+            vc[12] = vfmaq_laneq_f32(vc[12], vb1[0], va, 2);
+            vc[13] = vfmaq_laneq_f32(vc[13], vb1[1], va, 2);
+            vc[14] = vfmaq_laneq_f32(vc[14], vb1[2], va, 2);
+            vc[15] = vfmaq_laneq_f32(vc[15], vb1[3], va, 2);
+
+            vb1[0] = vld1q_f32(weights_base + 4  * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 5  * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 6  * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 7  * VBLOCK());
+
+            vc[0]  = vfmaq_laneq_f32(vc[0],  vb0[0], va, 3);
+            vc[1]  = vfmaq_laneq_f32(vc[1],  vb0[1], va, 3);
+            vc[2]  = vfmaq_laneq_f32(vc[2],  vb0[2], va, 3);
+            vc[3]  = vfmaq_laneq_f32(vc[3],  vb0[3], va, 3);
+
+            vb0[0] = vld1q_f32(weights_base + 8  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 9  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 10 * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 11 * VBLOCK());
+
+            vc[4]  = vfmaq_laneq_f32(vc[4],  vb1[0], va, 3);
+            vc[5]  = vfmaq_laneq_f32(vc[5],  vb1[1], va, 3);
+            vc[6]  = vfmaq_laneq_f32(vc[6],  vb1[2], va, 3);
+            vc[7]  = vfmaq_laneq_f32(vc[7],  vb1[3], va, 3);
+
+            vb1[0] = vld1q_f32(weights_base + 12 * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 13 * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 14 * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 15 * VBLOCK());
+
+            vc[8]  = vfmaq_laneq_f32(vc[8],  vb0[0], va, 3);
+            vc[9]  = vfmaq_laneq_f32(vc[9],  vb0[1], va, 3);
+            vc[10] = vfmaq_laneq_f32(vc[10], vb0[2], va, 3);
+            vc[11] = vfmaq_laneq_f32(vc[11], vb0[3], va, 3);
+
+            vc[12] = vfmaq_laneq_f32(vc[12], vb1[0], va, 3);
+            vc[13] = vfmaq_laneq_f32(vc[13], vb1[1], va, 3);
+            vc[14] = vfmaq_laneq_f32(vc[14], vb1[2], va, 3);
+            vc[15] = vfmaq_laneq_f32(vc[15], vb1[3], va, 3);
         }
-        for (int64_t p_l1 = num_in_align4; p_l1 < num_in; p_l1++) {
+        for (int64_t p_l1 = num_in_align; p_l1 < num_in; p_l1++) {
             float32x4_t va = vld1q_lane_f32(input + p_l1, va, 0);
-            vld1q_f32(input + p_l1);
-            float32x4_t vb;
-            const float *weights_base = cvt_weights + j_l1 * num_in + p_l1 * 4;
-            vb     = vld1q_f32(weights_base + 0  * num_in);
-            vc[0]  = vfmaq_laneq_f32(vc[0],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 4  * num_in);
-            vc[1]  = vfmaq_laneq_f32(vc[1],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 8  * num_in);
-            vc[2]  = vfmaq_laneq_f32(vc[2],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 12 * num_in);
-            vc[3]  = vfmaq_laneq_f32(vc[3],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 16 * num_in);
-            vc[4]  = vfmaq_laneq_f32(vc[4],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 20 * num_in);
-            vc[5]  = vfmaq_laneq_f32(vc[5],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 24 * num_in);
-            vc[6]  = vfmaq_laneq_f32(vc[6],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 28 * num_in);
-            vc[7]  = vfmaq_laneq_f32(vc[7],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 32 * num_in);
-            vc[8]  = vfmaq_laneq_f32(vc[8],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 36 * num_in);
-            vc[9]  = vfmaq_laneq_f32(vc[9],  vb,  va, 0);
-            vb     = vld1q_f32(weights_base + 40 * num_in);
-            vc[10] = vfmaq_laneq_f32(vc[10], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 44 * num_in);
-            vc[11] = vfmaq_laneq_f32(vc[11], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 48 * num_in);
-            vc[12] = vfmaq_laneq_f32(vc[12], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 52 * num_in);
-            vc[13] = vfmaq_laneq_f32(vc[13], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 56 * num_in);
-            vc[14] = vfmaq_laneq_f32(vc[14], vb, va, 0);
-            vb     = vld1q_f32(weights_base + 60 * num_in);
-            vc[15] = vfmaq_laneq_f32(vc[15], vb, va, 0);
+            float32x4_t vb0[4];
+            float32x4_t vb1[4];
+            const float *weights_base = cvt_weights + j_l1 * num_in + p_l1 * 16 * VBLOCK();
+            vb0[0] = vld1q_f32(weights_base + 0  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 1  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 2  * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 3  * VBLOCK());
+
+            vb1[0] = vld1q_f32(weights_base + 4  * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 5  * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 6  * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 7  * VBLOCK());
+
+            vc[0]  = vfmaq_laneq_f32(vc[0],  vb0[0], va, 0);
+            vc[1]  = vfmaq_laneq_f32(vc[1],  vb0[1], va, 0);
+            vc[2]  = vfmaq_laneq_f32(vc[2],  vb0[2], va, 0);
+            vc[3]  = vfmaq_laneq_f32(vc[3],  vb0[3], va, 0);
+
+            vb0[0] = vld1q_f32(weights_base + 8  * VBLOCK());
+            vb0[1] = vld1q_f32(weights_base + 9  * VBLOCK());
+            vb0[2] = vld1q_f32(weights_base + 10 * VBLOCK());
+            vb0[3] = vld1q_f32(weights_base + 11 * VBLOCK());
+
+            vc[4]  = vfmaq_laneq_f32(vc[4],  vb1[0], va, 0);
+            vc[5]  = vfmaq_laneq_f32(vc[5],  vb1[1], va, 0);
+            vc[6]  = vfmaq_laneq_f32(vc[6],  vb1[2], va, 0);
+            vc[7]  = vfmaq_laneq_f32(vc[7],  vb1[3], va, 0);
+
+            vb1[0] = vld1q_f32(weights_base + 12 * VBLOCK());
+            vb1[1] = vld1q_f32(weights_base + 13 * VBLOCK());
+            vb1[2] = vld1q_f32(weights_base + 14 * VBLOCK());
+            vb1[3] = vld1q_f32(weights_base + 15 * VBLOCK());
+
+            vc[8]  = vfmaq_laneq_f32(vc[8],  vb0[0], va, 0);
+            vc[9]  = vfmaq_laneq_f32(vc[9],  vb0[1], va, 0);
+            vc[10] = vfmaq_laneq_f32(vc[10], vb0[2], va, 0);
+            vc[11] = vfmaq_laneq_f32(vc[11], vb0[3], va, 0);
+
+            vc[12] = vfmaq_laneq_f32(vc[12], vb1[0], va, 0);
+            vc[13] = vfmaq_laneq_f32(vc[13], vb1[1], va, 0);
+            vc[14] = vfmaq_laneq_f32(vc[14], vb1[2], va, 0);
+            vc[15] = vfmaq_laneq_f32(vc[15], vb1[3], va, 0);
         }
         float * output_base = output + j_l1;
         vst1q_f32(output_base + 0 , vc[0] );
@@ -429,61 +420,62 @@ PRAGMA_OMP_PARALLEL()
         vst1q_f32(output_base + 60, vc[15]);
     }
     PRAGMA_OMP_SINGLE()
-    if (num_out_tail64 > 0) {
-        const int64_t num_out_processed = num_out_align64;
-        const int64_t num_out_align4 = num_out & (~3);
+    if (num_out_tail_16block > 0) {
+        const int64_t num_out_processed = num_out_align_16block;
+        const int64_t num_out_align = num_out & (~(VBLOCK()-1));
         float32x4_t vc[16];
-        const int64_t num_output_blocks = DIV_CEIL((num_out - num_out_processed), 4);
+        const int64_t num_output_blocks = DIV_CEIL((num_out - num_out_processed), VBLOCK());
         const float * bias_base = cvt_bias + num_out_processed;
         for (int64_t id = 0; id < num_output_blocks; id++) {
-            vc[id] = vld1q_f32(bias_base + id * 4);
+            vc[id] = vld1q_f32(bias_base + id * VBLOCK());
         }
-        for (int64_t p_l1 = 0; p_l1 < num_in_align4; p_l1 += 4) {
+        for (int64_t p_l1 = 0; p_l1 < num_in_align; p_l1 += VBLOCK()) {
             float32x4_t va = vld1q_f32(input + p_l1);
             float32x4_t vb;
-            const float *weights_base = cvt_weights + num_out_processed * num_in + p_l1 * 4;
+            const float *weights_base = cvt_weights + num_out_processed * num_in + p_l1 * num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
-                vb     = vld1q_f32(weights_base + id * 4 * num_in);
+                vb     = vld1q_f32(weights_base + id * VBLOCK());
                 vc[id]  = vfmaq_laneq_f32(vc[id],  vb,  va, 0);
             }
-            weights_base += 4;
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
-                vb     = vld1q_f32(weights_base + id * 4 * num_in);
+                vb     = vld1q_f32(weights_base + id * VBLOCK());
                 vc[id]  = vfmaq_laneq_f32(vc[id],  vb,  va, 1);
             }
-            weights_base += 4;
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
-                vb     = vld1q_f32(weights_base + id * 4 * num_in);
+                vb     = vld1q_f32(weights_base + id * VBLOCK());
                 vc[id]  = vfmaq_laneq_f32(vc[id],  vb,  va, 2);
             }
-            weights_base += 4;
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
-                vb     = vld1q_f32(weights_base + id * 4 * num_in);
+                vb     = vld1q_f32(weights_base + id * VBLOCK());
                 vc[id]  = vfmaq_laneq_f32(vc[id],  vb,  va, 3);
             }
         }
-        for (int64_t p_l1 = num_in_align4; p_l1 < num_in; p_l1++) {
+        for (int64_t p_l1 = num_in_align; p_l1 < num_in; p_l1++) {
             float32x4_t va = vld1q_lane_f32(input + p_l1, va, 0);
             float32x4_t vb;
-            const float *weights_base = cvt_weights + num_out_processed * num_in + p_l1;
+            const float *weights_base = cvt_weights + num_out_processed * num_in + p_l1 * num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
-                vb     = vld1q_f32(weights_base + id * 4 * num_in);
+                vb     = vld1q_f32(weights_base + id * VBLOCK());
                 vc[id]  = vfmaq_laneq_f32(vc[id],  vb,  va, 0);
             }
         }
         float * output_base = output + num_out_processed;
-        const int64_t num_output_inner_blocks = (num_out_align4 - num_out_processed) / 4;
+        const int64_t num_output_inner_blocks = (num_out_align - num_out_processed) / 4;
         for (int64_t id = 0; id < num_output_inner_blocks; id++) {
             vst1q_f32(output_base + id * 4, vc[id]);
         }
-        const int64_t num_output_tail4 = num_out - num_out_align4;
-        while (num_output_tail4 > 0) {
-            vst1q_lane_f32(output + num_out_align4, vc[num_output_blocks-1], 0);
-            if (num_output_tail4 == 1) break;
-            vst1q_lane_f32(output + num_out_align4 + 1, vc[num_output_blocks-1], 1);
-            if (num_output_tail4 == 2) break;
-            vst1q_lane_f32(output + num_out_align4 + 2, vc[num_output_blocks-1], 2);
-            // if (num_output_tail4 == 3) break;
+        const int64_t num_output_tail = num_out - num_out_align;
+        if (num_output_tail > 0) {
+            do {
+                vst1q_lane_f32(output + num_out_align, vc[num_output_blocks-1], 0);
+                if (num_output_tail == 1) break;
+                vst1q_lane_f32(output + num_out_align + 1, vc[num_output_blocks-1], 1);
+                if (num_output_tail == 2) break;
+                vst1q_lane_f32(output + num_out_align + 2, vc[num_output_blocks-1], 2);
+            } while (0);
         }
     }
 }  // omp parallel region
@@ -508,22 +500,22 @@ static void ppl_arm_server_kernel_fp32_fc_multi_batch(
 
     int64_t opt_sgemm_m2 = sgemm_m2;
     int64_t opt_sgemm_n2 = sgemm_n2;
-    int64_t num_blocks = ((num_out+sgemm_n2-1) / sgemm_n2) * ((num_batch+sgemm_m2-1) / sgemm_m2);
-    int64_t prv_num_blocks = num_blocks;
+    // int64_t num_blocks = ((num_out+sgemm_n2-1) / sgemm_n2) * ((num_batch+sgemm_m2-1) / sgemm_m2);
+    // int64_t prv_num_blocks = num_blocks;
 
-    while (num_blocks < 0.8 * PPL_OMP_MAX_THREADS()) {
-        if (opt_sgemm_n2 >= 2 * sgemm_n1) {
-            opt_sgemm_n2 = opt_sgemm_n2 / 2;
-        }
-        else if (opt_sgemm_m2 >= 2 * sgemm_m1) {
-            opt_sgemm_m2 = opt_sgemm_m2 / 2;
-        }
-        num_blocks = ((num_out+opt_sgemm_n2-1) / opt_sgemm_n2) * ((num_batch+opt_sgemm_m2-1) / opt_sgemm_m2);
-        if (prv_num_blocks == num_blocks) {
-            break;
-        }
-        prv_num_blocks = num_blocks;
-    }
+    // while (num_blocks < 0.8 * PPL_OMP_MAX_THREADS()) {
+    //     if (opt_sgemm_n2 >= 2 * sgemm_n1) {
+    //         opt_sgemm_n2 = opt_sgemm_n2 / 2;
+    //     }
+    //     else if (opt_sgemm_m2 >= 2 * sgemm_m1) {
+    //         opt_sgemm_m2 = opt_sgemm_m2 / 2;
+    //     }
+    //     num_blocks = ((num_out+opt_sgemm_n2-1) / opt_sgemm_n2) * ((num_batch+opt_sgemm_m2-1) / opt_sgemm_m2);
+    //     if (prv_num_blocks == num_blocks) {
+    //         break;
+    //     }
+    //     prv_num_blocks = num_blocks;
+    // }
     
 PRAGMA_OMP_PARALLEL()
 {
@@ -565,6 +557,10 @@ PRAGMA_OMP_PARALLEL()
                 const int64_t n_l2 = std::min((num_out-j_l2), opt_sgemm_n2);
 
                 for (int64_t j_l1 = 0; j_l1 < n_l2; j_l1 += sgemm_n1) {
+                    const int64_t n_multi_vblock_id = (j_l2 + j_l1) / (16 * VBLOCK());
+                    const int64_t n_multi_vblock_num = std::min((int64_t)16, PACK_VBLOCK(num_out)/VBLOCK() - n_multi_vblock_id * 16);
+                    const int64_t j_ofs = (j_l1 % (16 * VBLOCK()));
+
                     for (int64_t p_l1 = 0; p_l1 < k_l3; p_l1 += sgemm_k1) {
                         for (int64_t i_l1 = 0; i_l1 < m_l2; i_l1 += sgemm_m1) {
                             const int64_t n_l1 = std::min((n_l2 - j_l1), sgemm_n1);
@@ -587,7 +583,7 @@ PRAGMA_OMP_PARALLEL()
 
                                     sgemm_kernel_func_table[3][n_l0/VBLOCK()-1](
                                         a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                        cvt_weights + j * num_in + p * VBLOCK(),
+                                        cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                         cvt_bias + j,
                                         c_base_local + i_l0 * ldc_local + j_l0,
                                         k_sgemm_m0,
@@ -595,8 +591,8 @@ PRAGMA_OMP_PARALLEL()
                                         k_l1,
                                         VBLOCK(),
                                         num_batch * VBLOCK(),
-                                        VBLOCK(),
-                                        num_in * VBLOCK(),
+                                        n_multi_vblock_num * VBLOCK(), // b_k
+                                        VBLOCK(), // b_n
                                         ldc_local,
                                         !is_first_k,
                                         0
@@ -613,7 +609,7 @@ PRAGMA_OMP_PARALLEL()
                                         const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)16);
                                         sgemm_kernel_func_table[2][n_l0/VBLOCK()-1](
                                             a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                            cvt_weights + j * num_in + p * VBLOCK(),
+                                            cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                             cvt_bias + j,
                                             c_base_local + i_l0 * ldc_local + j_l0,
                                             4,
@@ -621,8 +617,8 @@ PRAGMA_OMP_PARALLEL()
                                             k_l1,
                                             VBLOCK(),
                                             num_batch * VBLOCK(),
-                                            VBLOCK(),
-                                            num_in * VBLOCK(),
+                                            n_multi_vblock_num * VBLOCK(), // b_k
+                                            VBLOCK(), // b_n
                                             ldc_local,
                                             !is_first_k,
                                             0
@@ -634,7 +630,7 @@ PRAGMA_OMP_PARALLEL()
                                         const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)16);
                                         sgemm_kernel_func_table[1][n_l0/VBLOCK()-1](
                                             a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                            cvt_weights + j * num_in + p * VBLOCK(),
+                                            cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                             cvt_bias + j,
                                             c_base_local + i_l0 * ldc_local + j_l0,
                                             2,
@@ -642,8 +638,8 @@ PRAGMA_OMP_PARALLEL()
                                             k_l1,
                                             VBLOCK(),
                                             num_batch * VBLOCK(),
-                                            VBLOCK(),
-                                            num_in * VBLOCK(),
+                                            n_multi_vblock_num * VBLOCK(), // b_k
+                                            VBLOCK(), // b_n
                                             ldc_local,
                                             !is_first_k,
                                             0
@@ -655,7 +651,7 @@ PRAGMA_OMP_PARALLEL()
                                         const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)16);
                                         sgemm_kernel_func_table[0][n_l0/VBLOCK()-1](
                                             a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                            cvt_weights + j * num_in + p * VBLOCK(),
+                                            cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                             cvt_bias + j,
                                             c_base_local + i_l0 * ldc_local + j_l0,
                                             1,
@@ -663,8 +659,8 @@ PRAGMA_OMP_PARALLEL()
                                             k_l1,
                                             VBLOCK(),
                                             num_batch * VBLOCK(),
-                                            VBLOCK(),
-                                            num_in * VBLOCK(),
+                                            n_multi_vblock_num * VBLOCK(), // b_k
+                                            VBLOCK(), // b_n
                                             ldc_local,
                                             !is_first_k,
                                             0
