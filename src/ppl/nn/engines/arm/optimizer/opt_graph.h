@@ -23,12 +23,14 @@
 #include "ppl/nn/engines/arm/arm_engine_options.h"
 #include "ppl/nn/runtime/runtime_partition_info.h"
 #include "ppl/nn/engines/arm/optimizer/opt_kernel.h"
+#include "ppl/nn/engines/arm/optimizer/tensor_getter.h"
 #include <memory>
 
 namespace ppl { namespace nn { namespace arm {
 
 class OptGraph final {
 public:
+    OptGraph() : tensor_getter_(&tensor_impls_) {}
     ppl::common::RetCode Init(ir::Graph*, utils::SharedResource*, RuntimePartitionInfo*, ArmEngineOptions*);
     ppl::common::RetCode DoOptimize(ArmDevice*);
 
@@ -52,6 +54,7 @@ private:
     RuntimePartitionInfo* info_ = nullptr;
     std::map<edgeid_t, std::unique_ptr<TensorImpl>> tensor_impls_;
     ArmEngineOptions* options_;
+    TensorGetter tensor_getter_;
 };
 
 }}} // namespace ppl::nn::ARM

@@ -232,13 +232,7 @@ RetCode OptGraph::StitchGraph(const OptKernelOptions& options) {
 
         InputOutputInfo IOinfo;
         IOinfo.SetNode(node);
-        IOinfo.SetAcquireObjectFunc([this](edgeid_t eid, uint32_t, Device*) -> EdgeObject* {
-            auto iter = tensor_impls_.find(eid);
-            if (iter == tensor_impls_.end()) {
-                return nullptr;
-            }
-            return iter->second.get();
-        });
+        IOinfo.SetAcquireObject(&tensor_getter_);
 
         auto status = kernel->SelectAlgorithm(IOinfo, options);
         if (status != RC_SUCCESS) {
@@ -400,13 +394,7 @@ RetCode OptGraph::TryToInferType(ArmDevice* device) {
 
         InputOutputInfo IOinfo;
         IOinfo.SetNode(node);
-        IOinfo.SetAcquireObjectFunc([this](edgeid_t eid, uint32_t, Device*) -> EdgeObject* {
-            auto iter = tensor_impls_.find(eid);
-            if (iter == tensor_impls_.end()) {
-                return nullptr;
-            }
-            return iter->second.get();
-        });
+        IOinfo.SetAcquireObject(&tensor_getter_);
 
         auto kernel = (ArmOptKernel*)(info_->kernels[node_id].get());
         kernel->InferTypes(&IOinfo);
@@ -473,13 +461,7 @@ RetCode OptGraph::TryToInferDims(ArmDevice* device) {
 
         InputOutputInfo IOinfo;
         IOinfo.SetNode(node);
-        IOinfo.SetAcquireObjectFunc([this](edgeid_t eid, uint32_t, Device*) -> EdgeObject* {
-            auto iter = tensor_impls_.find(eid);
-            if (iter == tensor_impls_.end()) {
-                return nullptr;
-            }
-            return iter->second.get();
-        });
+        IOinfo.SetAcquireObject(&tensor_getter_);
 
         auto kernel = (ArmOptKernel*)(info_->kernels[node_id].get());
         auto status = kernel->InferDims(&IOinfo);
