@@ -129,6 +129,7 @@ static void SplitString(const char* str, unsigned int len, const char* delim, un
 }
 
 static RetCode ReadFileContent(const char* fname, string* buf) {
+    (void)ReadFileContent;
     ifstream ifile;
 
     ifile.open(fname, ios_base::in);

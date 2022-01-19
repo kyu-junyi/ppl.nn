@@ -34,7 +34,6 @@ ppl::common::RetCode ExpandKernel::DoExecute(KernelExecContext* ctx) {
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(output);
     PPLNN_ARM_DEBUG_TRACE("isa: %u\n", GetISA());
 
-    const auto data_type = input->GetShape()->GetDataType();
     const auto data_format = input->GetShape()->GetDataFormat();
     if (data_format != ppl::common::DATAFORMAT_NDARRAY) {
         return ppl::common::RC_UNSUPPORTED;

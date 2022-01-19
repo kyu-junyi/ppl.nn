@@ -138,8 +138,6 @@ void ppl_arm_server_kernel_fp16_fc_convert_weights(
     const int64_t num_out) 
 {
     const int64_t num_out_align = num_out & (~(16 * VBLOCK()-1));
-    const int64_t num_in_align  = num_in & (~(VBLOCK()-1));
-
     const int64_t num_out_tail  = num_out - num_out_align;
     const int64_t num_out_tail_blocks  = DIV_CEIL(num_out_tail, VBLOCK());
     for (int64_t ic = 0; ic < num_in; ic++) {

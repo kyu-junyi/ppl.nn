@@ -37,8 +37,6 @@ ppl::common::RetCode WhereKernel::DoExecute(KernelExecContext* ctx) {
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(output);
     PPLNN_ARM_DEBUG_TRACE("isa: %u\n", GetISA());
 
-    const auto data_type = x->GetShape()->GetDataType();
-
     return ppl::kernel::arm_server::neon::where(cond->GetShape(), x->GetShape(), y->GetShape(), output->GetShape(),
                                                 cond->GetBufferPtr<void>(), x->GetBufferPtr<void>(),
                                                 y->GetBufferPtr<void>(), output->GetBufferPtr<void>());
