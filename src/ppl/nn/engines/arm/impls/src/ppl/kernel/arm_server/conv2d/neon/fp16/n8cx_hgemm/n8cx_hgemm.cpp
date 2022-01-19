@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "n8cx_hgemm.h"
+#include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
 
 #include <algorithm>
 #include <arm_neon.h>
@@ -46,7 +46,7 @@ namespace ppl { namespace kernel { namespace arm_server {
         v[7]     = (float16x8_t)vcombine_f32(vget_high_f32(vpf32[1].val[1]), vget_high_f32(vpf32[3].val[1])); \
     } while (0)
 
-static void hgemm_kernel_n8cx_inner_blocking_8x8_fp16(
+static void hgemm_n8cx_inner_blocking_8x8_fp16(
     const __fp16 *a,
     __fp16 *converted_a,
     const int64_t lda,
@@ -129,7 +129,7 @@ void hgemm_n8cx_blocking_fp16<N8cxHgemmBlockingOrd::M_N_K>(
             int64_t m_l1 = std::min(m - i, m_block1);
             int64_t k_l1 = std::min(k - p, k_block1);
 
-            hgemm_kernel_n8cx_inner_blocking_8x8_fp16(
+            hgemm_n8cx_inner_blocking_8x8_fp16(
                 a + i * lda + p,
                 converted_a + i * CEIL8(k) + p * CEIL8(m_l1),
                 lda,

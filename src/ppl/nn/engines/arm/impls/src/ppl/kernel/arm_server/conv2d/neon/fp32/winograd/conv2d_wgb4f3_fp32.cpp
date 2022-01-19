@@ -19,14 +19,9 @@
 
 #include <arm_neon.h>
 #include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
 #include <malloc.h>
 
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/n4cx_sgemm/n4cx_sgemm.h"
-
-#include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
 namespace ppl { namespace kernel { namespace arm_server {
@@ -52,7 +47,7 @@ namespace ppl { namespace kernel { namespace arm_server {
 
 #define LLC_CACHELINE_SIZE() 128
 
-static inline size_t conv_wgb4f3_get_input_buffer_size_fp32(
+static inline size_t conv2d_n4cx_wgb4f3_get_input_buffer_size_fp32(
     const int64_t inC,
     const int64_t tile_l2_size)
 {
@@ -62,7 +57,7 @@ static inline size_t conv_wgb4f3_get_input_buffer_size_fp32(
     return input_buffer_size;
 }
 
-static inline size_t conv_wgb4f3_get_output_buffer_size_fp32(
+static inline size_t conv2d_n4cx_wgb4f3_get_output_buffer_size_fp32(
     const int64_t outC,
     const int64_t tile_l2_size)
 {
@@ -72,7 +67,7 @@ static inline size_t conv_wgb4f3_get_output_buffer_size_fp32(
     return output_buffer_size;
 }
 
-static inline void conv_wgb4f3_prep_input_block_fp32(
+static inline void conv2d_n4cx_wgb4f3_prep_input_block_fp32(
     const float *input_block,
     const float32x4_t &vzeros,
     const float32x4_t &vcoeff,
@@ -479,7 +474,7 @@ static inline void conv_wgb4f3_prep_input_block_fp32(
     vst1q_f32(prep_input_block + 35 * in_wg_set_offset, v[17]);
 }
 
-static inline void conv_wgb4f3_postp_output_block_fp32(
+static inline void conv2d_n4cx_wgb4f3_postp_output_block_fp32(
     const float *raw_output_block,
     const float32x4_t &vbias,
     const float32x4_t &vcoeff,
@@ -882,9 +877,9 @@ uint64_t conv2d_wgb4f3_fp32_runtime_executor::cal_temp_buffer_size()
 {
     const conv2d_param &cp                      = *conv_param_;
     const conv2d_wgb4f3_fp32_schedule_param &sp = sched_param_;
-    size_t input_buffer_size                    = conv_wgb4f3_get_input_buffer_size_fp32(
+    size_t input_buffer_size                    = conv2d_n4cx_wgb4f3_get_input_buffer_size_fp32(
         cp.channels, sp.tile_blk);
-    size_t output_buffer_size = conv_wgb4f3_get_output_buffer_size_fp32(
+    size_t output_buffer_size = conv2d_n4cx_wgb4f3_get_output_buffer_size_fp32(
         cp.num_output, sp.tile_blk);
 
     sched_param_.input_buffer_size  = input_buffer_size;
@@ -951,9 +946,8 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
 
         const int64_t k_tile_l2 = tile_l2_size;
 
-        const int64_t k_in_wg_set_offset  = k_in_channel_section * k_tile_l2;
+        const int64_t k_in_wg_set_offset = k_in_channel_section * k_tile_l2;
 
-        // TODO: make sure buffer sizes are valid.
         /* Inner parallel mode */
         float *pre_proc_buffer  = tmp_buffer;
         float *post_proc_buffer = pre_proc_buffer + input_prep_buffer_size / sizeof(float);
@@ -989,7 +983,6 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
 
                 // Note: using `ic_group` in the loop is the same with using `ic_g_packed`.
                 for (int64_t ic_l2 = 0; ic_l2 < ic_g_packed; ic_l2 += k_in_channel_section) {
-                    // std::cerr << "IC: " << ic_l2 << std::endl;
                     const bool is_first_ic           = (ic_l2 == 0);
                     const bool is_last_ic            = (ic_l2 + k_in_channel_section >= ic_g_packed);
                     const int64_t in_channel_section = std::min(ic_g_packed - ic_l2, k_in_channel_section);
@@ -1026,8 +1019,6 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
                             ih_valid[4] = (ih4 >= 0 && ih4 < inH);
                             ih_valid[5] = (ih5 >= 0 && ih5 < inH);
 
-                            // std::cerr << "Prep: oh " << oh << ", ow " << ow << std::endl;
-                            // int64_t wg_block_idx = oh / WGB4F3_OBLK() * wg_w_blocks + ow / WGB4F3_OBLK();
                             int64_t wg_block_idx = tile_l0;
                             float *prep_in_block = prep_in_c_base + wg_block_idx * ICVL();
 
@@ -1045,7 +1036,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
                             iw_valid[4] = (iw4 >= 0 && iw4 < inW);
                             iw_valid[5] = (iw5 >= 0 && iw5 < inW);
 
-                            conv_wgb4f3_prep_input_block_fp32(
+                            conv2d_n4cx_wgb4f3_prep_input_block_fp32(
                                 input_c_base + ih0 * inW * ICVL() + iw0 * ICVL(),
                                 vzeros,
                                 vcoeff_prep,
@@ -1141,7 +1132,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
                                     const int64_t oh = tile_h_id * WGB4F3_OBLK();
                                     const int64_t ow = tile_w_id * WGB4F3_OBLK();
 
-                                    conv_wgb4f3_postp_output_block_fp32(
+                                    conv2d_n4cx_wgb4f3_postp_output_block_fp32(
                                         raw_output_c_base + tile_l0 * OCVL(),
                                         vbias,
                                         vcoeff_postp,
@@ -1156,7 +1147,6 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
                             } // close loop over oc(register)
                         } // close loop over oc(l2)
                     }
-
                 } // close loop over ic(l2)
             } // close loop over batch-outH-outW
         } // close loop over group
@@ -1164,7 +1154,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_runtime_executor::execute()
     return ppl::common::RC_SUCCESS;
 }
 
-static size_t conv_wgb4f3_get_converted_filter_size_fp32(
+static size_t conv2d_n4cx_wgb4f3_get_converted_filter_size_fp32(
     const int64_t c_in,
     const int64_t c_out,
     const int64_t num_group)
@@ -1277,7 +1267,7 @@ static void ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_inner_8x4(
     } // close loop over inner m blocks
 }
 
-static void conv_wgb4f3_convert_filter_fp32(
+static void conv2d_n4cx_wgb4f3_convert_filter_fp32(
     const float *filter,
     float *converted_filter,
     float *aux_filter_buffer,
@@ -1304,7 +1294,7 @@ static void conv_wgb4f3_convert_filter_fp32(
         float *converted_filter_g_base = converted_filter + g * WGB4F3_NSET() * filter_wg_set_offset;
 
         // first pass
-        //     note: pack c_in to 4c_in
+        // note: pack c_in to 4c_in
         float *aux_filter = aux_filter_buffer;
         float g_ic_pck[9 * ICVL()];
         for (int64_t oc = 0; oc < oc_group; oc++) {
@@ -1592,19 +1582,10 @@ static void conv_wgb4f3_convert_filter_fp32(
         }
 
         // second pass
-        //     note: pad c_out to 8c_out
+        // note: pad c_out to 8c_out
         for (int64_t set_id = 0; set_id < WGB4F3_NSET(); set_id++) {
             const float *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             float *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
-
-            // ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_outer<N4cxSgemmBlockingOrd::M_N_K>(
-            //     aux_filter_base,
-            //     converted_filter_base,
-            //     ic_group_packed,
-            //     oc_group,
-            //     ic_group_packed,
-            //     out_ch_section,
-            //     in_ch_section);
 
             for (int64_t i = 0; i < oc_group; i += out_ch_section) {
                 for (int64_t p = 0; p < ic_group_packed; p += in_ch_section) {
@@ -1618,7 +1599,6 @@ static void conv_wgb4f3_convert_filter_fp32(
                         k_l1);
                 } // close loop over outer K blocks
             } // close loop over outer M blocks
-
         } // close loop over wg-sets
     }
 }
@@ -1666,7 +1646,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
     ppl::nn::TensorShape dst_shape;
     dst_shape.Reshape({num_batch, num_output, dst_h, dst_w});
 
-    uint64_t cvt_filter_size = conv_wgb4f3_get_converted_filter_size_fp32(
+    uint64_t cvt_filter_size = conv2d_n4cx_wgb4f3_get_converted_filter_size_fp32(
                                    channels, num_output, param_.group) *
                                2;
     uint64_t cvt_bias_size = CEIL4(num_output) * sizeof(float);
@@ -1693,21 +1673,8 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
     std::vector<int64_t> candidate_oc_blk_list   = {40};
     std::vector<int64_t> candidate_ic_blk_list   = {128};
     std::vector<int64_t> candidate_tile_blk_list = {108};
-    // int64_t tile_l2_est = (int64_t)(((double)64*1024/sizeof(float)-(double)ic_g_pck*oc_g_pck)/((double)ic_g_pck+oc_g_pck));
-    // if (tile_l2_est >= 60) {
-    //     if (tile_l2_est % 10 < 9) {
-    //         tile_l2_est = (tile_l2_est / 10) * 10;
-    //     }
-    //     candidate_oc_blk_list = {ic_g_pck};
-    //     candidate_ic_blk_list = {oc_g_pck};
-    //     candidate_tile_blk_list = {tile_l2_est};
-    // }
 
     if (tune_blocksize) {
-        // candidate_oc_blk_list = {/*64, 128, 192, 256, 384, 512, 640, 768, 896, */1024};
-        // candidate_ic_blk_list = {32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, /*384, 512*/};
-        // candidate_tile_blk_list = {32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, /*384, 512*/};
-
         candidate_oc_blk_list   = {64, 128, 192, 256, 384, 512, 640, 768, 896, 1024};
         candidate_ic_blk_list   = {32, 64, 128, 256, /*384, 512*/};
         candidate_tile_blk_list = {32, 64, 128, 256, /*384, 512*/};
@@ -1750,7 +1717,6 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
                 auto end_ts = std::chrono::system_clock::now();
 
                 int64_t elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_ts - begin_ts).count();
-                // LOG(INFO) << "run time: " << elapsed_time / num_benchmark_iter / 1000  << " ms";
                 if (elapsed_time < best_run_time) {
                     best_oc_blk   = oc_blk;
                     best_ic_blk   = ic_blk;
@@ -1797,7 +1763,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::gen_cvt_weights(const v
     memcpy(cvt_bias_, bias, padding_offset_bytes);
     memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
-    cvt_filter_size_ = conv_wgb4f3_get_converted_filter_size_fp32(
+    cvt_filter_size_ = conv2d_n4cx_wgb4f3_get_converted_filter_size_fp32(
         param_.channels, param_.num_output, param_.group);
     cvt_filter_ = (float *)allocator_->Alloc(cvt_filter_size_);
 
@@ -1806,7 +1772,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::gen_cvt_weights(const v
     size_t buffer_size     = WGB4F3_NSET() * CEIL4(ic_group) * CEIL4(oc_group) * sizeof(float);
     float *aux_buffer      = (float *)allocator_->Alloc(buffer_size);
 
-    conv_wgb4f3_convert_filter_fp32(
+    conv2d_n4cx_wgb4f3_convert_filter_fp32(
         (const float *)filter,
         (float *)cvt_filter_,
         aux_buffer,

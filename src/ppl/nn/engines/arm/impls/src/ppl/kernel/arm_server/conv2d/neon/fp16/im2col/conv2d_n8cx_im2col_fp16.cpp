@@ -19,13 +19,7 @@
 
 #include <arm_neon.h>
 #include <chrono>
-#include <new>
-#include <string.h>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
 
-#include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
@@ -165,11 +159,8 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
                             if (in_hid < 0 || in_hid >= h_in ||
                                 in_wid < 0 || in_wid >= w_in) {
                                 src_ofs[j] = -1;
-                                // vst1q_f16(i2c_buf_kw_base + j * ICBLK(), vzeros);
                             } else {
                                 src_ofs[j] = in_hid * w_in_cblk + in_wid * ICBLK();
-                                // vst1q_f16(i2c_buf_kw_base + j * ICBLK(),
-                                // vld1q_f16(in_c_base + in_hid * w_in_cblk + in_wid * ICBLK()));
                             }
                         }
 
@@ -193,51 +184,59 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
             const int64_t m_l1_align16 = (CEIL8(m_l1) / 16) * 16;
             for (int64_t p2 = 0; p2 < k; p2 += k_block1) {
                 const bool is_first_k = (p2 == 0);
-                const bool is_last_k = (p2 + k_block1 >= k);
-                const int64_t k_l1 = std::min(k-p2, k_block1);
+                const bool is_last_k  = (p2 + k_block1 >= k);
+                const int64_t k_l1    = std::min(k - p2, k_block1);
 
-                const __fp16 *a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK() * 2;
-                const __fp16 *b_ptr = (use_im2col) ? (i2c_local_base + p2 * n_block1) : (input_g_base + p2 * hw_in + (hw_l2_base + j2) * CBLK());
+                const __fp16 *a_ptr     = cvt_filter_oc_base + i2 * lda + p2 * OCBLK() * 2;
+                const __fp16 *b_ptr     = (use_im2col) ? (i2c_local_base + p2 * n_block1) : (input_g_base + p2 * hw_in + (hw_l2_base + j2) * CBLK());
                 const int64_t ldb_local = (use_im2col) ? n_block1 : hw_in;
-                const __fp16 * const_ptr = bias_oc_base + i2;
-                const __fp16 * fused_ptr = fuse_data_row_base + i2 * ld_fused_data + j2 * CBLK();
-                __fp16 *c_ptr = hgemm_output_oc_hw_base + i2 * ldc + j2 * CBLK();
+                const __fp16 *const_ptr = bias_oc_base + i2;
+                const __fp16 *fused_ptr = fuse_data_row_base + i2 * ld_fused_data + j2 * CBLK();
+                __fp16 *c_ptr           = hgemm_output_oc_hw_base + i2 * ldc + j2 * CBLK();
 
                 uint32_t init_id = (is_first_k) ? ((bias_oc_base) ? 1 : 0) : 2;
-                // std::cout << "INIT: " << init_id << std::endl;
-                uint32_t fuse_id = (is_last_k)  ? fuse_type : 0;
-                // std::cout << "FUSE: " << fuse_id << std::endl;
+                uint32_t fuse_id = (is_last_k) ? fuse_type : 0;
 
                 for (int64_t i = 0; i < m_l1_align16; i += 16) {
                     for (int64_t j = 0; j < n_l1; j += 10) {
-                        const int64_t m_l0 = std::min((m_l1_align16-i), (int64_t)16);
-                        const int64_t n_l0 = std::min((n_l1-j), (int64_t)10);
-            
-                        hgemm_n8cx_kernel_m16nx_fp16_func_table[n_l0-1][init_id][fuse_id](
+                        const int64_t m_l0 = std::min(m_l1_align16 - i, (int64_t)16);
+                        const int64_t n_l0 = std::min(n_l1 - j, (int64_t)10);
+
+                        hgemm_n8cx_kernel_m16nx_fp16_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
-                            b_ptr + j * CBLK(), 
+                            b_ptr + j * CBLK(),
                             const_ptr + i,
                             fused_ptr + i * ld_fused_data + j * CBLK(),
                             c_ptr + i * ldc + j * CBLK(),
-                            m_l0, n_l0, k_l1,
-                            lda, ldb_local, ld_fused_data, ldc);
+                            m_l0,
+                            n_l0,
+                            k_l1,
+                            lda,
+                            ldb_local,
+                            ld_fused_data,
+                            ldc);
                     }
                 }
                 if (m_l1_align16 < CEIL8(m_l1)) {
-                    a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
+                    a_ptr     = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
                     int64_t i = m_l1_align16;
                     for (int64_t j = 0; j < n_l1; j += 12) {
-                        const int64_t m_l0 = std::min((m_l1-i), (int64_t)8);
-                        const int64_t n_l0 = std::min((n_l1-j), (int64_t)12);
-            
-                        hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0-1][init_id][fuse_id](
+                        const int64_t m_l0 = std::min(m_l1 - i, (int64_t)8);
+                        const int64_t n_l0 = std::min(n_l1 - j, (int64_t)12);
+
+                        hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
-                            b_ptr + j * CBLK(), 
+                            b_ptr + j * CBLK(),
                             const_ptr + i,
                             fused_ptr + i * ld_fused_data + j * CBLK(),
                             c_ptr + i * ldc + j * CBLK(),
-                            m_l0, n_l0, k_l1,
-                            lda, ldb_local, ld_fused_data, ldc);
+                            m_l0,
+                            n_l0,
+                            k_l1,
+                            lda,
+                            ldb_local,
+                            ld_fused_data,
+                            ldc);
                     }
                 }
             }
@@ -277,11 +276,10 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
     const int64_t hw_in     = src_shape_->GetDim(2) * src_shape_->GetDim(3);
     const int64_t hw_out    = dst_shape_->GetDim(2) * dst_shape_->GetDim(3);
 
-    const int64_t k_input_g_stride      = ic_group * hw_in;
-    const int64_t k_output_g_stride     = oc_group * hw_out;
-    const int64_t kk                    = ic_g_pck * cp.kernel_h * cp.kernel_w;
+    const int64_t k_input_g_stride  = ic_group * hw_in;
+    const int64_t k_output_g_stride = oc_group * hw_out;
+    const int64_t kk                = ic_g_pck * cp.kernel_h * cp.kernel_w;
 
-    // int64_t l3_cache_size = (ppl::common::GetCpuCacheL3() == 0) ? (kp.target_l3_cache_size * num_threads) : ppl::common::GetCpuCacheL3();
     int64_t l3_cache_size = (kp.target_l3_cache_size * num_threads);
     int64_t bl3           = 1;
     while (bl3 < num_batch && bl3 < num_threads &&
@@ -296,8 +294,8 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
         ++gl3;
     }
     sched_param_.group_block3 = gl3;
-    sched_param_.hw_block2 = kp.hgemm_n_block1;
-    sched_param_.oc_block2 = kp.hgemm_m_block1;
+    sched_param_.hw_block2    = kp.hgemm_n_block1;
+    sched_param_.oc_block2    = kp.hgemm_m_block1;
 
     sched_param_.use_im2col = (cp.kernel_h != 1 || cp.kernel_w != 1 ||
                                cp.pad_h != 0 || cp.pad_w != 0 ||
@@ -379,11 +377,11 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
         const int64_t hw_in  = h_in * w_in;
         const int64_t hw_out = h_out * w_out;
 
-        const int64_t k_input_b_stride      = ic_pck * hw_in;
-        const int64_t k_output_b_stride     = oc_pck * hw_out;
-        const int64_t k_input_g_stride      = ic_group * hw_in;
-        const int64_t k_output_g_stride     = oc_group * hw_out;
-        const int64_t kk                    = ic_g_pck * h_flt * w_flt;
+        const int64_t k_input_b_stride  = ic_pck * hw_in;
+        const int64_t k_output_b_stride = oc_pck * hw_out;
+        const int64_t k_input_g_stride  = ic_group * hw_in;
+        const int64_t k_output_g_stride = oc_group * hw_out;
+        const int64_t kk                = ic_g_pck * h_flt * w_flt;
 
         const int64_t input_gbuf_offset  = batch_block3 * group_block3 * ic_g_pck * hw_in;
         const int64_t output_gbuf_offset = batch_block3 * group_block3 * oc_g_pck * hw_out;
@@ -440,8 +438,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_runtime_executor::execute()
                     for (int64_t b = 0; b < num_batch_l3; b++) {
                         for (int64_t hw_l2 = 0; hw_l2 < hw_out; hw_l2 += hw_block2) {
                             for (int64_t oc_l2 = 0; oc_l2 < oc_g_pck; oc_l2 += oc_block2) {
-                                // std::cout << "hwl2: " << hw_l2 << std::endl;
-                                // std::cout << "ocl2: " << oc_l2 << std::endl;
                                 const int64_t hw_block2_valid = std::min(hw_block2, hw_out - hw_l2);
                                 const int64_t oc_block2_valid = std::min(oc_block2, oc_g_pck - oc_l2);
 
@@ -529,11 +525,10 @@ void conv_n8cx_tile_im2col_convert_filter(
         // NOTE: (num_g * oc_g, ic_g, kh, kw) -> ((num_g * oc_g/8, [ic_g/8, kh, kw, 8ic], 8oc)
         for (int64_t oc = 0; oc < oc_group_pck; oc += 2 * OCBLK()) {
             for (int64_t ic = 0; ic < ic_group_pck; ic += ICBLK()) {
-
-                const int64_t ic_valid_blk = std::min((int64_t)ICBLK(), ic_group - ic);
-                const int64_t oc_valid_blk = std::min((int64_t)2 * OCBLK(), oc_group - oc);
+                const int64_t ic_valid_blk  = std::min((int64_t)ICBLK(), ic_group - ic);
+                const int64_t oc_valid_blk  = std::min((int64_t)2 * OCBLK(), oc_group - oc);
                 const int64_t k_ocblk_local = (oc_valid_blk > OCBLK()) ? 2 * OCBLK() : OCBLK();
-                __fp16 *cvt_filter_c_base = cvt_filter_g_base + oc * ic_group_pck * hw_flt + ic * hw_flt * k_ocblk_local;
+                __fp16 *cvt_filter_c_base   = cvt_filter_g_base + oc * ic_group_pck * hw_flt + ic * hw_flt * k_ocblk_local;
 
                 for (int64_t k = 0; k < hw_flt; k++) {
                     const __fp16 *filter_k_base = filter_g_base + oc * ic_group * hw_flt + ic * hw_flt + k;
@@ -655,7 +650,6 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_offline_manager::pick_best_schedule
                 auto end_ts = std::chrono::system_clock::now();
 
                 int64_t elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_ts - begin_ts).count();
-                // LOG(INFO) << "using time: " << elapsed_time / num_benchmark_iter / 1000 << " ms";
                 if (elapsed_time < best_run_time) {
                     best_m_blk    = m_blk;
                     best_n_blk    = n_blk;
