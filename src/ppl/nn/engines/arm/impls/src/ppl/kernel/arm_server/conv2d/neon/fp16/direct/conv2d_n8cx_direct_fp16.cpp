@@ -254,14 +254,14 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
     __fp16 *tmp_buffer                               = (__fp16 *)temp_buffer_;
     const int64_t src_h                                = src_shape_->GetDim(2);
     const int64_t src_w                                = src_shape_->GetDim(3);
-    const int64_t inC                                = src_shape_->GetDim(1);
-    const int64_t outC                               = cp.num_output;
+    const int64_t channels                                = src_shape_->GetDim(1);
+    const int64_t num_output                               = cp.num_output;
     const int64_t dst_h                               = dst_shape_->GetDim(2);
     const int64_t dst_w                               = dst_shape_->GetDim(3);
     const int64_t flt_h                               = cp.kernel_h;
     const int64_t flt_w                               = cp.kernel_w;
-    const int64_t padH                               = cp.pad_h;
-    const int64_t padW                               = cp.pad_w;
+    const int64_t pad_h                               = cp.pad_h;
+    const int64_t pad_w                               = cp.pad_w;
     const int64_t strd_h                              = cp.stride_h;
     const int64_t strd_w                              = cp.stride_w;
     const int64_t dltn_h                              = cp.dilation_h;
@@ -271,11 +271,11 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
 
     PRAGMA_OMP_PARALLEL()
     {
-        const int64_t src_c_pck = CEIL8(inC);
-        const int64_t dst_c_pck = CEIL8(outC);
+        const int64_t src_c_pck = CEIL8(channels);
+        const int64_t dst_c_pck = CEIL8(num_output);
 
-        const int64_t ic_group = inC / cp.group;
-        const int64_t oc_group = outC / cp.group;
+        const int64_t ic_group = channels / cp.group;
+        const int64_t oc_group = num_output / cp.group;
         const int64_t ic_g_pck = CEIL8(ic_group);
         const int64_t oc_g_pck = CEIL8(oc_group);
 
@@ -311,8 +311,8 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
         const int64_t ic_l1_s = 128;
         (void)ic_l1_s;
 
-        int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((padW - 0 * dltn_w), strd_w)); // inclusive
-        int64_t ow_inner_end   = std::min((int64_t)dst_w, DIV_CEIL((src_w + padW - (flt_w - 1) * dltn_w), strd_w)); // exclusive
+        int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((pad_w - 0 * dltn_w), strd_w)); // inclusive
+        int64_t ow_inner_end   = std::min((int64_t)dst_w, DIV_CEIL((src_w + pad_w - (flt_w - 1) * dltn_w), strd_w)); // exclusive
         ow_inner_start         = std::min(ow_inner_start, dst_w);
         ow_inner_end           = std::max(ow_inner_end, ow_inner_start);
 
@@ -378,7 +378,7 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
                             const ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_t *const fp16_conv_gd_kernel =
                                 (oc_remains > 8) ? ppl_arm_server_kernel_fp16_conv_gen_direct_kernels_oc16 : ppl_arm_server_kernel_fp16_conv_gen_direct_kernels_oc8;
 #endif
-                            const int64_t ih           = -padH + oh * strd_h;
+                            const int64_t ih           = -pad_h + oh * strd_h;
                             int64_t flt_h_start         = DIV_CEIL(std::max((int64_t)0, -ih), dltn_h);
                             int64_t flt_h_end           = std::min(flt_h, DIV_CEIL((src_h - ih), dltn_h));
                             flt_h_end                   = std::max(flt_h_end, flt_h_start);
@@ -390,14 +390,14 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
                                 int64_t prv_flt_w_start = -1;
                                 int64_t prv_flt_w_end   = -1;
                                 for (; ow < ow_inner_start + 1; ow++) {
-                                    const int64_t iw               = -padW + ow * strd_w;
+                                    const int64_t iw               = -pad_w + ow * strd_w;
                                     int64_t flt_w_start             = DIV_CEIL(std::max((int64_t)0, -iw), dltn_w);
                                     int64_t flt_w_end               = std::min(flt_w, DIV_CEIL((src_w - iw), dltn_w));
                                     flt_w_end                       = std::max(flt_w_end, flt_w_start);
                                     if (prv_flt_w_start != flt_w_start || prv_flt_w_end != flt_w_end || ow - prv_ow == 10 || ow == ow_inner_start) {
                                         const int64_t prv_flt_w_skipped = flt_w - (prv_flt_w_end - prv_flt_w_start);
                                         if (prv_flt_w_skipped < flt_w && ow > prv_ow) {
-                                            const int64_t iw_iter = -padW + prv_ow * strd_w + prv_flt_w_start * dltn_w;
+                                            const int64_t iw_iter = -pad_w + prv_ow * strd_w + prv_flt_w_start * dltn_w;
                                             fp16_conv_gd_kernel[ow - prv_ow](
                                                 input_batch_base_ptr + ic_l1 * src_h * src_w + (ih + flt_h_start * dltn_h) * src_w * CBLK() + iw_iter * CBLK(),
                                                 cvt_filter_g_base + oc_l1 * ic_g_pck * flt_h * flt_w + ic_l1 * flt_h * flt_w * ocs + flt_h_start * flt_w * CBLK() * ocs + prv_flt_w_start * CBLK() * ocs, //TODO
@@ -424,7 +424,7 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
                             }
                             for (int64_t ow = ow_inner_start; ow < ow_inner_end; ow += otw) {
                                 const int64_t ow_len = std::min(otw, ow_inner_end - ow);
-                                const int64_t iw     = -padW + ow * strd_w;
+                                const int64_t iw     = -pad_w + ow * strd_w;
 
                                 fp16_conv_gd_kernel[ow_len](
                                     input_batch_base_ptr + ic_l1 * src_h * src_w + (ih + flt_h_start * dltn_h) * src_w * CBLK() + iw * CBLK(),
@@ -450,14 +450,14 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_runtime_executor::execute()
                                 int64_t prv_flt_w_start = -1;
                                 int64_t prv_flt_w_end   = -1;
                                 for (; ow < dst_w + 1; ow++) {
-                                    const int64_t iw   = -padW + ow * strd_w;
+                                    const int64_t iw   = -pad_w + ow * strd_w;
                                     int64_t flt_w_start = DIV_CEIL(std::max((int64_t)0, -iw), dltn_w);
                                     int64_t flt_w_end   = std::min(flt_w, DIV_CEIL((src_w - iw), dltn_w));
                                     flt_w_end           = std::max(flt_w_end, flt_w_start);
                                     if (prv_flt_w_start != flt_w_start || prv_flt_w_end != flt_w_end || ow - prv_ow == 10 || ow == dst_w) {
                                         const int64_t prv_flt_w_skipped = flt_w - (prv_flt_w_end - prv_flt_w_start);
                                         if (prv_flt_w_skipped < flt_w && ow > prv_ow) {
-                                            const int64_t iw_iter = -padW + prv_ow * strd_w + prv_flt_w_start * dltn_w;
+                                            const int64_t iw_iter = -pad_w + prv_ow * strd_w + prv_flt_w_start * dltn_w;
                                             fp16_conv_gd_kernel[ow - prv_ow](
                                                 input_batch_base_ptr + ic_l1 * src_h * src_w + (ih + flt_h_start * dltn_h) * src_w * CBLK() + iw_iter * CBLK(),
                                                 cvt_filter_g_base + oc_l1 * ic_g_pck * flt_h * flt_w + ic_l1 * flt_h * flt_w * ocs + flt_h_start * flt_w * CBLK() * ocs + prv_flt_w_start * CBLK() * ocs, //TODO
@@ -527,17 +527,17 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_offline_manager::fast_init_schedule
 }
 
 static inline int64_t ppl_arm_server_kernel_fp16_conv_direct_n8cx_get_converted_filter_size(
-    const int64_t num_group,
+    const int64_t group,
     const int64_t in_c,
     const int64_t out_c,
     const int64_t ker_h,
     const int64_t ker_w)
 {
-    const int64_t ic_group  = in_c / num_group;
-    const int64_t oc_group  = out_c / num_group;
+    const int64_t ic_group  = in_c / group;
+    const int64_t oc_group  = out_c / group;
     const int64_t ic_g_pck  = CEIL8(ic_group);
     const int64_t oc_g_pck2 = CEIL16(oc_group);
-    return CEIL128(num_group * oc_g_pck2 * ic_g_pck * ker_h * ker_w * sizeof(__fp16)) + 128;
+    return CEIL128(group * oc_g_pck2 * ic_g_pck * ker_h * ker_w * sizeof(__fp16)) + 128;
 }
 
 ppl::common::RetCode conv2d_n8cx_direct_fp16_offline_manager::pick_best_schedule_param(const ppl::nn::TensorShape &src_shape, double &run_time, bool tune_blocksize)
@@ -662,19 +662,19 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_offline_manager::pick_best_schedule
 static void ppl_arm_server_kernel_fp16_conv_direct_n8cx_convert_filter(
     const __fp16 *filter,
     __fp16 *converted_filter,
-    const int64_t num_group,
+    const int64_t group,
     const int64_t in_c,
     const int64_t out_c,
     const int64_t flt_h,
     const int64_t flt_w)
 {
     const int64_t ocs       = 16;
-    const int64_t ic_group  = in_c / num_group;
-    const int64_t oc_group  = out_c / num_group;
+    const int64_t ic_group  = in_c / group;
+    const int64_t oc_group  = out_c / group;
     const int64_t ic_g_pck  = CEIL8(ic_group);
     const int64_t oc_g_pck2 = CEIL16(oc_group);
 
-    for (int64_t g = 0; g < num_group; g++) {
+    for (int64_t g = 0; g < group; g++) {
         const __fp16 *filter_g_base = filter + g * oc_group * ic_group * flt_h * flt_w;
         __fp16 *cvt_filter_g_base   = converted_filter + g * oc_g_pck2 * ic_g_pck * flt_h * flt_w;
 
@@ -733,7 +733,7 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_offline_manager::gen_cvt_weights(co
         return ppl::common::RC_PERMISSION_DENIED;
     }
 
-    const int64_t num_group  = param_.group;
+    const int64_t group  = param_.group;
     const int64_t num_output = param_.num_output;
     const int64_t channels   = param_.channels;
     const int64_t kernel_h   = param_.kernel_h;
@@ -748,12 +748,12 @@ ppl::common::RetCode conv2d_n8cx_direct_fp16_offline_manager::gen_cvt_weights(co
 
     if (sched_param_.oc_blk == 16) {
         cvt_filter_size_  = ppl_arm_server_kernel_fp16_conv_direct_n8cx_get_converted_filter_size(
-            num_group, channels, num_output, kernel_h, kernel_w);
+            group, channels, num_output, kernel_h, kernel_w);
         cvt_filter_ = (__fp16 *)allocator_->Alloc(cvt_filter_size_);
         ppl_arm_server_kernel_fp16_conv_direct_n8cx_convert_filter(
             (const __fp16 *)filter,
             (__fp16 *)cvt_filter_,
-            num_group,
+            group,
             channels,
             num_output,
             kernel_h,

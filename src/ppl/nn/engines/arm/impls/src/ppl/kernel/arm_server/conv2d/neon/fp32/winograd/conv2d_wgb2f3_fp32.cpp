@@ -730,7 +730,7 @@ void conv2d_n4cx_wgb2f3_convert_filter_fp32(
         float *converted_filter_g_base = converted_filter + g * WGB2F3_NSET() * filter_wg_set_offset;
 
         // first pass
-        // note: pack channels to 4channels
+        // note: pack channels to 4c
         float *aux_filter = aux_filter_buffer;
         float g_ic_pck[9 * ICVL()];
         for (int64_t oc = 0; oc < oc_group; oc++) {
@@ -845,7 +845,7 @@ void conv2d_n4cx_wgb2f3_convert_filter_fp32(
         }
 
         // second pass
-        // note: pack num_output to 8num_output
+        // note: pack num_output to 8c
         for (int64_t set_id = 0; set_id < WGB2F3_NSET(); set_id++) {
             const float *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             float *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
