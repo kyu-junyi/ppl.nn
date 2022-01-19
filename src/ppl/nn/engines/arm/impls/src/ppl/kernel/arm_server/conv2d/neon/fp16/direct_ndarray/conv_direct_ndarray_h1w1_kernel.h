@@ -36,17 +36,17 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel(
     const __fp16 *bias_base,
     __fp16 *output_base,
     __fp16 *sum_base,
-    const int64_t inHW_stride,
-    const int64_t inC,
-    const int64_t fltH_start,
-    const int64_t fltH_end,
-    const int64_t fltW_start,
-    const int64_t fltW_end,
-    const int64_t fltW,
+    const int64_t src_hw_stride,
+    const int64_t channels,
+    const int64_t flt_h_start,
+    const int64_t flt_h_end,
+    const int64_t flt_w_start,
+    const int64_t flt_w_end,
+    const int64_t flt_w,
     const int64_t flt_ic_stride,
-    const int64_t input_kh_stride,
-    const int64_t dltnW,
-    const int64_t outBCHW_stride,
+    const int64_t src_kh_stride,
+    const int64_t dltn_w,
+    const int64_t dst_bchw_stride,
     const uint32_t fuse_type);
 
 template <>
@@ -56,54 +56,54 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<16>(
     const __fp16 *bias_base,
     __fp16 *output_base,
     __fp16 *sum_base,
-    const int64_t inHW_stride,
-    const int64_t inC,
-    const int64_t fltH_start,
-    const int64_t fltH_end,
-    const int64_t fltW_start,
-    const int64_t fltW_end,
-    const int64_t fltW,
+    const int64_t src_hw_stride,
+    const int64_t channels,
+    const int64_t flt_h_start,
+    const int64_t flt_h_end,
+    const int64_t flt_w_start,
+    const int64_t flt_w_end,
+    const int64_t flt_w,
     const int64_t flt_ic_stride,
-    const int64_t input_kh_stride,
-    const int64_t dltnW,
-    const int64_t outBCHW_stride,
+    const int64_t src_kh_stride,
+    const int64_t dltn_w,
+    const int64_t dst_bchw_stride,
     const uint32_t fuse_type)
 {
     float16x8_t v0, v1, v2, v3, v4, v5;
 
     if (bias_base == nullptr) {
         v0 = vld1q_f16(output_base);
-        v1 = vld1q_f16(output_base + outBCHW_stride);
+        v1 = vld1q_f16(output_base + dst_bchw_stride);
     } else {
         v0 = vld1q_f16(bias_base);
         v1 = vld1q_f16(bias_base + CBLK());
     }
 
-    int64_t ic                   = inC;
-    const __fp16 *filter_ic_base = filter_base;
+    int64_t ic                   = channels;
+    const __fp16 *flt_ic_base = filter_base;
     const __fp16 *input_ic_base  = input_base;
     do {
-        for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-            const __fp16 *input_kh_base = input_ic_base + kh * input_kh_stride;
-            for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
-                const __fp16 *filter_ptr = filter_ic_base + (kh * fltW + kw) * CBLK() * 2;
+        for (int64_t kh = flt_h_start; kh < flt_h_end; kh++) {
+            const __fp16 *src_kh_base = input_ic_base + kh * src_kh_stride;
+            for (int64_t kw = flt_w_start; kw < flt_w_end; kw++) {
+                const __fp16 *filter_ptr = flt_ic_base + (kh * flt_w + kw) * CBLK() * 2;
 
                 v2 = vld1q_f16(filter_ptr);
                 v3 = vld1q_f16(filter_ptr + CBLK());
-                v4 = vld1q_dup_f16(input_kh_base + kw * dltnW);
+                v4 = vld1q_dup_f16(src_kh_base + kw * dltn_w);
 
                 v0 = vfmaq_f16(v0, v2, v4);
                 v1 = vfmaq_f16(v1, v3, v4);
             }
         }
-        filter_ic_base += flt_ic_stride; //  fltH * fltW * CBLK() * 2;
-        input_ic_base += inHW_stride;
+        flt_ic_base += flt_ic_stride; //  flt_h * flt_w * CBLK() * 2;
+        input_ic_base += src_hw_stride;
         ic -= 1;
     } while (ic > 0);
 
     if (fuse_type & conv_fuse_flag::SUM) { // sum
         v0 = vaddq_f16(v0, vld1q_f16(sum_base));
-        v1 = vaddq_f16(v1, vld1q_f16(sum_base + outBCHW_stride));
+        v1 = vaddq_f16(v1, vld1q_f16(sum_base + dst_bchw_stride));
     }
     if (fuse_type & conv_fuse_flag::RELU) { // relu
         v5 = vdupq_n_f16(0.0);
@@ -116,7 +116,7 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<16>(
         v1 = vminq_f16(v1, v5);
     }
     vst1q_f16(output_base, v0);
-    vst1q_f16(output_base + outBCHW_stride, v1);
+    vst1q_f16(output_base + dst_bchw_stride, v1);
 }
 
 template <>
@@ -126,17 +126,17 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<8>(
     const __fp16 *bias_base,
     __fp16 *output_base,
     __fp16 *sum_base,
-    const int64_t inHW_stride,
-    const int64_t inC,
-    const int64_t fltH_start,
-    const int64_t fltH_end,
-    const int64_t fltW_start,
-    const int64_t fltW_end,
-    const int64_t fltW,
+    const int64_t src_hw_stride,
+    const int64_t channels,
+    const int64_t flt_h_start,
+    const int64_t flt_h_end,
+    const int64_t flt_w_start,
+    const int64_t flt_w_end,
+    const int64_t flt_w,
     const int64_t flt_ic_stride,
-    const int64_t input_kh_stride,
-    const int64_t dltnW,
-    const int64_t outBCHW_stride,
+    const int64_t src_kh_stride,
+    const int64_t dltn_w,
+    const int64_t dst_bchw_stride,
     const uint32_t fuse_type)
 {
     float16x8_t v0, v2, v4, v5;
@@ -147,23 +147,23 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<8>(
         v0 = vld1q_f16(bias_base);
     }
 
-    int64_t ic                   = inC;
-    const __fp16 *filter_ic_base = filter_base;
+    int64_t ic                   = channels;
+    const __fp16 *flt_ic_base = filter_base;
     const __fp16 *input_ic_base  = input_base;
     do {
-        for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-            const __fp16 *input_kh_base = input_ic_base + kh * input_kh_stride;
-            for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
-                const __fp16 *filter_ptr = filter_ic_base + (kh * fltW + kw) * CBLK() * 2;
+        for (int64_t kh = flt_h_start; kh < flt_h_end; kh++) {
+            const __fp16 *src_kh_base = input_ic_base + kh * src_kh_stride;
+            for (int64_t kw = flt_w_start; kw < flt_w_end; kw++) {
+                const __fp16 *filter_ptr = flt_ic_base + (kh * flt_w + kw) * CBLK() * 2;
 
                 v2 = vld1q_f16(filter_ptr);
-                v4 = vld1q_dup_f16(input_kh_base + kw * dltnW);
+                v4 = vld1q_dup_f16(src_kh_base + kw * dltn_w);
 
                 v0 = vfmaq_f16(v0, v2, v4);
             }
         }
-        filter_ic_base += flt_ic_stride; //  fltH * fltW * CBLK() * 2;
-        input_ic_base += inHW_stride;
+        flt_ic_base += flt_ic_stride; //  flt_h * flt_w * CBLK() * 2;
+        input_ic_base += src_hw_stride;
         ic -= 1;
     } while (ic > 0);
 
@@ -187,17 +187,17 @@ typedef void (*ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel
     const __fp16 *bias_base,
     __fp16 *output_base,
     __fp16 *sum_base,
-    const int64_t inHW_stride,
-    const int64_t inC,
-    const int64_t fltH_start,
-    const int64_t fltH_end,
-    const int64_t fltW_start,
-    const int64_t fltW_end,
-    const int64_t fltW,
+    const int64_t src_hw_stride,
+    const int64_t channels,
+    const int64_t flt_h_start,
+    const int64_t flt_h_end,
+    const int64_t flt_w_start,
+    const int64_t flt_w_end,
+    const int64_t flt_w,
     const int64_t flt_ic_stride,
-    const int64_t input_kh_stride,
-    const int64_t dltnW,
-    const int64_t outBCHW_stride,
+    const int64_t src_kh_stride,
+    const int64_t dltn_w,
+    const int64_t dst_bchw_stride,
     const uint32_t fuse_type);
 
 }}} // namespace ppl::kernel::arm_server
