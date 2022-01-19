@@ -27,7 +27,7 @@ Engine* ArmEngineFactory::Create(const ArmEngineOptions& options) {
     if (engine) {
         auto status = engine->Init(options);
         if (status != ppl::common::RC_SUCCESS) {
-            LOG(ERROR) << "init Arm engine failed: " << ppl::common::GetRetCodeStr(status);
+            LOG(ERROR) << "Init arm engine failed: " << ppl::common::GetRetCodeStr(status);
             delete engine;
             return nullptr;
         }

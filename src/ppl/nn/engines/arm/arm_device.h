@@ -21,7 +21,7 @@
 #include "ppl/common/generic_cpu_allocator.h"
 #include "ppl/nn/common/device.h"
 #include "ppl/nn/engines/arm/data_converter.h"
-#include <cstring> // memcpy
+#include <cstring>
 
 namespace ppl { namespace nn { namespace arm {
 

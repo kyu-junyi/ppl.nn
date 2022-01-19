@@ -16,7 +16,7 @@
 // under the License.
 
 #include "ppl/nn/engines/arm/data_converter.h"
-#include <cstring> // memcpy
+#include <cstring>
 #include "ppl/nn/common/logger.h"
 #include "ppl/kernel/arm_server/common/data_trans.h"
 #include "ppl/kernel/arm_server/common/memory.h"
@@ -81,7 +81,7 @@ ppl::common::RetCode ArmDataConverter::Convert(BufferDesc* dst, const TensorShap
             return ppl::kernel::arm_server::neon::cast(&src_desc, &dst_desc, src.addr, dst->addr);
         }
     }
-    LOG(ERROR) << "TODO: add data type conversion";
+    LOG(ERROR) << "Invalid data type conversion";
     return RC_UNSUPPORTED;
 }
 

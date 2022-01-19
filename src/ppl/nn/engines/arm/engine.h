@@ -28,8 +28,7 @@ namespace ppl { namespace nn { namespace arm {
 class ArmEngine final : public EngineImpl {
 public:
     ppl::common::RetCode Init(const ArmEngineOptions&);
-    ArmEngine()
-        : EngineImpl("arm"), device_(ARM_DEFAULT_ALIGNMENT, ppl::common::GetCpuISA()){};
+    ArmEngine() : EngineImpl("arm"), device_(ARM_DEFAULT_ALIGNMENT, ppl::common::GetCpuISA()){};
     ppl::common::RetCode BindNumaNode(int32_t numa_node_id) const;
     ppl::common::RetCode Configure(uint32_t, ...) override;
     EngineContext* CreateEngineContext() override;

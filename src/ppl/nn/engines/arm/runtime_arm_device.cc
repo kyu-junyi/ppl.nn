@@ -77,8 +77,6 @@ void RuntimeArmDevice::FreeTmpBuffer(BufferDesc* buffer) {
     }
 }
 
-/* -------------------------------------------------------------------------- */
-
 RetCode RuntimeArmDevice::DoMemDefrag(RuntimeArmDevice* dev, va_list) {
     if (!dev->can_defragement_) {
         return RC_UNSUPPORTED;
