@@ -137,83 +137,118 @@ void ppl_arm_server_kernel_fp16_fc_convert_weights(
     const int64_t num_in,
     const int64_t num_out) 
 {
-    const int64_t num_out_align = num_out & (~(VBLOCK()-1));
+    const int64_t num_out_align = num_out & (~(16 * VBLOCK()-1));
     const int64_t num_in_align  = num_in & (~(VBLOCK()-1));
 
-    for (int64_t i = 0; i < num_out_align; i += VBLOCK()) {
-        for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
-            const __fp16 *weights_ptr = weights + i * num_in + j;
-            float16x8_t v[8];
-            v[0] = vld1q_f16(weights_ptr + 0 * num_in);
-            v[1] = vld1q_f16(weights_ptr + 1 * num_in);
-            v[2] = vld1q_f16(weights_ptr + 2 * num_in);
-            v[3] = vld1q_f16(weights_ptr + 3 * num_in);
-            v[4] = vld1q_f16(weights_ptr + 4 * num_in);
-            v[5] = vld1q_f16(weights_ptr + 5 * num_in);
-            v[6] = vld1q_f16(weights_ptr + 6 * num_in);
-            v[7] = vld1q_f16(weights_ptr + 7 * num_in);
-
-            V_TRANSPOSE_FP16_8x8(v);
-            
-            __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * VBLOCK();
-            vst1q_f16(cvt_weights_ptr + 0 * VBLOCK(), v[0]);
-            vst1q_f16(cvt_weights_ptr + 1 * VBLOCK(), v[1]);
-            vst1q_f16(cvt_weights_ptr + 2 * VBLOCK(), v[2]);
-            vst1q_f16(cvt_weights_ptr + 3 * VBLOCK(), v[3]);
-            vst1q_f16(cvt_weights_ptr + 4 * VBLOCK(), v[4]);
-            vst1q_f16(cvt_weights_ptr + 5 * VBLOCK(), v[5]);
-            vst1q_f16(cvt_weights_ptr + 6 * VBLOCK(), v[6]);
-            vst1q_f16(cvt_weights_ptr + 7 * VBLOCK(), v[7]);
+    const int64_t num_out_tail  = num_out - num_out_align;
+    const int64_t num_out_tail_blocks  = DIV_CEIL(num_out_tail, VBLOCK());
+    for (int64_t ic = 0; ic < num_in; ic++) {
+        for (int64_t oc = 0; oc < num_out_align; oc++) {
+            cvt_weights[ (oc/(16*VBLOCK())*num_in)*(16*VBLOCK()) + ic*(16*VBLOCK()) + oc%(16*VBLOCK()) ] = weights[oc*num_in+ic];
         }
-        for (int64_t j = num_in_align; j < num_in; j++) {
-            const __fp16 *weights_ptr = weights + i * num_in + j;
-            __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * VBLOCK();
-            cvt_weights_ptr[0] = weights_ptr[0 * num_in];
-            cvt_weights_ptr[1] = weights_ptr[1 * num_in]; 
-            cvt_weights_ptr[2] = weights_ptr[2 * num_in];
-            cvt_weights_ptr[3] = weights_ptr[3 * num_in];
-            cvt_weights_ptr[4] = weights_ptr[4 * num_in];
-            cvt_weights_ptr[5] = weights_ptr[5 * num_in]; 
-            cvt_weights_ptr[6] = weights_ptr[6 * num_in];
-            cvt_weights_ptr[7] = weights_ptr[7 * num_in];
+        for (int64_t oc = num_out_align; oc < num_out; oc++) {
+            cvt_weights[ num_out_align*num_in + ic*(num_out_tail_blocks*VBLOCK()) + oc-num_out_align ] = weights[oc*num_in+ic];
+        }
+        for (int64_t oc = num_out; oc < CEIL8(num_out); oc++) {
+            cvt_weights[ num_out_align*num_in + ic*(num_out_tail_blocks*VBLOCK()) + oc-num_out_align ] = 0.0f;
         }
     }
-    if (num_out_align < num_out) {
-        const int64_t num_out_tail = num_out - num_out_align;
-        for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
-            const __fp16 *weights_ptr = weights + num_out_align * num_in + j;
-            float16x8_t v[8];
-            for (int64_t ii = 0; ii < num_out_tail; ii++) {
-                v[ii] = vld1q_f16(weights_ptr + ii * num_in);
-            }
-            for (int64_t ii = num_out_tail; ii < VBLOCK(); ii++) {
-                v[ii] = vdupq_n_f16(0.0f);
-            }
 
-            V_TRANSPOSE_FP16_8x8(v);
-            
-            __fp16 *cvt_weights_ptr = cvt_weights + num_out_align * num_in + j * VBLOCK();
-            vst1q_f16(cvt_weights_ptr + 0 * VBLOCK(), v[0]);
-            vst1q_f16(cvt_weights_ptr + 1 * VBLOCK(), v[1]);
-            vst1q_f16(cvt_weights_ptr + 2 * VBLOCK(), v[2]);
-            vst1q_f16(cvt_weights_ptr + 3 * VBLOCK(), v[3]);
-            vst1q_f16(cvt_weights_ptr + 4 * VBLOCK(), v[4]);
-            vst1q_f16(cvt_weights_ptr + 5 * VBLOCK(), v[5]);
-            vst1q_f16(cvt_weights_ptr + 6 * VBLOCK(), v[6]);
-            vst1q_f16(cvt_weights_ptr + 7 * VBLOCK(), v[7]);
-        }
-        for (int64_t j = num_in_align; j < num_in; j++) {
-            const __fp16 *weights_ptr = weights + num_out_align * num_in + j;
-            __fp16 *cvt_weights_ptr = cvt_weights + num_out_align * num_in + j * VBLOCK();
+    // for (int64_t i = 0; i < num_out_align; i += 16 * VBLOCK()) {
+    //     for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
+    //         for (int64_t b_id = 0; b_id < 16; b_id++) {
+    //             const __fp16 *weights_ptr = weights + (i + b_id * VBLOCK()) * num_in + j;
+    //             float16x8_t v[8];
+    //             v[0] = vld1q_f16(weights_ptr + 0 * num_in);
+    //             v[1] = vld1q_f16(weights_ptr + 1 * num_in);
+    //             v[2] = vld1q_f16(weights_ptr + 2 * num_in);
+    //             v[3] = vld1q_f16(weights_ptr + 3 * num_in);
+    //             v[4] = vld1q_f16(weights_ptr + 4 * num_in);
+    //             v[5] = vld1q_f16(weights_ptr + 5 * num_in);
+    //             v[6] = vld1q_f16(weights_ptr + 6 * num_in);
+    //             v[7] = vld1q_f16(weights_ptr + 7 * num_in);
 
-            for (int64_t ii = 0; ii < num_out_tail; ii++) {
-                cvt_weights_ptr[ii] = weights_ptr[ii * num_in];
-            }
-            for (int64_t ii = num_out_tail; ii < VBLOCK(); ii++) {
-                cvt_weights_ptr[ii] = 0.0f;
-            }
-        }
-    }
+    //             V_TRANSPOSE_FP16_8x8(v);
+                
+    //             __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * 16 * VBLOCK() + b_id * VBLOCK();
+    //             vst1q_f16(cvt_weights_ptr + 0 * 16 * VBLOCK(), v[0]);
+    //             vst1q_f16(cvt_weights_ptr + 1 * 16 * VBLOCK(), v[1]);
+    //             vst1q_f16(cvt_weights_ptr + 2 * 16 * VBLOCK(), v[2]);
+    //             vst1q_f16(cvt_weights_ptr + 3 * 16 * VBLOCK(), v[3]);
+    //             vst1q_f16(cvt_weights_ptr + 4 * 16 * VBLOCK(), v[4]);
+    //             vst1q_f16(cvt_weights_ptr + 5 * 16 * VBLOCK(), v[5]);
+    //             vst1q_f16(cvt_weights_ptr + 6 * 16 * VBLOCK(), v[6]);
+    //             vst1q_f16(cvt_weights_ptr + 7 * 16 * VBLOCK(), v[7]);
+    //         }
+    //     }
+    //     for (int64_t j = num_in_align; j < num_in; j++) {
+    //         const __fp16 *weights_ptr = weights + i * num_in + j;
+    //         __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * 16 * VBLOCK();
+    //         for (int64_t ii = 0; ii < 16 * VBLOCK(); ii++) {
+    //             cvt_weights_ptr[ii] = weights_ptr[ii * num_in];
+    //         }
+    //     }
+    // }
+    // if (num_out_align < num_out) {
+    //     int64_t i = num_out_align;
+    //     const int64_t num_out_tail = num_out - num_out_align;
+    //     const int64_t num_out_tail_align = FLOOR8(num_out_tail);
+    //     const int64_t num_out_tail_packed = CEIL8(num_out_tail);
+    //     const int64_t num_out_tail_align_blocks = num_out_tail_align/VBLOCK();
+    //     const int64_t num_out_tail_blocks = num_out_tail_packed/VBLOCK();
+
+    //     for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
+    //         for (int64_t b_id = 0; b_id < num_out_tail_align_blocks; b_id++) {
+    //             const __fp16 *weights_ptr = weights + (i + b_id * VBLOCK()) * num_in + j;
+    //             float16x8_t v[8];
+    //             v[0] = vld1q_f16(weights_ptr + 0 * num_in);
+    //             v[1] = vld1q_f16(weights_ptr + 1 * num_in);
+    //             v[2] = vld1q_f16(weights_ptr + 2 * num_in);
+    //             v[3] = vld1q_f16(weights_ptr + 3 * num_in);
+    //             v[4] = vld1q_f16(weights_ptr + 4 * num_in);
+    //             v[5] = vld1q_f16(weights_ptr + 5 * num_in);
+    //             v[6] = vld1q_f16(weights_ptr + 6 * num_in);
+    //             v[7] = vld1q_f16(weights_ptr + 7 * num_in);
+
+    //             V_TRANSPOSE_FP16_8x8(v);
+                
+    //             __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * num_out_tail_blocks * VBLOCK() + b_id * VBLOCK();
+    //             vst1q_f16(cvt_weights_ptr + 0 * num_out_tail_blocks * VBLOCK(), v[0]);
+    //             vst1q_f16(cvt_weights_ptr + 1 * num_out_tail_blocks * VBLOCK(), v[1]);
+    //             vst1q_f16(cvt_weights_ptr + 2 * num_out_tail_blocks * VBLOCK(), v[2]);
+    //             vst1q_f16(cvt_weights_ptr + 3 * num_out_tail_blocks * VBLOCK(), v[3]);
+    //             vst1q_f16(cvt_weights_ptr + 4 * num_out_tail_blocks * VBLOCK(), v[4]);
+    //             vst1q_f16(cvt_weights_ptr + 5 * num_out_tail_blocks * VBLOCK(), v[5]);
+    //             vst1q_f16(cvt_weights_ptr + 6 * num_out_tail_blocks * VBLOCK(), v[6]);
+    //             vst1q_f16(cvt_weights_ptr + 7 * num_out_tail_blocks * VBLOCK(), v[7]);
+    //         }
+    //         if (num_out_tail_align < num_out_tail) {
+    //             int64_t b_id = num_out_tail_align_blocks;
+    //             const __fp16 *weights_ptr = weights + (i + b_id * VBLOCK()) * num_in + j;
+    //             __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * 16 * VBLOCK();
+
+    //             int64_t num_out_remain = num_out_tail % VBLOCK();
+    //             for (int64_t jj = 0; jj < VBLOCK(); jj++) {
+    //                 for (int64_t ii = 0; ii < num_out_remain; ii++) {
+    //                     cvt_weights_ptr[jj * 16 * VBLOCK() + b_id * VBLOCK() + ii] = weights_ptr[ii * num_in + jj];
+    //                 }
+    //                 for (int64_t ii = num_out_remain; ii < VBLOCK(); ii++) {
+    //                     cvt_weights_ptr[jj * 16 * VBLOCK() + b_id * VBLOCK() + ii] = 0.0f;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     for (int64_t j = num_in_align; j < num_in; j++) {
+    //         const __fp16 *weights_ptr = weights + i * num_in + j;
+    //         __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * num_out_tail_blocks * VBLOCK();
+    //         for (int64_t ii = 0; ii < num_out_tail; ii++) {
+    //             cvt_weights_ptr[ii] = weights_ptr[ii * num_in];
+    //         }
+    //         for (int64_t ii = num_out_tail; ii < 16 * VBLOCK(); ii++) {
+    //             cvt_weights_ptr[ii] = 0.0f;
+    //         }
+    //     }
+    // }
 }
 
 static void ppl_arm_server_kernel_fp16_fc_single_batch(
@@ -232,7 +267,8 @@ static void ppl_arm_server_kernel_fp16_fc_single_batch(
 
 PRAGMA_OMP_PARALLEL()
 {
-    const int64_t b_n_stride = VBLOCK() * num_in;
+    // const int64_t b_n_stride = VBLOCK() * num_in;
+    const int64_t b_n_stride = VBLOCK();
 
     PRAGMA_OMP_FOR_NOWAIT()
     for (int64_t j_l1 = 0; j_l1 < num_out_align_16block; j_l1 += (16 * VBLOCK())) {
@@ -256,316 +292,380 @@ PRAGMA_OMP_PARALLEL()
         vc[15] = vld1q_f16(bias_base + 15 * VBLOCK());
         for (int64_t p_l1 = 0; p_l1 < num_in_align; p_l1 += VBLOCK()) {
             float16x8_t va = vld1q_f16(input + p_l1);
-            float16x8_t vb;
-            const __fp16 *weights_base = cvt_weights + j_l1 * num_in + p_l1 * VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 0);
+            float16x8_t vb0[4];
+            float16x8_t vb1[4];
+            const __fp16 *weights_base = cvt_weights + j_l1 * num_in + p_l1 * 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 1);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 1);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 1);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 1);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 1);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 1);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 1);
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 0);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 0);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 0);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 0);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 2);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 2);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 2);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 2);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 2);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 2);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 2);
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 3);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 3);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 3);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 3);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 3);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 3);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 3);
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 0);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 0);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 0);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 0);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 4);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 4);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 4);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 4);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 4);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 4);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 4);
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 5);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 5);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 5);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 5);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 5);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 5);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 5);
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 0);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 0);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 0);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 0);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 6);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 6);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 6);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 6);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 6);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 6);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 6);
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
 
-            weights_base += VBLOCK();
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 7);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 7);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 7);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 7);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 7);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 7);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 7);
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 0);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 0);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 0);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 0);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+            
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 1);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 1);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 1);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 1);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 1);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 1);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 1);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 1);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 1);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 1);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 1);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 1);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 1);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 1);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 1);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 1);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 2);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 2);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 2);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 2);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 2);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 2);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 2);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 2);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 2);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 2);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 2);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 2);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+            
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 2);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 2);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 2);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 2);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 3);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 3);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 3);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 3);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 3);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 3);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 3);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 3);
+            
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 3);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 3);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 3);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 3);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 3);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 3);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 3);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 3);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 4);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 4);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 4);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 4);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 4);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 4);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 4);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 4);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 4);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 4);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 4);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 4);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 4);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 4);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 4);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 4);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 5);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 5);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 5);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 5);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 5);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 5);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 5);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 5);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 5);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 5);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 5);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 5);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 5);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 5);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 5);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 5);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 6);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 6);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 6);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 6);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 6);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 6);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 6);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 6);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 6);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 6);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 6);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 6);
+
+            weights_base += 16 * VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 6);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 6);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 6);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 6);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 7);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 7);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 7);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 7);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 7);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 7);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 7);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 7);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 7);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 7);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 7);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 7);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 7);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 7);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 7);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 7);
         }
         for (int64_t p_l1 = num_in_align; p_l1 < num_in; p_l1++) {
             float16x8_t va = vld1q_lane_f16(input + p_l1, va, 0);
-            float16x8_t vb;
-            const __fp16 *weights_base = cvt_weights + j_l1 * num_in + p_l1 * VBLOCK();
-            const int64_t b_n_stride = VBLOCK() * num_in;
-            vb     = vld1q_f16(weights_base + 0  * b_n_stride);
-            vc[0]  = vfmaq_laneq_f16(vc[0],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 1  * b_n_stride);
-            vc[1]  = vfmaq_laneq_f16(vc[1],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 2  * b_n_stride);
-            vc[2]  = vfmaq_laneq_f16(vc[2],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 3  * b_n_stride);
-            vc[3]  = vfmaq_laneq_f16(vc[3],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 4  * b_n_stride);
-            vc[4]  = vfmaq_laneq_f16(vc[4],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 5  * b_n_stride);
-            vc[5]  = vfmaq_laneq_f16(vc[5],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 6  * b_n_stride);
-            vc[6]  = vfmaq_laneq_f16(vc[6],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 7  * b_n_stride);
-            vc[7]  = vfmaq_laneq_f16(vc[7],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 8  * b_n_stride);
-            vc[8]  = vfmaq_laneq_f16(vc[8],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 9  * b_n_stride);
-            vc[9]  = vfmaq_laneq_f16(vc[9],  vb, va, 0);
-            vb     = vld1q_f16(weights_base + 10 * b_n_stride);
-            vc[10] = vfmaq_laneq_f16(vc[10], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 11 * b_n_stride);
-            vc[11] = vfmaq_laneq_f16(vc[11], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 12 * b_n_stride);
-            vc[12] = vfmaq_laneq_f16(vc[12], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 13 * b_n_stride);
-            vc[13] = vfmaq_laneq_f16(vc[13], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 14 * b_n_stride);
-            vc[14] = vfmaq_laneq_f16(vc[14], vb, va, 0);
-            vb     = vld1q_f16(weights_base + 15 * b_n_stride);
-            vc[15] = vfmaq_laneq_f16(vc[15], vb, va, 0);
+            float16x8_t vb0[4];
+            float16x8_t vb1[4];
+            const __fp16 *weights_base = cvt_weights + j_l1 * num_in + p_l1 * 16 * VBLOCK();
+            const int64_t b_n_stride = VBLOCK();
+            vb0[0] = vld1q_f16(weights_base + 0  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 1  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 2  * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 3  * b_n_stride);
+
+            vb1[0] = vld1q_f16(weights_base + 4  * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 5  * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 6  * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 7  * b_n_stride);
+            
+            vc[0]  = vfmaq_laneq_f16(vc[0],  vb0[0], va, 0);
+            vc[1]  = vfmaq_laneq_f16(vc[1],  vb0[1], va, 0);
+            vc[2]  = vfmaq_laneq_f16(vc[2],  vb0[2], va, 0);
+            vc[3]  = vfmaq_laneq_f16(vc[3],  vb0[3], va, 0);
+
+            vb0[0] = vld1q_f16(weights_base + 8  * b_n_stride);
+            vb0[1] = vld1q_f16(weights_base + 9  * b_n_stride);
+            vb0[2] = vld1q_f16(weights_base + 10 * b_n_stride);
+            vb0[3] = vld1q_f16(weights_base + 11 * b_n_stride);
+
+            vc[4]  = vfmaq_laneq_f16(vc[4],  vb1[0], va, 0);
+            vc[5]  = vfmaq_laneq_f16(vc[5],  vb1[1], va, 0);
+            vc[6]  = vfmaq_laneq_f16(vc[6],  vb1[2], va, 0);
+            vc[7]  = vfmaq_laneq_f16(vc[7],  vb1[3], va, 0);
+
+            vb1[0] = vld1q_f16(weights_base + 12 * b_n_stride);
+            vb1[1] = vld1q_f16(weights_base + 13 * b_n_stride);
+            vb1[2] = vld1q_f16(weights_base + 14 * b_n_stride);
+            vb1[3] = vld1q_f16(weights_base + 15 * b_n_stride);
+
+            vc[8]  = vfmaq_laneq_f16(vc[8],  vb0[0], va, 0);
+            vc[9]  = vfmaq_laneq_f16(vc[9],  vb0[1], va, 0);
+            vc[10] = vfmaq_laneq_f16(vc[10], vb0[2], va, 0);
+            vc[11] = vfmaq_laneq_f16(vc[11], vb0[3], va, 0);
+
+            vc[12] = vfmaq_laneq_f16(vc[12], vb1[0], va, 0);
+            vc[13] = vfmaq_laneq_f16(vc[13], vb1[1], va, 0);
+            vc[14] = vfmaq_laneq_f16(vc[14], vb1[2], va, 0);
+            vc[15] = vfmaq_laneq_f16(vc[15], vb1[3], va, 0);
         }
         __fp16 * output_base = output + j_l1;
         vst1q_f16(output_base + 0  * VBLOCK(), vc[0] );
@@ -598,42 +698,42 @@ PRAGMA_OMP_PARALLEL()
         for (int64_t p_l1 = 0; p_l1 < num_in_align; p_l1 += VBLOCK()) {
             float16x8_t va = vld1q_f16(input + p_l1);
             float16x8_t vb;
-            const __fp16 *weights_base = cvt_weights + num_out_processed * num_in + p_l1 * VBLOCK();
+            const __fp16 *weights_base = cvt_weights + num_out_processed * num_in + p_l1 * num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 0);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 1);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 2);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 3);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 4);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 5);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 6);
             }
-            weights_base += VBLOCK();
+            weights_base += num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 7);
@@ -642,7 +742,7 @@ PRAGMA_OMP_PARALLEL()
         for (int64_t p_l1 = num_in_align; p_l1 < num_in; p_l1++) {
             float16x8_t va = vld1q_lane_f16(input + p_l1, va, 0);
             float16x8_t vb;
-            const __fp16 *weights_base = cvt_weights + num_out_processed * num_in + p_l1;
+            const __fp16 *weights_base = cvt_weights + num_out_processed * num_in + p_l1 * num_output_blocks * VBLOCK();
             for (int64_t id = 0; id < num_output_blocks; id++) {
                 vb     = vld1q_f16(weights_base + id * b_n_stride);
                 vc[id] = vfmaq_laneq_f16(vc[id],  vb,  va, 0);
@@ -654,21 +754,22 @@ PRAGMA_OMP_PARALLEL()
             vst1q_f16(output_base + id * VBLOCK(), vc[id]);
         }
         const int64_t num_output_tail = num_out - num_out_align;
-        while (num_output_tail > 0) {
-            vst1q_lane_f16(output + num_out_align    , vc[num_output_blocks-1], 0);
-            if (num_output_tail == 1) break;
-            vst1q_lane_f16(output + num_out_align + 1, vc[num_output_blocks-1], 1);
-            if (num_output_tail == 2) break;
-            vst1q_lane_f16(output + num_out_align + 2, vc[num_output_blocks-1], 2);
-            if (num_output_tail == 3) break;
-            vst1q_lane_f16(output + num_out_align + 3, vc[num_output_blocks-1], 3);
-            if (num_output_tail == 4) break;
-            vst1q_lane_f16(output + num_out_align + 4, vc[num_output_blocks-1], 4);
-            if (num_output_tail == 5) break;
-            vst1q_lane_f16(output + num_out_align + 5, vc[num_output_blocks-1], 5);
-            if (num_output_tail == 6) break;
-            vst1q_lane_f16(output + num_out_align + 6, vc[num_output_blocks-1], 6);
-            if (num_output_tail == 7) break;
+        if (num_output_tail > 0) {
+            do {
+                vst1q_lane_f16(output + num_out_align    , vc[num_output_blocks-1], 0);
+                if (num_output_tail == 1) break;
+                vst1q_lane_f16(output + num_out_align + 1, vc[num_output_blocks-1], 1);
+                if (num_output_tail == 2) break;
+                vst1q_lane_f16(output + num_out_align + 2, vc[num_output_blocks-1], 2);
+                if (num_output_tail == 3) break;
+                vst1q_lane_f16(output + num_out_align + 3, vc[num_output_blocks-1], 3);
+                if (num_output_tail == 4) break;
+                vst1q_lane_f16(output + num_out_align + 4, vc[num_output_blocks-1], 4);
+                if (num_output_tail == 5) break;
+                vst1q_lane_f16(output + num_out_align + 5, vc[num_output_blocks-1], 5);
+                if (num_output_tail == 6) break;
+                vst1q_lane_f16(output + num_out_align + 6, vc[num_output_blocks-1], 6);
+            } while(0);
         }
     }
 }  // omp parallel region
@@ -692,22 +793,22 @@ static void ppl_arm_server_kernel_fp16_fc_multi_batch(
 {
     int64_t opt_sgemm_m2 = sgemm_m2;
     int64_t opt_sgemm_n2 = sgemm_n2;
-    int64_t num_blocks = ((num_out+sgemm_n2-1) / sgemm_n2) * ((num_batch+sgemm_m2-1) / sgemm_m2);
-    int64_t prv_num_blocks = num_blocks;
+    // int64_t num_blocks = ((num_out+sgemm_n2-1) / sgemm_n2) * ((num_batch+sgemm_m2-1) / sgemm_m2);
+    // int64_t prv_num_blocks = num_blocks;
 
-    while (num_blocks < 0.8 * PPL_OMP_MAX_THREADS()) {
-        if (opt_sgemm_n2 >= 2 * sgemm_n1) {
-            opt_sgemm_n2 = opt_sgemm_n2 / 2;
-        }
-        else if (opt_sgemm_m2 >= 2 * sgemm_m1) {
-            opt_sgemm_m2 = opt_sgemm_m2 / 2;
-        }
-        num_blocks = ((num_out+opt_sgemm_n2-1) / opt_sgemm_n2) * ((num_batch+opt_sgemm_m2-1) / opt_sgemm_m2);
-        if (prv_num_blocks == num_blocks) {
-            break;
-        }
-        prv_num_blocks = num_blocks;
-    }
+    // while (num_blocks < 0.8 * PPL_OMP_MAX_THREADS()) {
+    //     if (opt_sgemm_n2 >= 2 * sgemm_n1) {
+    //         opt_sgemm_n2 = opt_sgemm_n2 / 2;
+    //     }
+    //     else if (opt_sgemm_m2 >= 2 * sgemm_m1) {
+    //         opt_sgemm_m2 = opt_sgemm_m2 / 2;
+    //     }
+    //     num_blocks = ((num_out+opt_sgemm_n2-1) / opt_sgemm_n2) * ((num_batch+opt_sgemm_m2-1) / opt_sgemm_m2);
+    //     if (prv_num_blocks == num_blocks) {
+    //         break;
+    //     }
+    //     prv_num_blocks = num_blocks;
+    // }
 
 PRAGMA_OMP_PARALLEL()
 {
@@ -749,6 +850,10 @@ PRAGMA_OMP_PARALLEL()
                 const int64_t n_l2 = std::min((num_out-j_l2), opt_sgemm_n2);
 
                 for (int64_t j_l1 = 0; j_l1 < n_l2; j_l1 += sgemm_n1) {
+                    const int64_t n_multi_vblock_id = (j_l2 + j_l1) / (16 * VBLOCK());
+                    const int64_t n_multi_vblock_num = std::min((int64_t)16, PACK_VBLOCK(num_out)/VBLOCK() - n_multi_vblock_id * 16);
+                    const int64_t j_ofs = (j_l1 % (16 * VBLOCK()));
+
                     for (int64_t p_l1 = 0; p_l1 < k_l3; p_l1 += sgemm_k1) {
                         for (int64_t i_l1 = 0; i_l1 < m_l2; i_l1 += sgemm_m1) {
                             const int64_t n_l1 = std::min((n_l2 - j_l1), sgemm_n1);
@@ -771,7 +876,7 @@ PRAGMA_OMP_PARALLEL()
 
                                     hgemm_kernel_func_table[3][n_l0/VBLOCK()-1](
                                         a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                        cvt_weights + j * num_in + p * VBLOCK(),
+                                        cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                         cvt_bias + j,
                                         c_base_local + i_l0 * ldc_local + j_l0,
                                         k_sgemm_m0,
@@ -779,8 +884,8 @@ PRAGMA_OMP_PARALLEL()
                                         k_l1,
                                         VBLOCK(),
                                         num_batch * VBLOCK(),
-                                        VBLOCK(),
-                                        num_in * VBLOCK(),
+                                        n_multi_vblock_num * VBLOCK(), // b_k
+                                        VBLOCK(), // b_n
                                         ldc_local,
                                         !is_first_k,
                                         0
@@ -797,7 +902,7 @@ PRAGMA_OMP_PARALLEL()
                                         const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)VBLOCK() * 4);
                                         hgemm_kernel_func_table[2][n_l0/VBLOCK()-1](
                                             a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                            cvt_weights + j * num_in + p * VBLOCK(),
+                                            cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                             cvt_bias + j,
                                             c_base_local + i_l0 * ldc_local + j_l0,
                                             4,
@@ -805,8 +910,8 @@ PRAGMA_OMP_PARALLEL()
                                             k_l1,
                                             VBLOCK(),
                                             num_batch * VBLOCK(),
-                                            VBLOCK(),
-                                            num_in * VBLOCK(),
+                                            n_multi_vblock_num * VBLOCK(), // b_k
+                                            VBLOCK(), // b_n
                                             ldc_local,
                                             !is_first_k,
                                             0
@@ -818,7 +923,7 @@ PRAGMA_OMP_PARALLEL()
                                         const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)VBLOCK() * 4);
                                         hgemm_kernel_func_table[1][n_l0/VBLOCK()-1](
                                             a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                            cvt_weights + j * num_in + p * VBLOCK(),
+                                            cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                             cvt_bias + j,
                                             c_base_local + i_l0 * ldc_local + j_l0,
                                             2,
@@ -826,8 +931,8 @@ PRAGMA_OMP_PARALLEL()
                                             k_l1,
                                             VBLOCK(),
                                             num_batch * VBLOCK(),
-                                            VBLOCK(),
-                                            num_in * VBLOCK(),
+                                            n_multi_vblock_num * VBLOCK(), // b_k
+                                            VBLOCK(), // b_n
                                             ldc_local,
                                             !is_first_k,
                                             0
@@ -839,7 +944,7 @@ PRAGMA_OMP_PARALLEL()
                                         const int64_t n_l0 = std::min((n_l1_pack-j_l0), (int64_t)VBLOCK() * 4);
                                         hgemm_kernel_func_table[0][n_l0/VBLOCK()-1](
                                             a_buffer + p_l1 * num_batch + (i_l2+i_l1+i_l0) * VBLOCK(),
-                                            cvt_weights + j * num_in + p * VBLOCK(),
+                                            cvt_weights + n_multi_vblock_id * num_in * (16 * VBLOCK()) + p * n_multi_vblock_num * VBLOCK() + j_ofs + j_l0,
                                             cvt_bias + j,
                                             c_base_local + i_l0 * ldc_local + j_l0,
                                             1,
@@ -847,8 +952,8 @@ PRAGMA_OMP_PARALLEL()
                                             k_l1,
                                             VBLOCK(),
                                             num_batch * VBLOCK(),
-                                            VBLOCK(),
-                                            num_in * VBLOCK(),
+                                            n_multi_vblock_num * VBLOCK(), // b_k
+                                            VBLOCK(), // b_n
                                             ldc_local,
                                             !is_first_k,
                                             0

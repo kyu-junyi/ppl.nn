@@ -132,72 +132,112 @@ static void maxpool2d_n4cx_f2s2p0_fp32(
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel; c += CVL()) {
                 const float *input_c_base = input + (n * num_channel_ceil4 + c) * inH * inW;
-                float *output_c_base      = output + (n * num_channel_ceil4 + c) * outH * outW;
+                float *output_c_base = output + (n * num_channel_ceil4 + c) * outH * outW;
                 for (int64_t oh = 0; oh < outH; oh++) {
                     const float *input_h_base = input_c_base + oh * 2 * inW * CVL();
-                    float *output_h_base      = output_c_base + oh * outW * CVL();
+                    float *output_h_base = output_c_base + oh * outW * CVL();
 
                     int64_t ow = 0;
-                    for (; ow <= outW - 4; ow += 4) {
+                    for (; ow <= outW-7; ow+=7) {
                         const float *input_base0 = input_h_base + ow * 2 * CVL();
                         const float *input_base1 = input_h_base + inW * CVL() + ow * 2 * CVL();
-                        float *output_base       = output_h_base + ow * CVL();
-                        float32x4_t vin0[8];
-                        float32x4_t vin1[8];
-                        float32x4_t vout[4];
+                        float *output_base = output_h_base + ow * CVL();
+                        float32x4_t vin0[12];
+                        float32x4_t vin1[12];
+                        float32x4_t vout[7];
 
-                        vin0[0] = vld1q_f32(input_base0);
-                        vin0[1] = vld1q_f32(input_base0 + CVL());
+                        vin0[0] = vld1q_f32(input_base0            );
+                        vin0[1] = vld1q_f32(input_base0 + CVL()    );
                         vin0[2] = vld1q_f32(input_base0 + CVL() * 2);
                         vin0[3] = vld1q_f32(input_base0 + CVL() * 3);
+
+                        vin1[0] = vld1q_f32(input_base1            );
+                        vin1[1] = vld1q_f32(input_base1 + CVL()    );
+                        vin1[2] = vld1q_f32(input_base1 + CVL() * 2);
+                        vin1[3] = vld1q_f32(input_base1 + CVL() * 3);
+
+                        vout[0] = vmaxq_f32(vin0[0], vin1[0]);
+                        vout[1] = vmaxq_f32(vin0[2], vin1[2]);
+
                         vin0[4] = vld1q_f32(input_base0 + CVL() * 4);
                         vin0[5] = vld1q_f32(input_base0 + CVL() * 5);
                         vin0[6] = vld1q_f32(input_base0 + CVL() * 6);
                         vin0[7] = vld1q_f32(input_base0 + CVL() * 7);
-
-                        vin1[0] = vld1q_f32(input_base1);
-                        vin1[1] = vld1q_f32(input_base1 + CVL());
-                        vin1[2] = vld1q_f32(input_base1 + CVL() * 2);
-                        vin1[3] = vld1q_f32(input_base1 + CVL() * 3);
+                        
                         vin1[4] = vld1q_f32(input_base1 + CVL() * 4);
                         vin1[5] = vld1q_f32(input_base1 + CVL() * 5);
                         vin1[6] = vld1q_f32(input_base1 + CVL() * 6);
                         vin1[7] = vld1q_f32(input_base1 + CVL() * 7);
+                        
+                        vout[2] = vmaxq_f32(vin0[4], vin1[4]);
+                        vout[3] = vmaxq_f32(vin0[6], vin1[6]);
 
-                        vout[0] = vmaxq_f32(vin0[0], vin0[1]);
-                        vout[1] = vmaxq_f32(vin0[2], vin0[3]);
-                        vout[2] = vmaxq_f32(vin0[4], vin0[5]);
-                        vout[3] = vmaxq_f32(vin0[6], vin0[7]);
+                        vout[0] = vmaxq_f32(vout[0], vin0[1]);
+                        vout[1] = vmaxq_f32(vout[1], vin0[3]);
 
-                        vout[0] = vmaxq_f32(vout[0], vin1[0]);
-                        vout[1] = vmaxq_f32(vout[1], vin1[2]);
-                        vout[2] = vmaxq_f32(vout[2], vin1[4]);
-                        vout[3] = vmaxq_f32(vout[3], vin1[6]);
+                        vin0[8] = vld1q_f32(input_base0 + CVL() * 8);
+                        vin0[9] = vld1q_f32(input_base0 + CVL() * 9);
+                        vin0[10] = vld1q_f32(input_base0 + CVL() * 10);
+                        vin0[11] = vld1q_f32(input_base0 + CVL() * 11);
+                        
+                        vin1[8] = vld1q_f32(input_base1 + CVL() * 8);
+                        vin1[9] = vld1q_f32(input_base1 + CVL() * 9);
+                        vin1[10] = vld1q_f32(input_base1 + CVL() * 10);
+                        vin1[11] = vld1q_f32(input_base1 + CVL() * 11);
+
+                        vout[2] = vmaxq_f32(vout[2], vin0[5]);
+                        vout[3] = vmaxq_f32(vout[3], vin0[7]);
+
+                        vout[4] = vmaxq_f32(vin0[8], vin1[8]);
+                        vout[5] = vmaxq_f32(vin0[10], vin1[10]);
 
                         vout[0] = vmaxq_f32(vout[0], vin1[1]);
                         vout[1] = vmaxq_f32(vout[1], vin1[3]);
+
+                        vin0[0] = vld1q_f32(input_base0 + CVL() * 12);
+                        vin0[1] = vld1q_f32(input_base0 + CVL() * 13);
+                        
+                        vin1[0] = vld1q_f32(input_base1 + CVL() * 12);
+                        vin1[1] = vld1q_f32(input_base1 + CVL() * 13);
+
+                        vout[4] = vmaxq_f32(vout[4], vin0[9]);
+                        vout[5] = vmaxq_f32(vout[5], vin0[11]);
+
                         vout[2] = vmaxq_f32(vout[2], vin1[5]);
                         vout[3] = vmaxq_f32(vout[3], vin1[7]);
 
-                        vst1q_f32(output_base, vout[0]);
-                        vst1q_f32(output_base + CVL(), vout[1]);
+                        vout[6] = vmaxq_f32(vin0[0], vin1[0]);
+
+                        vst1q_f32(output_base            , vout[0]);
+                        vst1q_f32(output_base + CVL()    , vout[1]);
                         vst1q_f32(output_base + CVL() * 2, vout[2]);
                         vst1q_f32(output_base + CVL() * 3, vout[3]);
+
+                        vout[0] = vmaxq_f32(vin0[1], vin1[1]);
+
+                        vout[4] = vmaxq_f32(vout[4], vin1[9]);
+                        vout[5] = vmaxq_f32(vout[5], vin1[11]);
+
+                        vout[6] = vmaxq_f32(vout[6], vout[0]);
+
+                        vst1q_f32(output_base + CVL() * 4, vout[4]);
+                        vst1q_f32(output_base + CVL() * 5, vout[5]);
+                        vst1q_f32(output_base + CVL() * 6, vout[6]);
                     }
                     for (; ow < outW; ow++) {
                         const float *input_base = input_h_base + ow * 2 * CVL();
                         float32x4_t vin[4];
                         float32x4_t vout;
 
-                        vin[0] = vld1q_f32(input_base);
-                        vin[1] = vld1q_f32(input_base + CVL());
-                        vin[2] = vld1q_f32(input_base + inW * CVL());
+                        vin[0] = vld1q_f32(input_base                      );
+                        vin[1] = vld1q_f32(input_base               + CVL());
+                        vin[2] = vld1q_f32(input_base + inW * CVL()        );
                         vin[3] = vld1q_f32(input_base + inW * CVL() + CVL());
 
                         vout = vmaxq_f32(vin[0], vin[1]);
                         vout = vmaxq_f32(vout, vin[2]);
                         vout = vmaxq_f32(vout, vin[3]);
-
+                        
                         vst1q_f32(output_h_base + ow * CVL(), vout);
                     }
                 }

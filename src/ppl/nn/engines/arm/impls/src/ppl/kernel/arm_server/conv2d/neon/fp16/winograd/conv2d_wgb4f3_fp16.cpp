@@ -1739,7 +1739,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
     int64_t ic_blk_est   = 192;
     int64_t tile_blk_est = 140;
     if (ic_blk_est > ic_g_pck) {
-        tile_blk_est = (64 * 1024 / sizeof(__fp16) - 2 * OCVL() * ic_g_pck) / (16 + ic_g_pck);
+        tile_blk_est = (64 * 1024 / sizeof(__fp16) - 2 * OCVL() * ic_g_pck) / (2 * OCVL() + ic_g_pck);
         if (tile_blk_est % 10 != 0 && tile_blk_est % 10 < 8) {
             tile_blk_est = (tile_blk_est / 10) * 10;
         }
