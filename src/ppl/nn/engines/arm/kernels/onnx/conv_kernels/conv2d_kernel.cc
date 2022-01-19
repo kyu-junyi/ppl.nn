@@ -20,27 +20,15 @@
 #include "ppl/common/sys.h"
 #include "ppl/nn/common/logger.h"
 #include "ppl/nn/engines/arm/utils/macros.h"
-#ifdef PPLNN_USE_ARM_SERVER_OMP
-#include <omp.h>
-#endif
-
-#ifdef PPLNN_USE_AARCH64
-//#include "PPLARMServerKernel/fp16/conv/gd/conv_gen_direct.h"
-#endif
 
 namespace ppl { namespace nn { namespace arm {
 
-#define CASE_STRING_FMT() "g%ld_mb%d_ic%ldih%diw%d_oc%ldoh%dow%d_kh%ldkw%ldsh%ldsw%ldph%ldpw%lddh%lddw%ld_n%s"
 ppl::common::RetCode Conv2dKernel::DoExecute(KernelExecContext* ctx) {
     TensorImpl* X = ctx->GetInput<TensorImpl>(0);
 
     TensorImpl* Y = ctx->GetOutput<TensorImpl>(0);
 
-    //    if (param_->infer_fallback_func) {
-    //        use_fallback_ = param_->infer_fallback_func(X, Y, &param_->param);
-    //    }
-
-    auto cur_executor = /*use_fallback_ ? fallback_executor_ :*/ executor_;
+    auto cur_executor = executor_;
 
     cur_executor->set_src_shape(X->GetShape());
     cur_executor->set_src(X->GetBufferPtr<void>());
@@ -62,6 +50,7 @@ ppl::common::RetCode Conv2dKernel::DoExecute(KernelExecContext* ctx) {
     }
 
 #ifdef DUMP_CONV
+#define CASE_STRING_FMT() "g%ld_mb%d_ic%ldih%diw%d_oc%ldoh%dow%d_kh%ldkw%ldsh%ldsw%ldph%ldpw%lddh%lddw%ld_n%s"
     fprintf(stderr, CASE_STRING_FMT() "\n", cur_executor->conv_param()->group, X->GetShape()->GetDim(0),
             cur_executor->conv_param()->channels, X->GetShape()->GetDim(2), X->GetShape()->GetDim(3),
             cur_executor->conv_param()->num_output, Y->GetShape()->GetDim(2), Y->GetShape()->GetDim(3),

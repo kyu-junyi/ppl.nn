@@ -53,8 +53,6 @@ private:
     bool use_fallback_ = false;
 };
 
-} //! namespace arm
-} //! namespace neruon
-} //! ppl
+}}} 
 
 #endif //! __ST_HPC_PPL_NEURON_RUNTIME_ARM_KERNELS_CONV2D_KERNEL_H_
