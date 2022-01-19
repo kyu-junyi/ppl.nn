@@ -115,54 +115,70 @@ static ArmOptKernel* GenericCreateOptKernel(const ir::Node* node) {
 
 OptKernelCreatorManager::OptKernelCreatorManager() {
     // onnx op default domain is ""
-    REGISTER_OPT_KERNEL_CREATOR("", "Add", 7, 12, AddOp);
+    // A
+    REGISTER_OPT_KERNEL_CREATOR("", "Add", 7, 16, AddOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ArgMax", 11, 11, ArgMaxOp);
     REGISTER_OPT_KERNEL_CREATOR("", "AveragePool", 11, 16, AvePoolOp);
+    // B
     REGISTER_OPT_KERNEL_CREATOR("", "BatchNormalization", 9, 13, BatchNormalizationOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Cast", 9, 12, CastOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Clip", 11, 11, ClipOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Concat", 11, 12, ConcatOp);
+    // C
+    REGISTER_OPT_KERNEL_CREATOR("", "Cast", 9, 16, CastOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Clip", 11, 16, ClipOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Concat", 4, 16, ConcatOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ConstantOfShape", 9, 16, ConstantOfShapeOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Conv", 1, 16, ConvOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Div", 7, 12, DivOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Equal", 11, 12, EqualOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Exp", 6, 12, ExpOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Expand", 8, 12, ExpandOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Less", 9, 12, LessOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Log", 6, 12, LogOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Not", 1, 16, NotOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Range", 11, 16, RangeOp);
+    // D
+    REGISTER_OPT_KERNEL_CREATOR("", "Div", 7, 16, DivOp);
+    // E
+    REGISTER_OPT_KERNEL_CREATOR("", "Equal", 11, 16, EqualOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Exp", 6, 16, ExpOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Expand", 8, 16, ExpandOp);
+    // F
     REGISTER_OPT_KERNEL_CREATOR("", "Flatten", 1, 16, FlattenOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Gather", 11, 12, GatherOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Gemm", 11, 12, GemmOp);
+    // G
+    REGISTER_OPT_KERNEL_CREATOR("", "Gather", 11, 16, GatherOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Gemm", 11, 16, GemmOp);
     REGISTER_OPT_KERNEL_CREATOR("", "GlobalAveragePool", 1, 16, AvePoolOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "GlobalMaxPool", 11, 11, MaxPoolOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "GlobalMaxPool", 1, 16, MaxPoolOp);
+    // L
     REGISTER_OPT_KERNEL_CREATOR("", "LeakyRelu", 6, 16, LeakyReLUOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "MaxPool", 11, 11, MaxPoolOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Mul", 7, 12, MulOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Less", 9, 16, LessOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Log", 6, 16, LogOp);
+    // M
+    REGISTER_OPT_KERNEL_CREATOR("", "MaxPool", 10, 16, MaxPoolOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Mul", 7, 16, MulOp);
+    // N
+    REGISTER_OPT_KERNEL_CREATOR("", "Not", 1, 16, NotOp);
+    // P
     REGISTER_OPT_KERNEL_CREATOR("", "Pad", 11, 16, PadOp);
+    // R
+    REGISTER_OPT_KERNEL_CREATOR("", "Range", 11, 16, RangeOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ReduceMax", 1, 16, ReduceMaxOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ReduceMean", 1, 16, ReduceMeanOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ReduceMin", 1, 16, ReduceMinOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ReduceProd", 1, 16, ReduceProdOp);
     REGISTER_OPT_KERNEL_CREATOR("", "ReduceSum", 1, 16, ReduceSumOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Relu", 6, 12, ReluOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Reshape", 5, 12, ReshapeOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Relu", 6, 16, ReluOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Reshape", 5, 13, ReshapeOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Resize", 11, 12, ResizeOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "ScatterND", 11, 12, ScatterNDOp);
+    // S
+    REGISTER_OPT_KERNEL_CREATOR("", "ScatterND", 11, 15, ScatterNDOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Shape", 1, 14, ShapeOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Sigmoid", 1, 16, SigmoidOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Slice", 10, 16, SliceOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Softmax", 11, 12, SoftmaxOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Split", 11, 12, SplitOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Sqrt", 6, 12, SqrtOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Split", 2, 12, SplitOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Sqrt", 6, 16, SqrtOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Squeeze", 1, 12, SqueezeOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Sub", 7, 12, SubOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Tile", 6, 12, TileOp);
+    REGISTER_OPT_KERNEL_CREATOR("", "Sub", 7, 16, SubOp);
+    // T
+    REGISTER_OPT_KERNEL_CREATOR("", "Tile", 6, 16, TileOp);
     REGISTER_OPT_KERNEL_CREATOR("", "TopK", 11, 16, TopKOp);
     REGISTER_OPT_KERNEL_CREATOR("", "Transpose", 1, 16, TransposeOp);
+    // U
     REGISTER_OPT_KERNEL_CREATOR("", "Unsqueeze", 1, 12, UnsqueezeOp);
-    REGISTER_OPT_KERNEL_CREATOR("", "Where", 9, 15, WhereOp);
+    // W
+    REGISTER_OPT_KERNEL_CREATOR("", "Where", 9, 16, WhereOp);
     // mmcv custom op
 
     // ppl
