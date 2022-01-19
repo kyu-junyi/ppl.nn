@@ -114,7 +114,6 @@ void PPL_ARM_SERVER_KERNEL_FP32_SGEMM_KERNEL_MXNX_FUNC(M_BLOCK0(), N_BLOCK0()) (
         
     "1:\n\t"
     ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " == 1 \n\t"
-                    // "eor  v15.16b, v15.16b, v15.16b\n\t"
                     "ldr  q15, [%[Vcnst_ptr]]\n\t"
         IF_M_GT(1 , "mov  v16.16b, v15.16b\n\t")
         IF_M_GT(2 , "mov  v17.16b, v15.16b\n\t")
@@ -132,8 +131,6 @@ void PPL_ARM_SERVER_KERNEL_FP32_SGEMM_KERNEL_MXNX_FUNC(M_BLOCK0(), N_BLOCK0()) (
         IF_M_GT(14, "mov  v29.16b, v15.16b\n\t")
     ".endif\n\t"
     ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " == 2 \n\t"
-                    // "eor  v10.16b, v10.16b, v10.16b\n\t"
-                    // "mov  v11.16b, v10.16b\n\t"
                     "ld1  {v10.4s, v11.4s}, [%[Vcnst_ptr]]\n\t"
         IF_M_GT(1,  "mov  v12.16b, v10.16b\n\t")
         IF_M_GT(1,  "mov  v13.16b, v11.16b\n\t")
@@ -155,9 +152,6 @@ void PPL_ARM_SERVER_KERNEL_FP32_SGEMM_KERNEL_MXNX_FUNC(M_BLOCK0(), N_BLOCK0()) (
         IF_M_GT(9,  "mov  v29.16b, v11.16b\n\t")
     ".endif\n\t"
     ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " == 3 \n\t"
-                    // "eor  v7.16b,  v7.16b, v7.16b\n\t"
-                    // "mov  v8.16b,  v7.16b\n\t"
-                    // "mov  v9.16b,  v7.16b\n\t"
                     "ld1  {v7.4s, v8.4s, v9.4s}, [%[Vcnst_ptr]]\n\t"
         IF_M_GT(1,  "mov  v10.16b, v7.16b\n\t")
         IF_M_GT(1,  "mov  v11.16b, v8.16b\n\t")
@@ -179,10 +173,6 @@ void PPL_ARM_SERVER_KERNEL_FP32_SGEMM_KERNEL_MXNX_FUNC(M_BLOCK0(), N_BLOCK0()) (
         IF_M_GT(6,  "mov  v27.16b, v9.16b\n\t")
     ".endif\n\t"
     ".if " PPL_ARM_SERVER_KERNEL_STR(N_BLOCK0()) " == 4 \n\t"
-                    // "eor  v8.16b,  v8.16b, v8.16b\n\t"
-                    // "mov  v9.16b,  v8.16b\n\t"
-                    // "mov  v10.16b, v8.16b\n\t"
-                    // "mov  v11.16b, v8.16b\n\t"
                     "ld1  {v8.4s, v9.4s, v10.4s, v11.4s}, [%[Vcnst_ptr]]\n\t"
         IF_M_GT(1,  "mov  v12.16b, v8.16b\n\t")
         IF_M_GT(1,  "mov  v13.16b, v9.16b\n\t")
@@ -594,7 +584,6 @@ void PPL_ARM_SERVER_KERNEL_FP32_SGEMM_KERNEL_MXNX_FUNC(M_BLOCK0(), N_BLOCK0()) (
         "ld1 {v31.4s}, [x10], %[Bkstride]\n\t"
     ".endif\n\t"
 
-        // "sub %[k], %[k], #4\n\t"  // scheduled earlier
                     "ld1  {v0.4s},  [x9], %[Amstride]\n\t"
         IF_M_GT(1 , "ld1  {v1.4s},  [x9], %[Amstride]\n\t")
         IF_M_GT(2 , "ld1  {v2.4s},  [x9], %[Amstride]\n\t")

@@ -15,14 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
+#include "sgemm_kernel.h"
+
 #include <arm_neon.h>
 #include <iostream>
 #include <cstdlib>
-#if defined PPL3_USE_ARM_OMP
-#include <omp.h>
-#endif
 
-#include "sgemm_kernel.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
 #define N_BLOCK0() 1
@@ -498,22 +496,6 @@ static void ppl_arm_server_kernel_fp32_fc_multi_batch(
 
     int64_t opt_sgemm_m2 = sgemm_m2;
     int64_t opt_sgemm_n2 = sgemm_n2;
-    // int64_t num_blocks = ((num_out+sgemm_n2-1) / sgemm_n2) * ((num_batch+sgemm_m2-1) / sgemm_m2);
-    // int64_t prv_num_blocks = num_blocks;
-
-    // while (num_blocks < 0.8 * PPL_OMP_MAX_THREADS()) {
-    //     if (opt_sgemm_n2 >= 2 * sgemm_n1) {
-    //         opt_sgemm_n2 = opt_sgemm_n2 / 2;
-    //     }
-    //     else if (opt_sgemm_m2 >= 2 * sgemm_m1) {
-    //         opt_sgemm_m2 = opt_sgemm_m2 / 2;
-    //     }
-    //     num_blocks = ((num_out+opt_sgemm_n2-1) / opt_sgemm_n2) * ((num_batch+opt_sgemm_m2-1) / opt_sgemm_m2);
-    //     if (prv_num_blocks == num_blocks) {
-    //         break;
-    //     }
-    //     prv_num_blocks = num_blocks;
-    // }
     
 PRAGMA_OMP_PARALLEL()
 {

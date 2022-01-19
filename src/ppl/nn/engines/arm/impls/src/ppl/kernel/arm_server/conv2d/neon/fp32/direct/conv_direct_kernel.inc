@@ -7,11 +7,11 @@
     PP_PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_FUNC(OUT_TILE_W)
 #endif
 
-#ifndef PPL3_ARM_SK_PP_STR
-#define PPL3_ARM_SK_PP_STR(X) #X
+#ifndef PPL_ARM_SK_PP_STR
+#define PPL_ARM_SK_PP_STR(X) #X
 #endif
-#ifndef PPL3_ARM_SK_STR
-#define PPL3_ARM_SK_STR(X) PPL3_ARM_SK_PP_STR(X)
+#ifndef PPL_ARM_SK_STR
+#define PPL_ARM_SK_STR(X) PPL_ARM_SK_PP_STR(X)
 #endif
 
 static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_FUNC(OUT_TILE_W())(
@@ -32,9 +32,9 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_FUNC(OUT_TILE_W())(
     const int64_t strdW_x_icV_bytes,
     const uint32_t fuse_flag)
 {
-#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
+#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
+// #define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
+// #define IF_ELSE_OW_GT(OW, INSTR_T, INSTR_F) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTR_T ".else\n\t  " INSTR_F ".endif\n\t"
 
     // x9  : filter pointer
     // x10 : input pointer
@@ -408,11 +408,11 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC8_H1WX_FUNC(OUT_TILE_W())(
     PP_PPL_ASK_FP32_CONV_DIRECT_N4CX_OC4_H1WX_FUNC(OUT_TILE_W)
 #endif
 
-#ifndef PPL3_ARM_SK_PP_STR
-#define PPL3_ARM_SK_PP_STR(X) #X
+#ifndef PPL_ARM_SK_PP_STR
+#define PPL_ARM_SK_PP_STR(X) #X
 #endif
-#ifndef PPL3_ARM_SK_STR
-#define PPL3_ARM_SK_STR(X) PPL3_ARM_SK_PP_STR(X)
+#ifndef PPL_ARM_SK_STR
+#define PPL_ARM_SK_STR(X) PPL_ARM_SK_PP_STR(X)
 #endif
 
 static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC4_H1WX_FUNC(OUT_TILE_W())(
@@ -433,7 +433,7 @@ static void PPL_ASK_FP32_CONV_DIRECT_N4CX_OC4_H1WX_FUNC(OUT_TILE_W())(
     const int64_t strdW_x_icV_bytes,
     const uint32_t fuse_flag)
 {
-#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL3_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
+#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
 
     // x9  : input 8-channel base pointer
     // x10 : input row base pointer

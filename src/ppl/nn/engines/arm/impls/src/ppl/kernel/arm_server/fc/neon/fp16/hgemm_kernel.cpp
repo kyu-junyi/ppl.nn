@@ -15,14 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
+#include "hgemm_kernel.h"
+
 #include <arm_neon.h>
 #include <iostream>
 #include <cstdlib>
-#if defined PPL3_USE_ARM_OMP
-#include <omp.h>
-#endif
 
-#include "hgemm_kernel.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
 #define N_BLOCK0() 1
@@ -152,101 +150,6 @@ void ppl_arm_server_kernel_fp16_fc_convert_weights(
         }
     }
 
-    // for (int64_t i = 0; i < num_out_align; i += 16 * VBLOCK()) {
-    //     for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
-    //         for (int64_t b_id = 0; b_id < 16; b_id++) {
-    //             const __fp16 *weights_ptr = weights + (i + b_id * VBLOCK()) * num_in + j;
-    //             float16x8_t v[8];
-    //             v[0] = vld1q_f16(weights_ptr + 0 * num_in);
-    //             v[1] = vld1q_f16(weights_ptr + 1 * num_in);
-    //             v[2] = vld1q_f16(weights_ptr + 2 * num_in);
-    //             v[3] = vld1q_f16(weights_ptr + 3 * num_in);
-    //             v[4] = vld1q_f16(weights_ptr + 4 * num_in);
-    //             v[5] = vld1q_f16(weights_ptr + 5 * num_in);
-    //             v[6] = vld1q_f16(weights_ptr + 6 * num_in);
-    //             v[7] = vld1q_f16(weights_ptr + 7 * num_in);
-
-    //             V_TRANSPOSE_FP16_8x8(v);
-                
-    //             __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * 16 * VBLOCK() + b_id * VBLOCK();
-    //             vst1q_f16(cvt_weights_ptr + 0 * 16 * VBLOCK(), v[0]);
-    //             vst1q_f16(cvt_weights_ptr + 1 * 16 * VBLOCK(), v[1]);
-    //             vst1q_f16(cvt_weights_ptr + 2 * 16 * VBLOCK(), v[2]);
-    //             vst1q_f16(cvt_weights_ptr + 3 * 16 * VBLOCK(), v[3]);
-    //             vst1q_f16(cvt_weights_ptr + 4 * 16 * VBLOCK(), v[4]);
-    //             vst1q_f16(cvt_weights_ptr + 5 * 16 * VBLOCK(), v[5]);
-    //             vst1q_f16(cvt_weights_ptr + 6 * 16 * VBLOCK(), v[6]);
-    //             vst1q_f16(cvt_weights_ptr + 7 * 16 * VBLOCK(), v[7]);
-    //         }
-    //     }
-    //     for (int64_t j = num_in_align; j < num_in; j++) {
-    //         const __fp16 *weights_ptr = weights + i * num_in + j;
-    //         __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * 16 * VBLOCK();
-    //         for (int64_t ii = 0; ii < 16 * VBLOCK(); ii++) {
-    //             cvt_weights_ptr[ii] = weights_ptr[ii * num_in];
-    //         }
-    //     }
-    // }
-    // if (num_out_align < num_out) {
-    //     int64_t i = num_out_align;
-    //     const int64_t num_out_tail = num_out - num_out_align;
-    //     const int64_t num_out_tail_align = FLOOR8(num_out_tail);
-    //     const int64_t num_out_tail_packed = CEIL8(num_out_tail);
-    //     const int64_t num_out_tail_align_blocks = num_out_tail_align/VBLOCK();
-    //     const int64_t num_out_tail_blocks = num_out_tail_packed/VBLOCK();
-
-    //     for (int64_t j = 0; j < num_in_align; j+= VBLOCK()) {
-    //         for (int64_t b_id = 0; b_id < num_out_tail_align_blocks; b_id++) {
-    //             const __fp16 *weights_ptr = weights + (i + b_id * VBLOCK()) * num_in + j;
-    //             float16x8_t v[8];
-    //             v[0] = vld1q_f16(weights_ptr + 0 * num_in);
-    //             v[1] = vld1q_f16(weights_ptr + 1 * num_in);
-    //             v[2] = vld1q_f16(weights_ptr + 2 * num_in);
-    //             v[3] = vld1q_f16(weights_ptr + 3 * num_in);
-    //             v[4] = vld1q_f16(weights_ptr + 4 * num_in);
-    //             v[5] = vld1q_f16(weights_ptr + 5 * num_in);
-    //             v[6] = vld1q_f16(weights_ptr + 6 * num_in);
-    //             v[7] = vld1q_f16(weights_ptr + 7 * num_in);
-
-    //             V_TRANSPOSE_FP16_8x8(v);
-                
-    //             __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * num_out_tail_blocks * VBLOCK() + b_id * VBLOCK();
-    //             vst1q_f16(cvt_weights_ptr + 0 * num_out_tail_blocks * VBLOCK(), v[0]);
-    //             vst1q_f16(cvt_weights_ptr + 1 * num_out_tail_blocks * VBLOCK(), v[1]);
-    //             vst1q_f16(cvt_weights_ptr + 2 * num_out_tail_blocks * VBLOCK(), v[2]);
-    //             vst1q_f16(cvt_weights_ptr + 3 * num_out_tail_blocks * VBLOCK(), v[3]);
-    //             vst1q_f16(cvt_weights_ptr + 4 * num_out_tail_blocks * VBLOCK(), v[4]);
-    //             vst1q_f16(cvt_weights_ptr + 5 * num_out_tail_blocks * VBLOCK(), v[5]);
-    //             vst1q_f16(cvt_weights_ptr + 6 * num_out_tail_blocks * VBLOCK(), v[6]);
-    //             vst1q_f16(cvt_weights_ptr + 7 * num_out_tail_blocks * VBLOCK(), v[7]);
-    //         }
-    //         if (num_out_tail_align < num_out_tail) {
-    //             int64_t b_id = num_out_tail_align_blocks;
-    //             const __fp16 *weights_ptr = weights + (i + b_id * VBLOCK()) * num_in + j;
-    //             __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * 16 * VBLOCK();
-
-    //             int64_t num_out_remain = num_out_tail % VBLOCK();
-    //             for (int64_t jj = 0; jj < VBLOCK(); jj++) {
-    //                 for (int64_t ii = 0; ii < num_out_remain; ii++) {
-    //                     cvt_weights_ptr[jj * 16 * VBLOCK() + b_id * VBLOCK() + ii] = weights_ptr[ii * num_in + jj];
-    //                 }
-    //                 for (int64_t ii = num_out_remain; ii < VBLOCK(); ii++) {
-    //                     cvt_weights_ptr[jj * 16 * VBLOCK() + b_id * VBLOCK() + ii] = 0.0f;
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     for (int64_t j = num_in_align; j < num_in; j++) {
-    //         const __fp16 *weights_ptr = weights + i * num_in + j;
-    //         __fp16 *cvt_weights_ptr = cvt_weights + i * num_in + j * num_out_tail_blocks * VBLOCK();
-    //         for (int64_t ii = 0; ii < num_out_tail; ii++) {
-    //             cvt_weights_ptr[ii] = weights_ptr[ii * num_in];
-    //         }
-    //         for (int64_t ii = num_out_tail; ii < 16 * VBLOCK(); ii++) {
-    //             cvt_weights_ptr[ii] = 0.0f;
-    //         }
-    //     }
-    // }
 }
 
 static void ppl_arm_server_kernel_fp16_fc_single_batch(
@@ -265,7 +168,6 @@ static void ppl_arm_server_kernel_fp16_fc_single_batch(
 
 PRAGMA_OMP_PARALLEL()
 {
-    // const int64_t b_n_stride = VBLOCK() * num_in;
     const int64_t b_n_stride = VBLOCK();
 
     PRAGMA_OMP_FOR_NOWAIT()
@@ -791,22 +693,6 @@ static void ppl_arm_server_kernel_fp16_fc_multi_batch(
 {
     int64_t opt_sgemm_m2 = sgemm_m2;
     int64_t opt_sgemm_n2 = sgemm_n2;
-    // int64_t num_blocks = ((num_out+sgemm_n2-1) / sgemm_n2) * ((num_batch+sgemm_m2-1) / sgemm_m2);
-    // int64_t prv_num_blocks = num_blocks;
-
-    // while (num_blocks < 0.8 * PPL_OMP_MAX_THREADS()) {
-    //     if (opt_sgemm_n2 >= 2 * sgemm_n1) {
-    //         opt_sgemm_n2 = opt_sgemm_n2 / 2;
-    //     }
-    //     else if (opt_sgemm_m2 >= 2 * sgemm_m1) {
-    //         opt_sgemm_m2 = opt_sgemm_m2 / 2;
-    //     }
-    //     num_blocks = ((num_out+opt_sgemm_n2-1) / opt_sgemm_n2) * ((num_batch+opt_sgemm_m2-1) / opt_sgemm_m2);
-    //     if (prv_num_blocks == num_blocks) {
-    //         break;
-    //     }
-    //     prv_num_blocks = num_blocks;
-    // }
 
 PRAGMA_OMP_PARALLEL()
 {

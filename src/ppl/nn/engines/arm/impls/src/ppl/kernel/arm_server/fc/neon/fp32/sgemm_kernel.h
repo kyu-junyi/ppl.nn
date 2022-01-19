@@ -15,8 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#ifndef PPL3_ARM_SERVER_KERNEL_SRC_FP32_FC_SGEMM_KERNEL_H_
-#define PPL3_ARM_SERVER_KERNEL_SRC_FP32_FC_SGEMM_KERNEL_H_
+#ifndef PPL_ARM_SERVER_KERNEL_SRC_FP32_FC_SGEMM_KERNEL_H_
+#define PPL_ARM_SERVER_KERNEL_SRC_FP32_FC_SGEMM_KERNEL_H_
 
 #include <iostream>
 #include <cstdlib>
