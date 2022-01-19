@@ -30,20 +30,20 @@ namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 static void avepool2d_n8cx_exclude_fp16(
     const __fp16 *input,
     __fp16 *output,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_channel,
     const int64_t num_batch,
-    const int64_t kerH,
-    const int64_t kerW,
-    const int64_t strdH,
-    const int64_t strdW,
-    const int64_t padH,
-    const int64_t padW,
-    const int64_t dltnH,
-    const int64_t dltnW)
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t strd_h,
+    const int64_t strd_w,
+    const int64_t pad_h,
+    const int64_t pad_w,
+    const int64_t dltn_h,
+    const int64_t dltn_w)
 {
     PRAGMA_OMP_PARALLEL()
     {
@@ -52,35 +52,35 @@ static void avepool2d_n8cx_exclude_fp16(
         for (int64_t n = 0; n < num_batch; n++) {
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel_ceil8; c += CVL()) {
-                const __fp16 *input_b_base = input + n * num_channel_ceil8 * inH * inW;
-                __fp16 *output_b_base      = output + n * num_channel_ceil8 * outH * outW;
-                const __fp16 *input_c_base = input_b_base + c * inH * inW;
-                __fp16 *output_c_base      = output_b_base + c * outH * outW;
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    const int64_t ih_base      = -padH + oh * strdH;
-                    const __fp16 *input_h_base = input_c_base + ih_base * inW * CVL();
-                    const int64_t fltH_start   = std::max(-ih_base + dltnH - 1, (int64_t)0) / dltnH; // inclusive
-                    const int64_t fltH_end     = std::min(kerH, (inH - ih_base + dltnH - 1) / dltnH); // exclusive
+                const __fp16 *input_b_base = input + n * num_channel_ceil8 * src_h * src_w;
+                __fp16 *output_b_base      = output + n * num_channel_ceil8 * dst_h * dst_w;
+                const __fp16 *input_c_base = input_b_base + c * src_h * src_w;
+                __fp16 *output_c_base      = output_b_base + c * dst_h * dst_w;
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    const int64_t ih_base      = -pad_h + oh * strd_h;
+                    const __fp16 *input_h_base = input_c_base + ih_base * src_w * CVL();
+                    const int64_t flt_h_start   = std::max(-ih_base + dltn_h - 1, (int64_t)0) / dltn_h; // inclusive
+                    const int64_t flt_h_end     = std::min(flt_h, (src_h - ih_base + dltn_h - 1) / dltn_h); // exclusive
 
-                    for (int64_t ow = 0; ow < outW; ow++) {
-                        int64_t iw_base            = -padW + ow * strdW;
+                    for (int64_t ow = 0; ow < dst_w; ow++) {
+                        int64_t iw_base            = -pad_w + ow * strd_w;
                         const __fp16 *input_w_base = input_h_base + iw_base * CVL();
-                        int64_t fltW_start         = std::max(-iw_base + dltnW - 1, (int64_t)0) / dltnW; // inclusive
-                        int64_t fltW_end           = std::min(kerW, (inW - iw_base + dltnW - 1) / dltnW); // exclusive
+                        int64_t flt_w_start         = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                        int64_t flt_w_end           = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                         float16x8_t vout       = vzero;
-                        __fp16 ave_coeff       = 1.0f / ((float)(fltH_end - fltH_start) * (fltW_end - fltW_start));
+                        __fp16 ave_coeff       = 1.0f / ((float)(flt_h_end - flt_h_start) * (flt_w_end - flt_w_start));
                         float16x8_t vave_coeff = vdupq_n_f16(ave_coeff);
 
-                        for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-                            for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
-                                float16x8_t vin = vld1q_f16(input_w_base + (kh * dltnH * inW + kw * dltnW) * CVL());
+                        for (int64_t kh = flt_h_start; kh < flt_h_end; kh++) {
+                            for (int64_t kw = flt_w_start; kw < flt_w_end; kw++) {
+                                float16x8_t vin = vld1q_f16(input_w_base + (kh * dltn_h * src_w + kw * dltn_w) * CVL());
                                 vout            = vaddq_f16(vout, vin);
                             }
                         }
                         vout = vmulq_f16(vout, vave_coeff);
 
-                        vst1q_f16(output_c_base + oh * outW * CVL() + ow * CVL(), vout);
+                        vst1q_f16(output_c_base + oh * dst_w * CVL() + ow * CVL(), vout);
                     }
                 }
             }
@@ -91,57 +91,57 @@ static void avepool2d_n8cx_exclude_fp16(
 static void avepool2d_n8cx_include_fp16(
     const __fp16 *input,
     __fp16 *output,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_channel,
     const int64_t num_batch,
-    const int64_t kerH,
-    const int64_t kerW,
-    const int64_t strdH,
-    const int64_t strdW,
-    const int64_t padH,
-    const int64_t padW,
-    const int64_t dltnH,
-    const int64_t dltnW)
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t strd_h,
+    const int64_t strd_w,
+    const int64_t pad_h,
+    const int64_t pad_w,
+    const int64_t dltn_h,
+    const int64_t dltn_w)
 {
     PRAGMA_OMP_PARALLEL()
     {
         const int64_t num_channel_ceil8 = CEIL8(num_channel);
         const float16x8_t vzero         = vdupq_n_f16(0.0f);
-        const __fp16 kernel_size_recp   = 1.0f / (kerH * kerW);
+        const __fp16 kernel_size_recp   = 1.0f / (flt_h * flt_w);
         const float16x8_t vave_coeff    = vdupq_n_f16(kernel_size_recp);
         for (int64_t n = 0; n < num_batch; n++) {
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel_ceil8; c += CVL()) {
-                const __fp16 *input_b_base = input + n * num_channel_ceil8 * inH * inW;
-                __fp16 *output_b_base      = output + n * num_channel_ceil8 * outH * outW;
-                const __fp16 *input_c_base = input_b_base + c * inH * inW;
-                __fp16 *output_c_base      = output_b_base + c * outH * outW;
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    const int64_t ih_base      = -padH + oh * strdH;
-                    const __fp16 *input_h_base = input_c_base + ih_base * inW * CVL();
-                    const int64_t fltH_start   = std::max(-ih_base + dltnH - 1, (int64_t)0) / dltnH; // inclusive
-                    const int64_t fltH_end     = std::min(kerH, (inH - ih_base + dltnH - 1) / dltnH); // exclusive
+                const __fp16 *input_b_base = input + n * num_channel_ceil8 * src_h * src_w;
+                __fp16 *output_b_base      = output + n * num_channel_ceil8 * dst_h * dst_w;
+                const __fp16 *input_c_base = input_b_base + c * src_h * src_w;
+                __fp16 *output_c_base      = output_b_base + c * dst_h * dst_w;
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    const int64_t ih_base      = -pad_h + oh * strd_h;
+                    const __fp16 *input_h_base = input_c_base + ih_base * src_w * CVL();
+                    const int64_t flt_h_start   = std::max(-ih_base + dltn_h - 1, (int64_t)0) / dltn_h; // inclusive
+                    const int64_t flt_h_end     = std::min(flt_h, (src_h - ih_base + dltn_h - 1) / dltn_h); // exclusive
 
-                    for (int64_t ow = 0; ow < outW; ow++) {
-                        int64_t iw_base            = -padW + ow * strdW;
+                    for (int64_t ow = 0; ow < dst_w; ow++) {
+                        int64_t iw_base            = -pad_w + ow * strd_w;
                         const __fp16 *input_w_base = input_h_base + iw_base * CVL();
-                        int64_t fltW_start         = std::max(-iw_base + dltnW - 1, (int64_t)0) / dltnW; // inclusive
-                        int64_t fltW_end           = std::min(kerW, (inW - iw_base + dltnW - 1) / dltnW); // exclusive
+                        int64_t flt_w_start         = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                        int64_t flt_w_end           = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                         float16x8_t vout = vzero;
 
-                        for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-                            for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
-                                float16x8_t vin = vld1q_f16(input_w_base + (kh * dltnH * inW + kw * dltnW) * CVL());
+                        for (int64_t kh = flt_h_start; kh < flt_h_end; kh++) {
+                            for (int64_t kw = flt_w_start; kw < flt_w_end; kw++) {
+                                float16x8_t vin = vld1q_f16(input_w_base + (kh * dltn_h * src_w + kw * dltn_w) * CVL());
                                 vout            = vaddq_f16(vout, vin);
                             }
                         }
                         vout = vmulq_f16(vout, vave_coeff);
 
-                        vst1q_f16(output_c_base + oh * outW * CVL() + ow * CVL(), vout);
+                        vst1q_f16(output_c_base + oh * dst_w * CVL() + ow * CVL(), vout);
                     }
                 }
             }
@@ -152,8 +152,8 @@ static void avepool2d_n8cx_include_fp16(
 static void avepool2d_n8cx_global_fp16(
     const __fp16 *input,
     __fp16 *output,
-    const int64_t inH,
-    const int64_t inW,
+    const int64_t src_h,
+    const int64_t src_w,
     const int64_t num_channel,
     const int64_t num_batch)
 {
@@ -161,19 +161,19 @@ static void avepool2d_n8cx_global_fp16(
     {
         const int64_t num_channel_ceil8 = CEIL8(num_channel);
         const float32x4_t vzero         = vdupq_n_f32(0.0f);
-        const float in_size_recp        = 1.0f / (inH * inW);
+        const float in_size_recp        = 1.0f / (src_h * src_w);
         float32x4_t vave_coeff          = vdupq_n_f32(in_size_recp);
 
         for (int64_t n = 0; n < num_batch; n++) {
-            const __fp16 *input_b_base = input + n * num_channel_ceil8 * inH * inW;
+            const __fp16 *input_b_base = input + n * num_channel_ceil8 * src_h * src_w;
             __fp16 *output_b_base      = output + n * num_channel_ceil8;
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel_ceil8; c += CVL()) {
-                const __fp16 *input_c_base = input_b_base + c * inH * inW;
+                const __fp16 *input_c_base = input_b_base + c * src_h * src_w;
 
                 float32x4_t vout_fp32_0 = vzero;
                 float32x4_t vout_fp32_1 = vzero;
-                for (int64_t idx = 0; idx < inH * inW; idx++) {
+                for (int64_t idx = 0; idx < src_h * src_w; idx++) {
                     float16x8_t vin_fp16   = vld1q_f16(input_c_base + idx * CVL());
                     float32x4_t vin_fp32_0 = vcvt_f32_f16(vget_low_f16(vin_fp16));
                     float32x4_t vin_fp32_1 = vcvt_f32_f16(vget_high_f16(vin_fp16));

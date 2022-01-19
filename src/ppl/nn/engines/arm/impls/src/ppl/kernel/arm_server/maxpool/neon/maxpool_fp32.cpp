@@ -29,54 +29,54 @@ namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 static void maxpool2d_n4cx_general_fp32(
     const float *input,
     float *output,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_channel,
     const int64_t num_batch,
-    const int64_t kerH,
-    const int64_t kerW,
-    const int64_t strdH,
-    const int64_t strdW,
-    const int64_t padH,
-    const int64_t padW,
-    const int64_t dltnH,
-    const int64_t dltnW)
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t strd_h,
+    const int64_t strd_w,
+    const int64_t pad_h,
+    const int64_t pad_w,
+    const int64_t dltn_h,
+    const int64_t dltn_w)
 {
     PRAGMA_OMP_PARALLEL()
     {
         const int64_t num_channel_ceil4 = CEIL4(num_channel);
         const float32x4_t vmin          = vdupq_n_f32(-numeric_max<float>());
         for (int64_t n = 0; n < num_batch; n++) {
-            const float *input_b_base = input + n * num_channel_ceil4 * inH * inW;
-            float *output_b_base      = output + n * num_channel_ceil4 * outH * outW;
+            const float *input_b_base = input + n * num_channel_ceil4 * src_h * src_w;
+            float *output_b_base      = output + n * num_channel_ceil4 * dst_h * dst_w;
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel_ceil4; c += CVL()) {
-                const float *input_c_base = input_b_base + c * inH * inW;
-                float *output_c_base      = output_b_base + c * outH * outW;
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    const int64_t ih_base     = -padH + oh * strdH;
-                    const float *input_h_base = input_c_base + ih_base * inW * CVL();
-                    const int64_t fltH_start  = std::max(-ih_base + dltnH - 1, (int64_t)0) / dltnH; // inclusive
-                    const int64_t fltH_end    = std::min(kerH, (inH - ih_base + dltnH - 1) / dltnH); // exclusive
+                const float *input_c_base = input_b_base + c * src_h * src_w;
+                float *output_c_base      = output_b_base + c * dst_h * dst_w;
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    const int64_t ih_base     = -pad_h + oh * strd_h;
+                    const float *input_h_base = input_c_base + ih_base * src_w * CVL();
+                    const int64_t flt_h_start  = std::max(-ih_base + dltn_h - 1, (int64_t)0) / dltn_h; // inclusive
+                    const int64_t flt_h_end    = std::min(flt_h, (src_h - ih_base + dltn_h - 1) / dltn_h); // exclusive
 
-                    for (int64_t ow = 0; ow < outW; ow++) {
-                        int64_t iw_base           = -padW + ow * strdW;
+                    for (int64_t ow = 0; ow < dst_w; ow++) {
+                        int64_t iw_base           = -pad_w + ow * strd_w;
                         const float *input_w_base = input_h_base + iw_base * CVL();
-                        int64_t fltW_start        = std::max(-iw_base + dltnW - 1, (int64_t)0) / dltnW; // inclusive
-                        int64_t fltW_end          = std::min(kerW, (inW - iw_base + dltnW - 1) / dltnW); // exclusive
+                        int64_t flt_w_start        = std::max(-iw_base + dltn_w - 1, (int64_t)0) / dltn_w; // inclusive
+                        int64_t flt_w_end          = std::min(flt_w, (src_w - iw_base + dltn_w - 1) / dltn_w); // exclusive
 
                         float32x4_t vout = vmin;
 
-                        for (int64_t kh = fltH_start; kh < fltH_end; kh++) {
-                            for (int64_t kw = fltW_start; kw < fltW_end; kw++) {
-                                float32x4_t vin = vld1q_f32(input_w_base + (kh * dltnH * inW + kw * dltnW) * CVL());
+                        for (int64_t kh = flt_h_start; kh < flt_h_end; kh++) {
+                            for (int64_t kw = flt_w_start; kw < flt_w_end; kw++) {
+                                float32x4_t vin = vld1q_f32(input_w_base + (kh * dltn_h * src_w + kw * dltn_w) * CVL());
                                 vout            = vmaxq_f32(vin, vout);
                             }
                         }
 
-                        vst1q_f32(output_c_base + oh * outW * CVL() + ow * CVL(), vout);
+                        vst1q_f32(output_c_base + oh * dst_w * CVL() + ow * CVL(), vout);
                     }
                 }
             }
@@ -87,8 +87,8 @@ static void maxpool2d_n4cx_general_fp32(
 static void maxpool2d_n4cx_global_fp32(
     const float *input,
     float *output,
-    const int64_t inH,
-    const int64_t inW,
+    const int64_t src_h,
+    const int64_t src_w,
     const int64_t num_channel,
     const int64_t num_batch)
 {
@@ -97,14 +97,14 @@ static void maxpool2d_n4cx_global_fp32(
         const int64_t num_channel_ceil4 = CEIL4(num_channel);
         const float32x4_t vmin          = vdupq_n_f32(-numeric_max<float>());
         for (int64_t n = 0; n < num_batch; n++) {
-            const float *input_b_base = input + n * num_channel_ceil4 * inH * inW;
+            const float *input_b_base = input + n * num_channel_ceil4 * src_h * src_w;
             float *output_b_base      = output + n * num_channel_ceil4;
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel_ceil4; c += CVL()) {
-                const float *input_c_base = input_b_base + c * inH * inW;
+                const float *input_c_base = input_b_base + c * src_h * src_w;
 
                 float32x4_t vout = vmin;
-                for (int64_t idx = 0; idx < inH * inW; idx++) {
+                for (int64_t idx = 0; idx < src_h * src_w; idx++) {
                     float32x4_t vin = vld1q_f32(input_c_base + idx * CVL());
                     vout            = vmaxq_f32(vin, vout);
                 }
@@ -118,10 +118,10 @@ static void maxpool2d_n4cx_global_fp32(
 static void maxpool2d_n4cx_f2s2p0_fp32(
     const float *input,
     float *output,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_channel,
     const int64_t num_batch)
 {
@@ -131,16 +131,16 @@ static void maxpool2d_n4cx_f2s2p0_fp32(
         for (int64_t n = 0; n < num_batch; n++) {
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel; c += CVL()) {
-                const float *input_c_base = input + (n * num_channel_ceil4 + c) * inH * inW;
-                float *output_c_base = output + (n * num_channel_ceil4 + c) * outH * outW;
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    const float *input_h_base = input_c_base + oh * 2 * inW * CVL();
-                    float *output_h_base = output_c_base + oh * outW * CVL();
+                const float *input_c_base = input + (n * num_channel_ceil4 + c) * src_h * src_w;
+                float *output_c_base = output + (n * num_channel_ceil4 + c) * dst_h * dst_w;
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    const float *input_h_base = input_c_base + oh * 2 * src_w * CVL();
+                    float *output_h_base = output_c_base + oh * dst_w * CVL();
 
                     int64_t ow = 0;
-                    for (; ow <= outW-7; ow+=7) {
+                    for (; ow <= dst_w-7; ow+=7) {
                         const float *input_base0 = input_h_base + ow * 2 * CVL();
-                        const float *input_base1 = input_h_base + inW * CVL() + ow * 2 * CVL();
+                        const float *input_base1 = input_h_base + src_w * CVL() + ow * 2 * CVL();
                         float *output_base = output_h_base + ow * CVL();
                         float32x4_t vin0[12];
                         float32x4_t vin1[12];
@@ -224,15 +224,15 @@ static void maxpool2d_n4cx_f2s2p0_fp32(
                         vst1q_f32(output_base + CVL() * 5, vout[5]);
                         vst1q_f32(output_base + CVL() * 6, vout[6]);
                     }
-                    for (; ow < outW; ow++) {
+                    for (; ow < dst_w; ow++) {
                         const float *input_base = input_h_base + ow * 2 * CVL();
                         float32x4_t vin[4];
                         float32x4_t vout;
 
                         vin[0] = vld1q_f32(input_base                      );
                         vin[1] = vld1q_f32(input_base               + CVL());
-                        vin[2] = vld1q_f32(input_base + inW * CVL()        );
-                        vin[3] = vld1q_f32(input_base + inW * CVL() + CVL());
+                        vin[2] = vld1q_f32(input_base + src_w * CVL()        );
+                        vin[3] = vld1q_f32(input_base + src_w * CVL() + CVL());
 
                         vout = vmaxq_f32(vin[0], vin[1]);
                         vout = vmaxq_f32(vout, vin[2]);
@@ -249,20 +249,20 @@ static void maxpool2d_n4cx_f2s2p0_fp32(
 static void maxpool2d_n4cx_f3s2_fp32(
     const float *input,
     float *output,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_channel,
     const int64_t num_batch,
-    const int64_t padH,
-    const int64_t padW)
+    const int64_t pad_h,
+    const int64_t pad_w)
 {
     PRAGMA_OMP_PARALLEL()
     {
         const int64_t num_channel_pck = CEIL4(num_channel);
-        int64_t ow_no_padding_start   = (padW + 1) / 2;
-        int64_t ow_no_padding_end     = (inW - 3 + padW) / 2 + 1;
+        int64_t ow_no_padding_start   = (pad_w + 1) / 2;
+        int64_t ow_no_padding_end     = (src_w - 3 + pad_w) / 2 + 1;
         ow_no_padding_end             = std::max(ow_no_padding_end, ow_no_padding_start);
         ow_no_padding_end             = ow_no_padding_start + ((ow_no_padding_end - ow_no_padding_start) & (~7));
 
@@ -270,23 +270,23 @@ static void maxpool2d_n4cx_f3s2_fp32(
         for (int64_t n = 0; n < num_batch; n++) {
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel; c += CVL()) {
-                const float *input_c_base = input + (n * num_channel_pck + c) * inH * inW;
-                float *output_c_base      = output + (n * num_channel_pck + c) * outH * outW;
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    float *output_h_base = output_c_base + oh * outW * CVL();
-                    int64_t ih_start     = oh * 2 - padH;
-                    int64_t ih_end       = std::min(ih_start + 3, inH);
+                const float *input_c_base = input + (n * num_channel_pck + c) * src_h * src_w;
+                float *output_c_base      = output + (n * num_channel_pck + c) * dst_h * dst_w;
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    float *output_h_base = output_c_base + oh * dst_w * CVL();
+                    int64_t ih_start     = oh * 2 - pad_h;
+                    int64_t ih_end       = std::min(ih_start + 3, src_h);
                     ih_start             = std::max(ih_start, (int64_t)0);
 
                     if (ih_end - ih_start != 3) {
-                        for (int64_t ow = 0; ow < outW; ow++) {
-                            int64_t iw_start = ow * 2 - padW;
-                            int64_t iw_end   = std::min(iw_start + 3, inW);
+                        for (int64_t ow = 0; ow < dst_w; ow++) {
+                            int64_t iw_start = ow * 2 - pad_w;
+                            int64_t iw_end   = std::min(iw_start + 3, src_w);
                             iw_start         = std::max(iw_start, (int64_t)0);
 
                             float32x4_t vout = vmin;
                             for (int ih = ih_start; ih < ih_end; ih++) {
-                                const float *input_h_base = input_c_base + ih * inW * CVL();
+                                const float *input_h_base = input_c_base + ih * src_w * CVL();
                                 for (int iw = iw_start; iw < iw_end; iw++) {
                                     float32x4_t vin = vld1q_f32(input_h_base + iw * CVL());
                                     vout            = vmaxq_f32(vout, vin);
@@ -295,17 +295,17 @@ static void maxpool2d_n4cx_f3s2_fp32(
                             vst1q_f32(output_h_base + ow * CVL(), vout);
                         }
                     } else {
-                        const float *input_h_base = input_c_base + ih_start * inW * CVL();
+                        const float *input_h_base = input_c_base + ih_start * src_w * CVL();
 
                         int64_t ow = 0;
                         for (; ow < ow_no_padding_start; ow++) {
-                            int64_t iw_start = ow * 2 - padW;
-                            int64_t iw_end   = std::min(iw_start + 3, inW);
+                            int64_t iw_start = ow * 2 - pad_w;
+                            int64_t iw_end   = std::min(iw_start + 3, src_w);
                             iw_start         = std::max(iw_start, (int64_t)0);
 
                             float32x4_t vout = vmin;
                             for (int ih = ih_start; ih < ih_end; ih++) {
-                                const float *input_h_base = input_c_base + ih * inW * CVL();
+                                const float *input_h_base = input_c_base + ih * src_w * CVL();
                                 for (int iw = iw_start; iw < iw_end; iw++) {
                                     float32x4_t vin = vld1q_f32(input_h_base + iw * CVL());
                                     vout            = vmaxq_f32(vout, vin);
@@ -314,12 +314,12 @@ static void maxpool2d_n4cx_f3s2_fp32(
                             vst1q_f32(output_h_base + ow * CVL(), vout);
                         }
                         for (; ow < ow_no_padding_end; ow += 4) {
-                            int64_t iw_start = ow * 2 - padW;
+                            int64_t iw_start = ow * 2 - pad_w;
 
                             const float *input_base0 = input_h_base + iw_start * CVL();
 
-                            const float *input_base1 = input_base0 + inW * CVL();
-                            const float *input_base2 = input_base0 + inW * CVL() * 2;
+                            const float *input_base1 = input_base0 + src_w * CVL();
+                            const float *input_base2 = input_base0 + src_w * CVL() * 2;
 
                             float *output_base = output_h_base + ow * CVL();
 
@@ -400,14 +400,14 @@ static void maxpool2d_n4cx_f3s2_fp32(
                             vst1q_f32(output_base + CVL() * 2, vout[2]);
                             vst1q_f32(output_base + CVL() * 3, vout[3]);
                         }
-                        for (; ow < outW; ow++) {
-                            int64_t iw_start = ow * 2 - padW;
-                            int64_t iw_end   = std::min(iw_start + 3, inW);
+                        for (; ow < dst_w; ow++) {
+                            int64_t iw_start = ow * 2 - pad_w;
+                            int64_t iw_end   = std::min(iw_start + 3, src_w);
                             iw_start         = std::max(iw_start, (int64_t)0);
 
                             float32x4_t vout = vmin;
                             for (int ih = ih_start; ih < ih_end; ih++) {
-                                const float *input_h_base = input_c_base + ih * inW * CVL();
+                                const float *input_h_base = input_c_base + ih * src_w * CVL();
                                 for (int iw = iw_start; iw < iw_end; iw++) {
                                     float32x4_t vin = vld1q_f32(input_h_base + iw * CVL());
                                     vout            = vmaxq_f32(vout, vin);
@@ -425,44 +425,44 @@ static void maxpool2d_n4cx_f3s2_fp32(
 static void maxpool2d_n4cx_f3s1_fp32(
     const float *input,
     float *output,
-    const int64_t inH,
-    const int64_t inW,
-    const int64_t outH,
-    const int64_t outW,
+    const int64_t src_h,
+    const int64_t src_w,
+    const int64_t dst_h,
+    const int64_t dst_w,
     const int64_t num_channel,
     const int64_t num_batch,
-    const int64_t padH,
-    const int64_t padW)
+    const int64_t pad_h,
+    const int64_t pad_w)
 {
     (void)maxpool2d_n4cx_f3s1_fp32;
     PRAGMA_OMP_PARALLEL()
     {
         const int64_t num_channel_ceil4 = CEIL4(num_channel);
-        int64_t ow_no_padding_start     = padW;
-        int64_t ow_no_padding_end       = padW + ((inW - 3) & (~7));
+        int64_t ow_no_padding_start     = pad_w;
+        int64_t ow_no_padding_end       = pad_w + ((src_w - 3) & (~7));
         // ow_no_padding_end = ow_no_padding_start + ((ow_no_padding_end - ow_no_padding_start) & (~7));
 
         const float32x4_t vmin = vdupq_n_f32(-numeric_max<float>());
         for (int64_t n = 0; n < num_batch; n++) {
             PRAGMA_OMP_FOR_NOWAIT()
             for (int64_t c = 0; c < num_channel; c += CVL()) {
-                const float *input_c_base = input + (n * num_channel_ceil4 + c) * inH * inW;
-                float *output_c_base      = output + (n * num_channel_ceil4 + c) * outH * outW;
-                for (int64_t oh = 0; oh < outH; oh++) {
-                    float *output_h_base = output_c_base + oh * outW * CVL();
-                    int64_t ih_start     = oh - padH;
-                    int64_t ih_end       = std::min(ih_start + 3, inH);
+                const float *input_c_base = input + (n * num_channel_ceil4 + c) * src_h * src_w;
+                float *output_c_base      = output + (n * num_channel_ceil4 + c) * dst_h * dst_w;
+                for (int64_t oh = 0; oh < dst_h; oh++) {
+                    float *output_h_base = output_c_base + oh * dst_w * CVL();
+                    int64_t ih_start     = oh - pad_h;
+                    int64_t ih_end       = std::min(ih_start + 3, src_h);
                     ih_start             = std::max(ih_start, (int64_t)0);
 
                     if (ih_end - ih_start != 3) {
-                        for (int64_t ow = 0; ow < outW; ow++) {
-                            int64_t iw_start = ow - padW;
-                            int64_t iw_end   = std::min(iw_start + 3, inW);
+                        for (int64_t ow = 0; ow < dst_w; ow++) {
+                            int64_t iw_start = ow - pad_w;
+                            int64_t iw_end   = std::min(iw_start + 3, src_w);
                             iw_start         = std::max(ih_start, (int64_t)0);
 
                             float32x4_t vout = vmin;
                             for (int ih = ih_start; ih < ih_end; ih++) {
-                                const float *input_h_base = input_c_base + ih * inW * CVL();
+                                const float *input_h_base = input_c_base + ih * src_w * CVL();
                                 for (int iw = iw_start; iw < iw_end; iw++) {
                                     float32x4_t vin = vld1q_f32(input_h_base + iw * CVL());
                                     vout            = vmaxq_f32(vout, vin);
@@ -471,17 +471,17 @@ static void maxpool2d_n4cx_f3s1_fp32(
                             vst1q_f32(output_h_base + ow * CVL(), vout);
                         }
                     } else {
-                        const float *input_h_base = input_c_base + ih_start * inW * CVL();
+                        const float *input_h_base = input_c_base + ih_start * src_w * CVL();
 
                         int64_t ow = 0;
                         for (; ow < ow_no_padding_start; ow++) {
-                            int64_t iw_start = ow - padW;
-                            int64_t iw_end   = std::min(iw_start + 3, inW);
+                            int64_t iw_start = ow - pad_w;
+                            int64_t iw_end   = std::min(iw_start + 3, src_w);
                             iw_start         = std::max(ih_start, (int64_t)0);
 
                             float32x4_t vout = vmin;
                             for (int ih = ih_start; ih < ih_end; ih++) {
-                                const float *input_h_base = input_c_base + ih * inW * CVL();
+                                const float *input_h_base = input_c_base + ih * src_w * CVL();
                                 for (int iw = iw_start; iw < iw_end; iw++) {
                                     float32x4_t vin = vld1q_f32(input_h_base + iw * CVL());
                                     vout            = vmaxq_f32(vout, vin);
@@ -490,12 +490,12 @@ static void maxpool2d_n4cx_f3s1_fp32(
                             vst1q_f32(output_h_base + ow * CVL(), vout);
                         }
                         for (; ow < ow_no_padding_end; ow += 4) {
-                            int64_t iw_start = ow - padH;
+                            int64_t iw_start = ow - pad_h;
 
                             const float *input_base0 = input_h_base + iw_start * CVL();
 
-                            const float *input_base1 = input_base0 + inW * CVL();
-                            const float *input_base2 = input_base0 + inW * CVL() * 2;
+                            const float *input_base1 = input_base0 + src_w * CVL();
+                            const float *input_base2 = input_base0 + src_w * CVL() * 2;
 
                             float *output_base = output_h_base + ow * CVL();
 
@@ -567,14 +567,14 @@ static void maxpool2d_n4cx_f3s1_fp32(
                             vst1q_f32(output_base + CVL() * 2, vout[2]);
                             vst1q_f32(output_base + CVL() * 3, vout[3]);
                         }
-                        for (; ow < outW; ow++) {
-                            int64_t iw_start = ow - padW;
-                            int64_t iw_end   = std::min(iw_start + 3, inW);
+                        for (; ow < dst_w; ow++) {
+                            int64_t iw_start = ow - pad_w;
+                            int64_t iw_end   = std::min(iw_start + 3, src_w);
                             iw_start         = std::max(ih_start, (int64_t)0);
 
                             float32x4_t vout = vmin;
                             for (int ih = ih_start; ih < ih_end; ih++) {
-                                const float *input_h_base = input_c_base + ih * inW * CVL();
+                                const float *input_h_base = input_c_base + ih * src_w * CVL();
                                 for (int iw = iw_start; iw < iw_end; iw++) {
                                     float32x4_t vin = vld1q_f32(input_h_base + iw * CVL());
                                     vout            = vmaxq_f32(vout, vin);
