@@ -22,7 +22,7 @@
 #include "ppl/nn/engines/arm/optimizer/opt_kernel_creator_manager.h"
 #include "ppl/nn/engines/arm/optimizer/opt_rule_manager.h"
 #include "ppl/nn/common/logger.h"
-#include "ppl/nn/engines/arm/optimizer/ops/onnx/conv/conv_op.h"
+#include "ppl/nn/engines/arm/optimizer/ops/onnx/conv_op.h"
 #include "ppl/nn/engines/utils.h"
 
 //#define SHOW_GRAPH_VIS

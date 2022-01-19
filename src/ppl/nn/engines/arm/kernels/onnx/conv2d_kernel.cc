@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "ppl/nn/engines/arm/kernels/onnx/conv_kernels/conv2d_kernel.h"
+#include "ppl/nn/engines/arm/kernels/onnx/conv2d_kernel.h"
 #include <ppl/nn/runtime/tensor_impl.h>
 #include "ppl/common/sys.h"
 #include "ppl/nn/common/logger.h"

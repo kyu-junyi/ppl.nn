@@ -19,7 +19,7 @@
 
 #include "ppl/nn/engines/arm/optimizer/rules/fuse_conv_activation.h"
 #include "ppl/nn/engines/arm/optimizer/rules/utils.h"
-#include "ppl/nn/engines/arm/optimizer/ops/onnx/conv/conv_op.h"
+#include "ppl/nn/engines/arm/optimizer/ops/onnx/conv_op.h"
 
 namespace ppl { namespace nn { namespace arm {
 
