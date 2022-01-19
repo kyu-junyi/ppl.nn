@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(PPLKernelArmServer)
 
-option(PPL_USE_ARM_SERVER_OMP "Build arm server kernel with openmp support." OFF)
+option(PPL_USE_ARM_SERVER_OMP "Build arm server kernel with openmp support." ON)
 if(HPCC_USE_OPENMP)
     set(PPL_USE_ARM_SERVER_OMP ON)
 endif()

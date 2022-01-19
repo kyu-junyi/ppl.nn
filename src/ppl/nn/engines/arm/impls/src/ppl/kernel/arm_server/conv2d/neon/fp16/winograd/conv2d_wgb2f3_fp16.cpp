@@ -47,22 +47,22 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define LLC_CACHELINE_SIZE()  128
 
 size_t conv2d_n8cx_wgb2f3_get_input_buffer_size_fp16(
-    const int64_t inC,
+    const int64_t channels,
     const int64_t tile_l2_size)
 {
     /* inner parallel mode */
     const int64_t num_wg_blocks    = tile_l2_size;
-    const size_t input_buffer_size = CEIL128(WGB2F3_NSET() * CEIL8(inC) * num_wg_blocks * sizeof(__fp16)) + LLC_CACHELINE_SIZE();
+    const size_t input_buffer_size = CEIL128(WGB2F3_NSET() * CEIL8(channels) * num_wg_blocks * sizeof(__fp16)) + LLC_CACHELINE_SIZE();
     return input_buffer_size;
 }
 
 size_t conv2d_n8cx_wgb2f3_get_output_buffer_size_fp16(
-    const int64_t outC,
+    const int64_t num_output,
     const int64_t tile_l2_size)
 {
     /* inner parallel mode */
     const int64_t num_wg_blocks     = tile_l2_size;
-    const size_t output_buffer_size = CEIL128(WGB2F3_NSET() * CEIL8(outC) * num_wg_blocks * sizeof(__fp16)) + LLC_CACHELINE_SIZE();
+    const size_t output_buffer_size = CEIL128(WGB2F3_NSET() * CEIL8(num_output) * num_wg_blocks * sizeof(__fp16)) + LLC_CACHELINE_SIZE();
     return output_buffer_size;
 }
 
@@ -70,7 +70,7 @@ static inline void conv2d_n8cx_wgb2f3_prep_input_block_fp16(
     const __fp16 *input_block,
     const float16x8_t &vzeros,
     __fp16 *prep_input_block,
-    const int64_t inW,
+    const int64_t src_w,
     const int64_t in_wg_set_offset,
     const bool ih_valid[WGB2F3_IBLK()],
     const bool iw_valid[WGB2F3_IBLK()])
@@ -93,7 +93,7 @@ static inline void conv2d_n8cx_wgb2f3_prep_input_block_fp16(
 
     // D[2][:]
     if (ih_valid[2]) {
-        const __fp16 *input_base = input_block + 2 * inW * ICVL();
+        const __fp16 *input_base = input_block + 2 * src_w * ICVL();
         v[4]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
         v[5]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
         v[6]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
@@ -124,7 +124,7 @@ static inline void conv2d_n8cx_wgb2f3_prep_input_block_fp16(
 
     // D[1][:]
     if (ih_valid[1]) {
-        const __fp16 *input_base = input_block + 1 * inW * ICVL();
+        const __fp16 *input_base = input_block + 1 * src_w * ICVL();
         v[0]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
         v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
         v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
@@ -172,7 +172,7 @@ static inline void conv2d_n8cx_wgb2f3_prep_input_block_fp16(
 
     // D[3][:]
     if (ih_valid[3]) {
-        const __fp16 *input_base = input_block + 3 * inW * ICVL();
+        const __fp16 *input_base = input_block + 3 * src_w * ICVL();
         v[4]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
         v[5]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
         v[6]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
@@ -208,7 +208,7 @@ static inline void conv2d_n8cx_wgb2f3_postp_output_block_fp16(
     __fp16 *output_block, // oc_start biased, oh_start, ow_start biased
     __fp16 *sum_block,
     const int64_t wg_out_set_offset,
-    const int64_t outW,
+    const int64_t dst_w,
     const int64_t num_valid_oh,
     const int64_t num_valid_ow,
     const uint32_t fuse_flag)
@@ -270,8 +270,8 @@ static inline void conv2d_n8cx_wgb2f3_postp_output_block_fp16(
         if (fuse_flag & conv_fuse_flag::SUM) { // sum
             vr[0] = vaddq_f16(vr[0], vld1q_f16(sum_block));
             vr[1] = vaddq_f16(vr[1], vld1q_f16(sum_block + OCVL()));
-            vr[4] = vaddq_f16(vr[4], vld1q_f16(sum_block + outW * OCVL()));
-            vr[5] = vaddq_f16(vr[5], vld1q_f16(sum_block + outW * OCVL() + OCVL()));
+            vr[4] = vaddq_f16(vr[4], vld1q_f16(sum_block + dst_w * OCVL()));
+            vr[5] = vaddq_f16(vr[5], vld1q_f16(sum_block + dst_w * OCVL() + OCVL()));
         }
 
         if (fuse_flag & conv_fuse_flag::RELU) { // relu
@@ -292,8 +292,8 @@ static inline void conv2d_n8cx_wgb2f3_postp_output_block_fp16(
 
         vst1q_f16(output_block, vr[0]);
         vst1q_f16(output_block + OCVL(), vr[1]);
-        vst1q_f16(output_block + outW * OCVL(), vr[4]);
-        vst1q_f16(output_block + outW * OCVL() + OCVL(), vr[5]);
+        vst1q_f16(output_block + dst_w * OCVL(), vr[4]);
+        vst1q_f16(output_block + dst_w * OCVL() + OCVL(), vr[5]);
     } else if (num_valid_oh == 2 && num_valid_ow == 1) {
         vr[0]  = vld1q_f16(raw_output_block + 0 * wg_out_set_offset);
         vr[1]  = vld1q_f16(raw_output_block + 1 * wg_out_set_offset);
@@ -335,7 +335,7 @@ static inline void conv2d_n8cx_wgb2f3_postp_output_block_fp16(
 
         if (fuse_flag & conv_fuse_flag::SUM) { // sum
             vr[0] = vaddq_f16(vr[0], vld1q_f16(sum_block));
-            vr[4] = vaddq_f16(vr[4], vld1q_f16(sum_block + outW * OCVL()));
+            vr[4] = vaddq_f16(vr[4], vld1q_f16(sum_block + dst_w * OCVL()));
         }
 
         if (fuse_flag & conv_fuse_flag::RELU) { // relu
@@ -351,7 +351,7 @@ static inline void conv2d_n8cx_wgb2f3_postp_output_block_fp16(
         }
 
         vst1q_f16(output_block, vr[0]);
-        vst1q_f16(output_block + outW * OCVL(), vr[4]);
+        vst1q_f16(output_block + dst_w * OCVL(), vr[4]);
     } else if (num_valid_oh == 1 && num_valid_ow == 2) {
         vr[0]  = vld1q_f16(raw_output_block + 0 * wg_out_set_offset);
         vr[1]  = vld1q_f16(raw_output_block + 1 * wg_out_set_offset);
@@ -487,17 +487,17 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
     __fp16 *output                              = (__fp16 *)dst_;
     __fp16 *sum                                 = (__fp16 *)sum_;
     __fp16 *tmp_buffer                          = (__fp16 *)temp_buffer_;
-    const int64_t inH                           = src_shape_->GetDim(2);
-    const int64_t inW                           = src_shape_->GetDim(3);
-    const int64_t c_in                          = src_shape_->GetDim(1);
-    const int64_t c_out                         = cp.num_output;
-    const int64_t outH                          = dst_shape_->GetDim(2);
-    const int64_t outW                          = dst_shape_->GetDim(3);
-    const int64_t padH                          = cp.pad_h;
-    const int64_t padW                          = cp.pad_w;
-    const int64_t num_group                     = cp.group;
-    const int64_t icS                           = sp.ic_blk;
-    const int64_t ocS                           = sp.oc_blk;
+    const int64_t src_h                           = src_shape_->GetDim(2);
+    const int64_t src_w                           = src_shape_->GetDim(3);
+    const int64_t channels                          = src_shape_->GetDim(1);
+    const int64_t num_output                         = cp.num_output;
+    const int64_t dst_h                          = dst_shape_->GetDim(2);
+    const int64_t dst_w                          = dst_shape_->GetDim(3);
+    const int64_t pad_h                          = cp.pad_h;
+    const int64_t pad_w                          = cp.pad_w;
+    const int64_t group                     = cp.group;
+    const int64_t ics                           = sp.ic_blk;
+    const int64_t ocs                           = sp.oc_blk;
     const int64_t tile_l2_size                  = sp.tile_blk;
     const int64_t num_batch                     = src_shape_->GetDim(0);
     const size_t input_prep_buffer_size         = sp.input_buffer_size;
@@ -505,17 +505,17 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
     PRAGMA_OMP_PARALLEL()
     {
         // Pack to 4:CVL()
-        const int64_t ic_packed = CEIL8(c_in);
-        const int64_t oc_packed = CEIL8(c_out);
+        const int64_t ic_packed = CEIL8(channels);
+        const int64_t oc_packed = CEIL8(num_output);
 
-        const int64_t ic_group    = c_in / num_group;
-        const int64_t oc_group    = c_out / num_group;
+        const int64_t ic_group    = channels / group;
+        const int64_t oc_group    = num_output / group;
         const int64_t ic_g_packed = CEIL8(ic_group);
         const int64_t oc_g_packed = CEIL8(oc_group);
 
         // Pack to 4:CVL()
-        const int64_t k_in_channel_section  = CEIL8(std::min(icS, ic_group));
-        const int64_t k_out_channel_section = CEIL8(std::min(ocS, oc_group));
+        const int64_t k_in_channel_section  = CEIL8(std::min(ics, ic_group));
+        const int64_t k_out_channel_section = CEIL8(std::min(ocs, oc_group));
 
         const int64_t k_tile_l2 = tile_l2_size;
 
@@ -528,13 +528,13 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
 
         const float16x8_t vzeros = vdupq_n_f16(0.0f);
 
-        const int64_t num_h_blocks  = DIV_CEIL(outH, WGB2F3_OBLK());
-        const int64_t num_w_blocks  = DIV_CEIL(outW, WGB2F3_OBLK());
+        const int64_t num_h_blocks  = DIV_CEIL(dst_h, WGB2F3_OBLK());
+        const int64_t num_w_blocks  = DIV_CEIL(dst_w, WGB2F3_OBLK());
         const int64_t num_hw_blocks = num_h_blocks * num_w_blocks;
         const int64_t num_tiles     = num_batch * num_hw_blocks;
 
-        const int64_t hw_in               = inH * inW;
-        const int64_t hw_out              = outH * outW;
+        const int64_t hw_in               = src_h * src_w;
+        const int64_t hw_out              = dst_h * dst_w;
         const int64_t input_b_stride      = ic_packed * hw_in;
         const int64_t output_b_stride     = oc_packed * hw_out;
         const int64_t input_g_stride      = ic_group * hw_in;
@@ -542,7 +542,7 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
         const int64_t filter_wgset_stride = oc_g_packed * ic_g_packed;
         const int64_t filter_g_stride     = WGB2F3_NSET() * filter_wgset_stride;
 
-        for (int64_t g = 0; g < num_group; g++) {
+        for (int64_t g = 0; g < group; g++) {
             const __fp16 *input_g_base  = input + g * input_g_stride;
             const __fp16 *filter_g_base = cvt_filter + g * filter_g_stride;
             const __fp16 *bias_g_base   = bias + g * oc_group;
@@ -574,36 +574,36 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                             const __fp16 *input_c_base = input_g_base + batch_id * input_b_stride + (ic_l2 + ic) * hw_in;
                             __fp16 *prep_in_c_base     = pre_proc_buffer + ic * wg_blocks;
 
-                            const int64_t ih0 = -padH + oh;
+                            const int64_t ih0 = -pad_h + oh;
                             const int64_t ih1 = ih0 + 1;
                             const int64_t ih2 = ih0 + 2;
                             const int64_t ih3 = ih0 + 3;
 
                             bool ih_valid[WGB2F3_IBLK()];
-                            ih_valid[0] = (ih0 >= 0 && ih0 < inH);
-                            ih_valid[1] = (ih1 >= 0 && ih1 < inH);
-                            ih_valid[2] = (ih2 >= 0 && ih2 < inH);
-                            ih_valid[3] = (ih3 >= 0 && ih3 < inH);
+                            ih_valid[0] = (ih0 >= 0 && ih0 < src_h);
+                            ih_valid[1] = (ih1 >= 0 && ih1 < src_h);
+                            ih_valid[2] = (ih2 >= 0 && ih2 < src_h);
+                            ih_valid[3] = (ih3 >= 0 && ih3 < src_h);
 
                             int64_t wg_block_idx  = tile_l0;
                             __fp16 *prep_in_block = prep_in_c_base + wg_block_idx * ICVL();
 
-                            const int64_t iw0 = -padW + ow;
+                            const int64_t iw0 = -pad_w + ow;
                             const int64_t iw1 = iw0 + 1;
                             const int64_t iw2 = iw0 + 2;
                             const int64_t iw3 = iw0 + 3;
 
                             bool iw_valid[WGB2F3_IBLK()];
-                            iw_valid[0] = (iw0 >= 0 && iw0 < inW);
-                            iw_valid[1] = (iw1 >= 0 && iw1 < inW);
-                            iw_valid[2] = (iw2 >= 0 && iw2 < inW);
-                            iw_valid[3] = (iw3 >= 0 && iw3 < inW);
+                            iw_valid[0] = (iw0 >= 0 && iw0 < src_w);
+                            iw_valid[1] = (iw1 >= 0 && iw1 < src_w);
+                            iw_valid[2] = (iw2 >= 0 && iw2 < src_w);
+                            iw_valid[3] = (iw3 >= 0 && iw3 < src_w);
 
                             conv2d_n8cx_wgb2f3_prep_input_block_fp16(
-                                input_c_base + ih0 * inW * ICVL() + iw0 * ICVL(),
+                                input_c_base + ih0 * src_w * ICVL() + iw0 * ICVL(),
                                 vzeros,
                                 prep_in_block,
-                                inW,
+                                src_w,
                                 k_in_wg_set_offset,
                                 ih_valid,
                                 iw_valid);
@@ -668,32 +668,32 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                                     conv2d_n8cx_wgb2f3_postp_output_block_fp16(
                                         raw_output_c_base + tile_l0 * OCVL(),
                                         vbias,
-                                        output_oc_base + batch_id * output_b_stride + (oh * outW + ow) * OCVL(),
-                                        sum_oc_base + batch_id * output_b_stride + (oh * outW + ow) * OCVL(),
+                                        output_oc_base + batch_id * output_b_stride + (oh * dst_w + ow) * OCVL(),
+                                        sum_oc_base + batch_id * output_b_stride + (oh * dst_w + ow) * OCVL(),
                                         k_out_wg_set_offset,
-                                        outW,
-                                        std::min((int64_t)WGB2F3_OBLK(), outH - oh),
-                                        std::min((int64_t)WGB2F3_OBLK(), outW - ow),
+                                        dst_w,
+                                        std::min((int64_t)WGB2F3_OBLK(), dst_h - oh),
+                                        std::min((int64_t)WGB2F3_OBLK(), dst_w - ow),
                                         cp.fuse_flag);
                                 } // close loop over tile
                             } // close loop over oc(register)
                         }
                     } // close loop over oc(l2)
                 } // close loop over ic(l2)
-            } // close loop over batch-outH-outW
+            } // close loop over batch-dst_h-dst_w
         } // close loop over group
     }
     return ppl::common::RC_SUCCESS;
 }
 
 static size_t conv2d_n8cx_wgb2f3_get_converted_filter_size_fp16(
-    const int64_t c_in,
-    const int64_t c_out,
-    const int64_t num_group)
+    const int64_t channels,
+    const int64_t num_output,
+    const int64_t group)
 {
-    const int64_t ic_group             = c_in / num_group;
-    const int64_t oc_group             = c_out / num_group;
-    const size_t converted_filter_size = num_group * WGB2F3_NSET() * CEIL8(oc_group) * CEIL8(ic_group) * sizeof(__fp16) + LLC_CACHELINE_SIZE();
+    const int64_t ic_group             = channels / group;
+    const int64_t oc_group             = num_output / group;
+    const size_t converted_filter_size = group * WGB2F3_NSET() * CEIL8(oc_group) * CEIL8(ic_group) * sizeof(__fp16) + LLC_CACHELINE_SIZE();
     return converted_filter_size;
 }
 
@@ -701,16 +701,16 @@ static void conv2d_n8cx_wgb2f3_convert_filter_fp16(
     const __fp16 *filter,
     __fp16 *converted_filter,
     __fp16 *aux_filter_buffer,
-    const int64_t c_in,
-    const int64_t c_out,
-    const int64_t num_group,
+    const int64_t channels,
+    const int64_t num_output,
+    const int64_t group,
     const int64_t k_in_ch_section,
     const int64_t k_out_ch_section)
 {
     const float32x4_t vhalves = vdupq_n_f32(0.5f);
 
-    const int64_t ic_group = c_in / num_group;
-    const int64_t oc_group = c_out / num_group;
+    const int64_t ic_group = channels / group;
+    const int64_t oc_group = num_output / group;
     const int64_t ic_g_pck = CEIL8(ic_group);
     const int64_t oc_g_pck = CEIL8(oc_group);
 
@@ -719,12 +719,12 @@ static void conv2d_n8cx_wgb2f3_convert_filter_fp16(
 
     size_t filter_wg_set_offset = oc_g_pck * ic_g_pck;
 
-    for (int64_t g = 0; g < num_group; g++) {
+    for (int64_t g = 0; g < group; g++) {
         const __fp16 *filter_g_base     = filter + g * oc_group * ic_group * 9;
         __fp16 *converted_filter_g_base = converted_filter + g * WGB2F3_NSET() * filter_wg_set_offset;
 
         // first pass
-        // note: pack c_in to 4c_in
+        // note: pack channels to 4channels
         __fp16 *aux_filter = aux_filter_buffer;
         float g_ic_pck[9 * ICVL()];
         for (int64_t oc = 0; oc < oc_group; oc++) {
@@ -896,7 +896,7 @@ static void conv2d_n8cx_wgb2f3_convert_filter_fp16(
         }
 
         // second pass
-        // note: pack c_out to 8c_out
+        // note: pack num_output to 8num_output
         for (int64_t set_id = 0; set_id < WGB2F3_NSET(); set_id++) {
             const __fp16 *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             __fp16 *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
