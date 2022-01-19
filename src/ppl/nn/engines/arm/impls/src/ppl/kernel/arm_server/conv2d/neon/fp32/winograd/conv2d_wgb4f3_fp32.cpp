@@ -1742,10 +1742,12 @@ ppl::common::RetCode conv2d_wgb4f3_fp32_offline_manager::pick_best_schedule_para
     sched_param_.oc_blk   = best_oc_blk;
     sched_param_.ic_blk   = best_ic_blk;
     sched_param_.tile_blk = best_tile_blk;
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
     LOG(INFO) << "choose sp param oc: " << sched_param_.oc_blk;
     LOG(INFO) << "choose sp param ic: " << sched_param_.ic_blk;
     LOG(INFO) << "choose sp param tile: " << sched_param_.tile_blk;
     LOG(INFO) << "best run time: " << best_run_time / num_benchmark_iter / 1000 << " ms";
+#endif
     run_time = (double)best_run_time / (double)num_benchmark_iter;
     return ppl::common::RC_SUCCESS;
 }

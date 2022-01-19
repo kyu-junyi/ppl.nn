@@ -16,18 +16,21 @@
 // under the License.
 
 #include "ppl/nn/engines/arm/optimizer/opt_graph.h"
+
+#include <string.h>
+
 #include "ppl/nn/engines/arm/optimizer/opt_kernel_creator_manager.h"
 #include "ppl/nn/engines/arm/optimizer/opt_rule_manager.h"
 #include "ppl/nn/common/logger.h"
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/conv/conv_op.h"
 #include "ppl/nn/engines/utils.h"
-#include <string.h>
 
 //#define SHOW_GRAPH_VIS
 #ifdef SHOW_GRAPH_VIS
 #include "ppl/nn/auxtools/to_graphviz.h"
 #include <fstream>
 #endif
+
 using namespace std;
 using namespace ppl::common;
 
@@ -124,7 +127,7 @@ RetCode OptGraph::AddReorderOp(const OptKernelOptions& options, const edgeid_t& 
         LOG(ERROR) << "node[" << reorder_node_name << "] already exists.";
         return RC_EXISTS;
     }
-    ir::Node* reorder_node = node_ret_pair.first; // TODO: change name for easy to understand
+    ir::Node* reorder_node = node_ret_pair.first;
     reorder_node->SetType(ir::Node::Type("ppl", "Reorder", 1));
 
     std::string reorder_edge_name = reorder_node_name + "_edge";
@@ -135,8 +138,7 @@ RetCode OptGraph::AddReorderOp(const OptKernelOptions& options, const edgeid_t& 
     }
     ir::Edge* reorder_edge = edge_ret_pair.first;
 
-    if (reorder_type == REORDER_INPUT ||
-        reorder_type == REORDER_EXTRA_INPUT) { // edge -> reorder_node -> reorder_edge -> node
+    if (reorder_type == REORDER_INPUT || reorder_type == REORDER_EXTRA_INPUT) {
         reorder_node->AddInput(edge_id);
         reorder_node->AddOutput(reorder_edge->GetId());
         reorder_edge->SetProducer(reorder_node->GetId());
@@ -149,7 +151,7 @@ RetCode OptGraph::AddReorderOp(const OptKernelOptions& options, const edgeid_t& 
         } else if (reorder_type == REORDER_EXTRA_INPUT) {
             node->ReplaceExtraInput(edge_id, reorder_edge->GetId());
         }
-    } else if (reorder_type == REORDER_OUTPUT) { // node -> reorder_edge -> reorder_node ->  edge
+    } else if (reorder_type == REORDER_OUTPUT) {
         reorder_node->AddInput(reorder_edge->GetId());
         reorder_node->AddOutput(edge_id);
         reorder_edge->SetProducer(node_id);
@@ -185,16 +187,18 @@ RetCode OptGraph::AddReorderOp(const OptKernelOptions& options, const edgeid_t& 
 
     TensorImpl* tensor = new TensorImpl(reorder_edge, TENSORTYPE_NORMAL);
     tensor->GetShape()->SetDataFormat((reorder_type == REORDER_INPUT || reorder_type == REORDER_EXTRA_INPUT)
-                                         ? reorder_out_format
-                                         : reorder_in_format);
+                                          ? reorder_out_format
+                                          : reorder_in_format);
     tensor->GetShape()->SetDataType(
         (reorder_type == REORDER_INPUT || reorder_type == REORDER_EXTRA_INPUT) ? reorder_out_type : reorder_in_type);
 
     tensor_impls_.emplace(reorder_edge->GetId(), unique_ptr<TensorImpl>(tensor));
 
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
     LOG(INFO) << "Successfully added reorder op " << reorder_node_name << ". [" << GetDataFormatStr(reorder_in_format)
               << ", " << GetDataTypeStr(reorder_in_type) << "] --> [" << GetDataFormatStr(reorder_out_format) << ", "
               << GetDataTypeStr(reorder_out_type) << "]";
+#endif
     return RC_SUCCESS;
 }
 
@@ -283,10 +287,13 @@ RetCode OptGraph::StitchGraph(const OptKernelOptions& options) {
                 input_type = DATATYPE_FLOAT32;
                 input_format = DATAFORMAT_NDARRAY;
             }
-            LOG(INFO) << "In Stitching: " << node->GetName() << "\'s input[" << i << "] requires ["
-                      << GetDataFormatStr(input_format) << ", " << GetDataTypeStr(input_type) << "] --> ["
-                      << GetDataFormatStr(selected_input_format) << ", " << GetDataTypeStr(selected_input_type) << "]";
             if (input_format != selected_input_format || input_type != selected_input_type) {
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
+                LOG(INFO) << "In Stitching: " << node->GetName() << "\'s input[" << i << "] requires ["
+                          << GetDataFormatStr(input_format) << ", " << GetDataTypeStr(input_type) << "] --> ["
+                          << GetDataFormatStr(selected_input_format) << ", " << GetDataTypeStr(selected_input_type)
+                          << "]";
+#endif
                 status = AddReorderOp(options, edge_id, node_id, REORDER_INPUT, input_format, selected_input_format,
                                       input_type, selected_input_type);
                 if (status != RC_SUCCESS) {
@@ -326,30 +333,8 @@ RetCode OptGraph::StitchGraph(const OptKernelOptions& options) {
         }
     }
 
-#if 0
-    auto status = FuseReorderOp();
-    if (status != RC_SUCCESS) {
-        LOG(ERROR) << "FuseReorderOp failed: " << GetRetCodeStr(status);
-        return status;
-    }
-#endif
-
     return RC_SUCCESS;
 }
-
-#if 0
-RetCode OptGraph::SetIODataType() {
-    /** by default i/o float data. TODO: can be specified by user using options*/
-    for (int64_t i = 0; i < graph_->topo->GetInputCount(); i++) {
-        auto edge_id = graph_->topo->GetInput(i);
-        tensor_impls_[edge_id]->GetShape()->SetDataType(DATATYPE_FLOAT32);
-    }
-    for (int64_t i = 0; i < graph_->topo->GetOutputCount(); i++) {
-        auto edge_id = graph_->topo->GetOutput(i);
-        tensor_impls_[edge_id]->GetShape()->SetDataType(DATATYPE_FLOAT32);
-    }
-}
-#endif
 
 RetCode OptGraph::TryToInferType(ArmDevice* device) {
     vector<nodeid_t> sorted_nodes;
@@ -404,34 +389,6 @@ RetCode OptGraph::TryToInferType(ArmDevice* device) {
         }
     }
 
-#if 0 // no need for this if we assume the input is always in fp32-ndarray in graph stitching
-    // reset input to fp32, because input data type settings is not passed to runtime kernel.
-    for (int64_t i = 0; i < graph_->topo->GetInputCount(); i++) {
-        auto edge_id = graph_->topo->GetInput(i);
-        tensor_impls_[edge_id]->GetShape()->SetDataType(DATATYPE_FLOAT32);
-    }
-#endif
-#if 0
-    // TODO: delete this test used for printing all types
-    for (auto node_id : sorted_nodes) {
-        auto node = graph_->topo->GetNodeById(node_id);
-        InputOutputInfo IOinfo;
-        IOinfo.SetNode(node);
-        IOinfo.SetAcquireObjectFunc([this](edgeid_t eid, uint32_t, Device*) -> EdgeObject* {
-            auto iter = tensor_impls_.find(eid);
-            if (iter == tensor_impls_.end()) {
-                return nullptr;
-            }
-            return iter->second.get();
-        });
-        auto& in_shape = IOinfo.GetInput<TensorImpl>(0)->GetShape();
-        auto& out_shape = IOinfo.GetOutput<TensorImpl>(0)->GetShape();
-
-        LOG(DEBUG) << "node name " << node->GetName();
-        LOG(DEBUG) << " input shape type" << in_shape.GetDataType();
-        LOG(DEBUG) << " output shape type" << out_shape.GetDataType();
-    }
-#endif
     return RC_SUCCESS;
 }
 
@@ -501,17 +458,6 @@ ppl::common::RetCode OptGraph::CreateArmOptKernel(const OptKernelOptions& option
     return RC_SUCCESS;
 }
 
-/**
- * I/O tensor data type & layout inference and transformation:
- *  1. Infer and set data type using initial graph, with user-specified infer type.
- *      Note: a) Network input tensor data type won't be passed to runtime op kernel (whose defualt data type is default
- * fp32), as the runtime kernel only stores output data type. b) Reorder nodes have not been added.
- *  2. Infer tensor dims using intial graph.
- *  3. Transform data layout and inject necessary reorder nodes.
- *      Note: the types of injected reorder nodes are default (fp32)
- *  4. Infer and set data type again using optimized graph. (Set the data type of reorder nodes to user-specified type.)
- * */
-
 RetCode OptGraph::DoOptimize(ArmDevice* device) {
     OptKernelOptions options;
     options.resource = resource_;
@@ -559,7 +505,7 @@ RetCode OptGraph::DoOptimize(ArmDevice* device) {
     const auto opt_rule_manager = OptRuleManager::Instance();
     const auto max_opt_level = opt_rule_manager->GetMaxOptLevel(options_->graph_optimization_level);
 
-    // do before layout optimize
+    // before layout optimize
     status = opt_rule_manager->ApplyRules(options, max_opt_level, "BeforeLayoutOptimize", "");
     if (status != RC_SUCCESS) {
         LOG(ERROR) << "Run BeforeLayoutOptimize failed: " << GetRetCodeStr(status);
@@ -573,12 +519,6 @@ RetCode OptGraph::DoOptimize(ArmDevice* device) {
     }
 
     status = opt_rule_manager->ApplyRules(options, max_opt_level, "AfterLayoutOptimize", "");
-
-#if 0
-    while (FuseConvActivation() || FuseConvAdd() || FuseBNReLU() || FuseArithmeticReLU() || FuseFcActivation() ||
-           FuseSwish(options))
-        ;
-#endif
 
 #ifdef SHOW_GRAPH_VIS
     std::string vis = utils::ToGraphviz(graph_->topo.get());

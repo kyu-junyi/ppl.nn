@@ -61,7 +61,9 @@ bool FuseBatchNormalizationReLURule::Apply(const OptKernelOptions& options) {
             auto bn_kernel = (BatchNormalizationOp*)bn_kernel_it->second.get();
             bn_kernel->TryFuseReLU();
 
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
             LOG(INFO) << "merge kernel " << bn_node->GetName() << " and " << relu_node->GetName() << ".";
+#endif
             DelActivationNode(options, relu_node);
             graph_changed = true;
         }

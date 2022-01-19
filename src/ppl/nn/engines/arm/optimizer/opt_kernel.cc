@@ -17,14 +17,12 @@
 
 #include "ppl/nn/engines/arm/optimizer/opt_kernel.h"
 #include "ppl/common/sys.h"
-using namespace std;
-using namespace ppl::common;
 
 namespace ppl { namespace nn { namespace arm {
 
 ArmOptKernel::ArmOptKernel(const ir::Node* node) : OptKernel(node) {
-    common_param_.output_formats.resize(node->GetOutputCount(), DATAFORMAT_NDARRAY);
-    common_param_.output_types.resize(node->GetOutputCount(), DATATYPE_FLOAT32);
+    common_param_.output_formats.resize(node->GetOutputCount(), ppl::common::DATAFORMAT_NDARRAY);
+    common_param_.output_types.resize(node->GetOutputCount(), ppl::common::DATATYPE_FLOAT32);
 }
 
 }}} // namespace ppl::nn::x86

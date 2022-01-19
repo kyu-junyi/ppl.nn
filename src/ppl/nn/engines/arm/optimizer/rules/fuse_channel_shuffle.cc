@@ -328,7 +328,9 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
                 continue;
             }
 
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
             LOG(INFO) << "Successfully fused " << channel_shuffle_node_name;
+#endif
             graph_changed = true;
         }
     }

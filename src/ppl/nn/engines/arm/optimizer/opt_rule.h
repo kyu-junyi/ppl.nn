@@ -18,9 +18,9 @@
 #ifndef _ST_HPC_PPL_NN_ENGINES_ARM_OPTIMIZER_OPT_RULE_H_
 #define _ST_HPC_PPL_NN_ENGINES_ARM_OPTIMIZER_OPT_RULE_H_
 
-#include <string>
-
 #include "ppl/nn/engines/arm/optimizer/opt_kernel.h"
+
+#include <string>
 
 namespace ppl { namespace nn { namespace arm {
 

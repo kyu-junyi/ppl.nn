@@ -159,7 +159,9 @@ bool FuseConvActivationRule::ApplyReLU6(const OptKernelOptions& options) {
             conv_node->ReplaceOutput(conv_output_edge_id, activation_output_edge_id);
             activation_output_edge->SetProducer(conv_node->GetId());
 
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
             LOG(INFO) << "merge kernel " << successor_node->GetName() << " into kernel " << conv_node->GetName() << ".";
+#endif
             info->kernels.erase(activation_node_id);
             graph_topo->DelNodeById(activation_node_id);
             graph_topo->DelEdgeById(conv_output_edge_id);

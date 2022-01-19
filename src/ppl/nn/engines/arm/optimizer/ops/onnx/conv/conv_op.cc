@@ -16,11 +16,13 @@
 // under the License.
 
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/conv/conv_op.h"
+
+#include <cstring>
+
 #include "ppl/nn/engines/arm/kernels/onnx/conv_kernels/conv2d_kernel.h"
 #include "ppl/nn/engines/arm/utils/data_trans.h"
 #include "ppl/nn/oputils/onnx/reshape_convolution.h"
 #include "ppl/nn/common/logger.h"
-#include <cstring>
 
 using namespace std;
 using namespace ppl::common;
@@ -133,7 +135,10 @@ ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const 
             LOG(ERROR) << "Unsupported algorithm type: " << selected_algo.algo_type;
             return ppl::common::RC_UNSUPPORTED;
         }
-        LOG(INFO) << "selected algorithm: " << selected_algo.algo_type;
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
+        LOG(INFO) << "Op " << node->GetName() << " selected conv algorithm: " 
+            << ppl::kernel::arm_server::get_conv_algo_str(selected_algo.algo_type);
+#endif
 
         ppl::common::RetCode normal_cvt_weights_ret = ppl::common::RC_SUCCESS;
         ppl::common::RetCode fallback_cvt_weights_ret = ppl::common::RC_SUCCESS;
@@ -206,8 +211,6 @@ RetCode ConvOp::SelectDataType(const InputOutputInfo& info, std::vector<ppl::com
     for (uint32_t i = 1; i < info.GetInputCount(); i++) {
         selected_input_types->at(i) = info.GetInput<TensorImpl>(i)->GetShape()->GetDataType();
     }
-    //    selected_input_types->at(0) = DATATYPE_FLOAT16;
-    //    selected_output_types->at(0) = DATATYPE_FLOAT16;
     return RC_SUCCESS;
 }
 
@@ -243,12 +246,6 @@ bool ConvOp::TryFuseSum(void) {
     if (param.fuse_flag) { // already fused sum, relu or relu6
         return false;
     }
-    // if (conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::conv2d_algo::winograd_b2f3) {
-    //     return false;
-    // }
-    // if (conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::conv2d_algo::winograd_b4f3) {
-    //     return false;
-    // }
     param.fuse_flag |= ppl::kernel::arm_server::conv_fuse_flag::SUM;
     conv2d_param_->mgr->set_param(param);
     return true;

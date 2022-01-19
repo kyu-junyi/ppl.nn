@@ -104,7 +104,9 @@ bool FuseConvEltwiseRule::Apply(const OptKernelOptions& options) {
             conv_node->ReplaceOutput(conv_output_edge_id, add_output_edge->GetId());
             add_output_edge->SetProducer(conv_node->GetId());
 
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
             LOG(INFO) << "fuse add " << add_node->GetName()<< " into kernel " << conv_node->GetName() << ".";
+#endif
             info->kernels.erase(add_node->GetId());
             graph_topo->DelNodeById(add_node->GetId());
             graph_topo->DelEdgeById(conv_output_edge_id);

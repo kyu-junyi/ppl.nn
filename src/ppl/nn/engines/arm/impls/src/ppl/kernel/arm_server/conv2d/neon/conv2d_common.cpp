@@ -15,11 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include <chrono>
-#include <new>
-#include <limits>
-#include <vector>
-
 #include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/depthwise/conv2d_n8cx_depthwise_fp16.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/direct/conv2d_n8cx_direct_fp16.h"
@@ -34,6 +29,11 @@
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/im2col/conv2d_n4cx_im2col_fp32.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/winograd/conv2d_wgb2f3_fp32.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/winograd/conv2d_wgb4f3_fp32.h"
+
+#include <chrono>
+#include <new>
+#include <limits>
+#include <vector>
 
 #include "ppl/nn/engines/arm/utils/macros.h"
 
@@ -257,31 +257,28 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
     }
 
     // check direct
-    // TODO: remove group restriction after add group support
-    if (1) {
-        target_algo.algo_type              = ppl::kernel::arm_server::conv2d_algo::direct;
-        conv2d_offline_manager *direct_mgr = nullptr;
-        if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
-            if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
-                direct_mgr = new conv2d_n4cx_direct_fp32_offline_manager(param, allocator);
-            } else if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
-                direct_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
-            }
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
-            if (target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
-                direct_mgr = new conv2d_n8cx_direct_fp16_offline_manager(param, allocator);
-            } else if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
-                direct_mgr = new conv2d_direct_ndarray_fp16_offline_manager(param, allocator);
-            }
+    target_algo.algo_type              = ppl::kernel::arm_server::conv2d_algo::direct;
+    conv2d_offline_manager *direct_mgr = nullptr;
+    if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
+        if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
+            direct_mgr = new conv2d_n4cx_direct_fp32_offline_manager(param, allocator);
+        } else if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
+            direct_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
         }
-        if (direct_mgr != nullptr) {
-            if (direct_mgr->is_supported()) {
-                direct_mgr->set_algo_info(target_algo);
-                direct_mgr->fast_init_schedule_param();
-                return direct_mgr;
-            } else {
-                delete direct_mgr;
-            }
+    } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        if (target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
+            direct_mgr = new conv2d_n8cx_direct_fp16_offline_manager(param, allocator);
+        } else if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
+            direct_mgr = new conv2d_direct_ndarray_fp16_offline_manager(param, allocator);
+        }
+    }
+    if (direct_mgr != nullptr) {
+        if (direct_mgr->is_supported()) {
+            direct_mgr->set_algo_info(target_algo);
+            direct_mgr->fast_init_schedule_param();
+            return direct_mgr;
+        } else {
+            delete direct_mgr;
         }
     }
 
@@ -471,12 +468,10 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         algo = ppl::kernel::arm_server::conv2d_algo::winograd_b4f3;
         candidate_algo_list.push_back(algo);
     }
-    if (1) {
-        auto algo = ppl::kernel::arm_server::conv2d_algo::direct;
-        candidate_algo_list.push_back(algo);
-        algo = ppl::kernel::arm_server::conv2d_algo::tile_gemm;
-        candidate_algo_list.push_back(algo);
-    }
+    auto algo = ppl::kernel::arm_server::conv2d_algo::direct;
+    candidate_algo_list.push_back(algo);
+    algo = ppl::kernel::arm_server::conv2d_algo::tile_gemm;
+    candidate_algo_list.push_back(algo);
 
     const bool tune_blocksize                        = (options.dynamic_tuning_level == ppl::nn::ARM_TUNING_SELECT_BLK_SIZE);
     double best_run_time                             = std::numeric_limits<double>::max();
@@ -510,7 +505,6 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         }
     }
 
-    LOG(INFO) << best_algo;
     return best_conv2d_mgr;
 }
 }}}; // namespace ppl::kernel::arm_server

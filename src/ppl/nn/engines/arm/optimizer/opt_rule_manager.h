@@ -18,12 +18,12 @@
 #ifndef _ST_HPC_PPL_NN_ENGINES_ARM_OPTIMIZER_OPT_RULE_MANAGER_H_
 #define _ST_HPC_PPL_NN_ENGINES_ARM_OPTIMIZER_OPT_RULE_MANAGER_H_
 
+#include "ppl/nn/engines/arm/optimizer/opt_kernel.h"
+#include "ppl/nn/engines/arm/optimizer/opt_rule.h"
+
 #include <string>
 #include <vector>
 #include <memory>
-
-#include "ppl/nn/engines/arm/optimizer/opt_kernel.h"
-#include "ppl/nn/engines/arm/optimizer/opt_rule.h"
 
 namespace ppl { namespace nn { namespace arm {
 

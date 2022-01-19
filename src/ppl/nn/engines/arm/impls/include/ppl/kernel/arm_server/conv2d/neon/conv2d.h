@@ -83,17 +83,26 @@ struct conv2d_param {
 
 typedef uint32_t conv2d_algo_t;
 
+// ensure consistent with below algo str
 class conv2d_algo {
 public:
     static const conv2d_algo_t unknown        = 0;
     static const conv2d_algo_t depthwise      = 1;
-    static const conv2d_algo_t gemm           = 3;
-    static const conv2d_algo_t tile_gemm      = 4;
-    static const conv2d_algo_t direct         = 5;
-    static const conv2d_algo_t direct_ndarray = 6;
-    static const conv2d_algo_t winograd_b2f3  = 32;
-    static const conv2d_algo_t winograd_b4f3  = 33;
+    static const conv2d_algo_t gemm           = 2;
+    static const conv2d_algo_t tile_gemm      = 3;
+    static const conv2d_algo_t direct         = 4;
+    static const conv2d_algo_t direct_ndarray = 5;
+    static const conv2d_algo_t winograd_b2f3  = 6;
+    static const conv2d_algo_t winograd_b4f3  = 7;
 };
+
+static inline const char* get_conv_algo_str(const conv2d_algo_t algo) {
+    static const char* algo_str[] = {
+        "unknown", "depthwise", "gemm", "tile_gemm",
+        "direct", "direct_ndarray", "winograd_b2f3", "winograd_b4f3",
+    };
+    return algo_str[algo];
+}
 
 struct conv2d_algo_info {
     conv2d_algo_t algo_type;

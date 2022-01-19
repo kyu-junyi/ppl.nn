@@ -376,7 +376,7 @@ static inline bool RegisterRiscvEngine(vector<unique_ptr<Engine>>* engines) {
 
 Define_bool_opt("--use-arm", g_flag_use_arm, false, "use arm engine");
 Define_bool_opt("--use-fp16", g_flag_use_fp16, false, "infer with armv8.2 fp16");
-Define_int32_opt("--wg-level", g_flag_wg_level, 1, "select winograd level[0-3]. 0: wingorad off. 1: turn on winograd and automatically select block size. 2: use winograd block 2 if possible. 3: use winograd block 4 if possible");
+Define_int32_opt("--wg-level", g_flag_wg_level, 3, "select winograd level[0-3]. 0: wingorad off. 1: turn on winograd and automatically select block size. 2: use winograd block 2 if possible. 3: use winograd block 4 if possible");
 Define_int32_opt("--tuning-level", g_flag_tuning_level, 1, "select conv algo dynamic tuning level[0-1]. 0: off. 1: on");
 Define_int32_opt("--numa-node-id", g_flag_numa_node_id, -1, "bind arm engine to specified numa node, range [0, numa_max_node), -1 means not bind");
 
@@ -1010,7 +1010,7 @@ static bool Profiling(const vector<string>& input_data, Runtime* runtime) {
         run_count += 1;
     }
 
-    LOG(INFO) << "Duration: " << run_dur << " ms";
+    LOG(INFO) << "Total duration: " << run_dur << " ms";
 
 #ifdef PPLNN_ENABLE_KERNEL_PROFILING
     ProfilingStatistics stat;
@@ -1020,7 +1020,7 @@ static bool Profiling(const vector<string>& input_data, Runtime* runtime) {
     }
     PrintProfilingStatistics(stat, run_dur, run_count);
 #else
-    LOG(INFO) << "Average run cost: " << (run_dur / run_count) << " ms.";
+    LOG(INFO) << "Average run costs: " << (run_dur / run_count) << " ms.";
 #endif
 
     LOG(INFO) << "Profiling End";

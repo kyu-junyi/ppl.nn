@@ -19,13 +19,15 @@
 #define _ST_HPC_PPL_NN_ENGINES_ARM_OPTIMIZER_OPT_KERNEL_H_
 
 #include "ppl/nn/runtime/opt_kernel.h"
+
+#include <functional>
+
 #include "ppl/nn/runtime/tensor_impl.h"
 #include "ppl/nn/runtime/runtime_partition_info.h"
 #include "ppl/nn/engines/arm/arm_device.h"
 #include "ppl/nn/engines/arm/arm_common_param.h"
 #include "ppl/nn/engines/arm/utils/macros.h"
 #include "ppl/nn/engines/arm/arm_engine_options.h"
-#include <functional>
 
 namespace ppl { namespace nn { namespace utils {
 struct SharedResource;

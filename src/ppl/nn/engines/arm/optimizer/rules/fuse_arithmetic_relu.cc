@@ -101,7 +101,9 @@ bool FuseArithmeticReLURule::Apply(const OptKernelOptions& options) {
             arithmetic_node->ReplaceOutput(arithmetic_output_edge->GetId(), relu_output_edge->GetId());
             relu_output_edge->SetProducer(arithmetic_node->GetId());
 
+#ifdef PPLNN_ENABLE_KERNEL_PROFILING
             LOG(INFO) << "merge " << relu_node->GetName() << " into " << arithmetic_node->GetName() << ".";
+#endif
             info->kernels.erase(relu_node->GetId());
             graph_topo->DelNodeById(relu_node->GetId());
             graph_topo->DelEdgeById(arithmetic_output_edge->GetId());
