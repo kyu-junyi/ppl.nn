@@ -25,11 +25,11 @@
 
 #include "ppl/common/arm/sysinfo.h"
 
+namespace ppl { namespace kernel { namespace arm_server {
+
 #define CBLK()  8
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
-
-namespace ppl { namespace kernel { namespace arm_server {
 
 void conv2d_n8cx_load_group_fp16(
     const __fp16 *input_b_base,
@@ -149,7 +149,7 @@ void conv2d_n8cx_store_group_fp16(
 
     PRAGMA_OMP_SINGLE_NOWAIT()
     if (oc_tail) {
-        const int64_t global_oc_base = global_oc_inner_end; // FLOOR8(global_oc_inner_end);
+        const int64_t global_oc_base = global_oc_inner_end;
         const int64_t group_oc_ofs   = global_oc_inner_end - global_oc_start;
         for (int64_t idx = 0; idx < hw_out; idx++) {
             for (int64_t lane = 0; lane < oc_tail; lane++) {
@@ -170,5 +170,9 @@ void conv2d_n8cx_store_group_fp16(
         }
     }
 }
+
+#undef CBLK
+#undef ICBLK
+#undef OCBLK
 
 }}} // namespace ppl::kernel::arm_server
