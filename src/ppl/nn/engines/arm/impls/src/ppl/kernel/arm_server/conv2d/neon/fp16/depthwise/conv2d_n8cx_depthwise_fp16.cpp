@@ -206,9 +206,9 @@ void conv_n8cx_depthwise_f3sx_h1w4<0, 1>(
 {
     PRAGMA_OMP_PARALLEL()
     {
-        const int64_t flt_c_pck            = CEIL8(flt_c);
-        const int64_t src_hw                = src_h * src_w;
-        const int64_t dst_hw               = dst_h * dst_w;
+        const int64_t flt_c_pck         = CEIL8(flt_c);
+        const int64_t src_hw            = src_h * src_w;
+        const int64_t dst_hw            = dst_h * dst_w;
         const int64_t input_batch_strd  = flt_c_pck * src_hw;
         const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
@@ -408,9 +408,9 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 1>(
 {
     PRAGMA_OMP_PARALLEL()
     {
-        const int64_t flt_c_pck            = CEIL8(flt_c);
-        const int64_t src_hw                = src_h * src_w;
-        const int64_t dst_hw               = dst_h * dst_w;
+        const int64_t flt_c_pck         = CEIL8(flt_c);
+        const int64_t src_hw            = src_h * src_w;
+        const int64_t dst_hw            = dst_h * dst_w;
         const int64_t input_batch_strd  = flt_c_pck * src_hw;
         const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
@@ -914,9 +914,9 @@ void conv_n8cx_depthwise_f3sx_h1w4<0, 2>(
 {
     PRAGMA_OMP_PARALLEL()
     {
-        const int64_t flt_c_pck            = CEIL8(flt_c);
-        const int64_t src_hw                = src_h * src_w;
-        const int64_t dst_hw               = dst_h * dst_w;
+        const int64_t flt_c_pck         = CEIL8(flt_c);
+        const int64_t src_hw            = src_h * src_w;
+        const int64_t dst_hw            = dst_h * dst_w;
         const int64_t input_batch_strd  = flt_c_pck * src_hw;
         const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
@@ -1125,9 +1125,9 @@ void conv_n8cx_depthwise_f3sx_h1w4<1, 2>(
 {
     PRAGMA_OMP_PARALLEL()
     {
-        const int64_t flt_c_pck            = CEIL8(flt_c);
-        const int64_t src_hw                = src_h * src_w;
-        const int64_t dst_hw               = dst_h * dst_w;
+        const int64_t flt_c_pck         = CEIL8(flt_c);
+        const int64_t src_hw            = src_h * src_w;
+        const int64_t dst_hw            = dst_h * dst_w;
         const int64_t input_batch_strd  = flt_c_pck * src_hw;
         const int64_t output_batch_strd = flt_c_pck * dst_hw;
 
@@ -1841,9 +1841,9 @@ ppl::common::RetCode conv2d_n8cx_depthwise_fp16_runtime_executor::execute()
     __fp16 *sum                    = (__fp16 *)sum_;
     const uint32_t fuse_flag       = cp.fuse_flag;
 
-    const int64_t src_h       = src_shape_->GetDim(2);
-    const int64_t src_w       = src_shape_->GetDim(3);
-    const int64_t num_output      = cp.num_output;
+    const int64_t src_h      = src_shape_->GetDim(2);
+    const int64_t src_w      = src_shape_->GetDim(3);
+    const int64_t num_output = cp.num_output;
     const int64_t dst_h      = dst_shape_->GetDim(2);
     const int64_t dst_w      = dst_shape_->GetDim(3);
     const int64_t flt_h      = cp.kernel_h;
@@ -1985,6 +1985,10 @@ conv2d_runtime_executor *conv2d_n8cx_depthwise_fp16_offline_manager::gen_executo
 {
     return new conv2d_n8cx_depthwise_fp16_runtime_executor(&param_, cvt_filter_, cvt_bias_, sched_param_);
 }
+
+#undef CBLK
+#undef ICBLK
+#undef OCBLK
 
 }}} // namespace ppl::kernel::arm_server
 
