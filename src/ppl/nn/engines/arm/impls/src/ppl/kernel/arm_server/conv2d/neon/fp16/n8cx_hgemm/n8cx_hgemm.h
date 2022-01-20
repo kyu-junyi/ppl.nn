@@ -20,15 +20,27 @@
 
 #include <cstdint>
 
-#define CBLK()           8
-#define HGEMM_N_BLOCK0() 12
-
 namespace ppl { namespace kernel { namespace arm_server {
 
 enum class N8cxHgemmBlockingOrd {
     M_N_K,
-    N_M_K
+    N_M_K,
+    N_K_M
 };
+
+void hgemm_n8cx_inner_blocking_8x8_fp16(
+    const __fp16 *a,
+    __fp16 *converted_a,
+    const int64_t lda,
+    const int64_t m,
+    const int64_t k);
+
+void hgemm_n8cx_inner_blocking_16x8_fp16(
+    const __fp16 *a,
+    __fp16 *converted_a,
+    const int64_t lda,
+    const int64_t m,
+    const int64_t k);
 
 template <N8cxHgemmBlockingOrd order>
 void hgemm_n8cx_blocking_fp16(
@@ -40,8 +52,15 @@ void hgemm_n8cx_blocking_fp16(
     const int64_t m_block1,
     const int64_t k_block1);
 
-#include "n8cx_hgemm_m8nx_header.inc"
-#include "n8cx_hgemm_m16nx_header.inc"
+template <>
+void hgemm_n8cx_blocking_fp16<N8cxHgemmBlockingOrd::M_N_K>(
+    const __fp16 *a,
+    __fp16 *converted_a,
+    const int64_t lda,
+    const int64_t m,
+    const int64_t k,
+    const int64_t m_block1,
+    const int64_t k_block1);
 
 typedef void (*hgemm_n8cx_kernel_fp16_func_t)(
     const __fp16 *A,
@@ -60,72 +79,62 @@ typedef void (*hgemm_n8cx_kernel_fp16_func_t)(
 extern const hgemm_n8cx_kernel_fp16_func_t hgemm_n8cx_kernel_m8nx_fp16_func_table[12][3][6];
 extern const hgemm_n8cx_kernel_fp16_func_t hgemm_n8cx_kernel_m16nx_fp16_func_table[10][3][6];
 
-template <>
-void hgemm_n8cx_blocking_fp16<N8cxHgemmBlockingOrd::M_N_K>(
-    const __fp16 *a,
-    __fp16 *converted_a,
-    const int64_t lda,
-    const int64_t m,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t k_block1);
+// template <N8cxHgemmBlockingOrd order>
+// void hgemm_n8cx_fp16(
+//     const __fp16 *a,
+//     const __fp16 *b,
+//     const __fp16 *contant,
+//     const __fp16 *fused_data,
+//     __fp16 *c,
+//     const int64_t lda,
+//     const int64_t ldb,
+//     const int64_t ld_fused_data,
+//     const int64_t ldc,
+//     const int64_t m,
+//     const int64_t n,
+//     const int64_t k,
+//     const int64_t m_block1,
+//     const int64_t n_block1,
+//     const int64_t k_block1,
+//     const uint32_t fuse_type);
 
-template <N8cxHgemmBlockingOrd order>
-void hgemm_n8cx_fp16(
-    const __fp16 *a,
-    const __fp16 *b,
-    const __fp16 *contant,
-    const __fp16 *fused_data,
-    __fp16 *c,
-    const int64_t lda,
-    const int64_t ldb,
-    const int64_t ld_fused_data,
-    const int64_t ldc,
-    const int64_t m,
-    const int64_t n,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t n_block1,
-    const int64_t k_block1,
-    const uint32_t fuse_type);
+// template <>
+// void hgemm_n8cx_fp16<N8cxHgemmBlockingOrd::M_N_K>(
+//     const __fp16 *a,
+//     const __fp16 *b,
+//     const __fp16 *contant,
+//     const __fp16 *fused_data,
+//     __fp16 *c,
+//     const int64_t lda,
+//     const int64_t ldb,
+//     const int64_t ld_fused_data,
+//     const int64_t ldc,
+//     const int64_t m,
+//     const int64_t n,
+//     const int64_t k,
+//     const int64_t m_block1,
+//     const int64_t n_block1,
+//     const int64_t k_block1,
+//     const uint32_t fuse_type);
 
-template <>
-void hgemm_n8cx_fp16<N8cxHgemmBlockingOrd::M_N_K>(
-    const __fp16 *a,
-    const __fp16 *b,
-    const __fp16 *contant,
-    const __fp16 *fused_data,
-    __fp16 *c,
-    const int64_t lda,
-    const int64_t ldb,
-    const int64_t ld_fused_data,
-    const int64_t ldc,
-    const int64_t m,
-    const int64_t n,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t n_block1,
-    const int64_t k_block1,
-    const uint32_t fuse_type);
-
-template <>
-void hgemm_n8cx_fp16<N8cxHgemmBlockingOrd::N_M_K>(
-    const __fp16 *a,
-    const __fp16 *b,
-    const __fp16 *contant,
-    const __fp16 *fused_data,
-    __fp16 *c,
-    const int64_t lda,
-    const int64_t ldb,
-    const int64_t ld_fused_data,
-    const int64_t ldc,
-    const int64_t m,
-    const int64_t n,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t n_block1,
-    const int64_t k_block1,
-    const uint32_t fuse_type);
+// template <>
+// void hgemm_n8cx_fp16<N8cxHgemmBlockingOrd::N_M_K>(
+//     const __fp16 *a,
+//     const __fp16 *b,
+//     const __fp16 *contant,
+//     const __fp16 *fused_data,
+//     __fp16 *c,
+//     const int64_t lda,
+//     const int64_t ldb,
+//     const int64_t ld_fused_data,
+//     const int64_t ldc,
+//     const int64_t m,
+//     const int64_t n,
+//     const int64_t k,
+//     const int64_t m_block1,
+//     const int64_t n_block1,
+//     const int64_t k_block1,
+//     const uint32_t fuse_type);
 
 }}} // namespace ppl::kernel::arm_server
 
