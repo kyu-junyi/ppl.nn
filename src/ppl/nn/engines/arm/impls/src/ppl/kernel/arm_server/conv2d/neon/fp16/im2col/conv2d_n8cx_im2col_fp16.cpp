@@ -25,6 +25,8 @@
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/utils/conv2d_utils_fp16.h"
 
+namespace ppl { namespace kernel { namespace arm_server {
+
 #define CBLK()  8
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
@@ -36,8 +38,6 @@
 #else
 #error
 #endif
-
-namespace ppl { namespace kernel { namespace arm_server {
 
 static inline void prefetch_l1(const void *ptr, size_t offset)
 {
@@ -93,8 +93,8 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
     const int64_t ic_group = cp.channels / cp.group;
     const int64_t ic_g_pck = PACK_CHANNEL(ic_group);
 
-    const int64_t src_h   = src_shape_->GetDim(2);
-    const int64_t src_w   = src_shape_->GetDim(3);
+    const int64_t src_h  = src_shape_->GetDim(2);
+    const int64_t src_w  = src_shape_->GetDim(3);
     const int64_t dst_h  = dst_shape_->GetDim(2);
     const int64_t dst_w  = dst_shape_->GetDim(3);
     const int64_t flt_h  = cp.kernel_h;
@@ -106,14 +106,19 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
     const int64_t dltn_h = cp.dilation_h;
     const int64_t dltn_w = cp.dilation_w;
 
-    const int64_t m_block1 = kp.hgemm_m_block1;
-    const int64_t n_block1 = kp.hgemm_n_block1;
-    const int64_t k_block1 = kp.hgemm_k_block1;
+    const int64_t m_block1 = sp.hgemm_m_block1;
+    const int64_t n_block1 = sp.hgemm_n_block1;
+    const int64_t k_block1 = sp.hgemm_k_block1;
     const bool use_im2col  = sp.use_im2col;
 
     const int64_t src_hw  = src_h * src_w;
     const int64_t dst_hw = dst_h * dst_w;
     const int64_t flt_hw = flt_h * flt_w;
+
+    const int64_t k_m16_block0 = kp.k_m16_block0;
+    const int64_t k_n10_block0 = kp.k_n10_block0;
+    const int64_t k_m8_block0  = kp.k_m8_block0;
+    const int64_t k_n12_block0 = kp.k_n12_block0;
 
     int64_t prv_j2 = -1;
 
@@ -181,7 +186,7 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
                 prv_j2 = j2;
             }
 
-            const int64_t m_l1_align16 = (CEIL8(m_l1) / 16) * 16;
+            const int64_t m_l1_align16 = FLOOR16(CEIL8(m_l1));
             for (int64_t p2 = 0; p2 < k; p2 += k_block1) {
                 const bool is_first_k = (p2 == 0);
                 const bool is_last_k  = (p2 + k_block1 >= k);
@@ -197,10 +202,10 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
                 uint32_t init_id = (is_first_k) ? ((bias_oc_base) ? 1 : 0) : 2;
                 uint32_t fuse_id = (is_last_k) ? fuse_type : 0;
 
-                for (int64_t i = 0; i < m_l1_align16; i += 16) {
-                    for (int64_t j = 0; j < n_l1; j += 10) {
-                        const int64_t m_l0 = std::min(m_l1_align16 - i, (int64_t)16);
-                        const int64_t n_l0 = std::min(n_l1 - j, (int64_t)10);
+                for (int64_t i = 0; i < m_l1_align16; i += k_m16_block0) {
+                    for (int64_t j = 0; j < n_l1; j += k_n10_block0) {
+                        const int64_t m_l0 = std::min(m_l1_align16 - i, k_m16_block0);
+                        const int64_t n_l0 = std::min(n_l1 - j, k_n10_block0);
 
                         hgemm_n8cx_kernel_m16nx_fp16_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
@@ -220,9 +225,9 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::conv_n8cx_tile_im2col_kernel(
                 if (m_l1_align16 < CEIL8(m_l1)) {
                     a_ptr     = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
                     int64_t i = m_l1_align16;
-                    for (int64_t j = 0; j < n_l1; j += 12) {
-                        const int64_t m_l0 = std::min(m_l1 - i, (int64_t)8);
-                        const int64_t n_l0 = std::min(n_l1 - j, (int64_t)12);
+                    for (int64_t j = 0; j < n_l1; j += k_n12_block0) {
+                        const int64_t m_l0 = std::min(m_l1 - i, k_m8_block0);
+                        const int64_t n_l0 = std::min(n_l1 - j, k_n12_block0);
 
                         hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
@@ -262,8 +267,9 @@ uint64_t conv2d_n8cx_im2col_fp16_runtime_executor::cal_temp_buffer_size()
 
 void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
 {
-    const conv2d_param &cp                         = *conv_param_;
-    const conv2d_n8cx_im2col_fp16_kernel_param &kp = ker_param_;
+    const conv2d_param &cp                           = *conv_param_;
+    const conv2d_n8cx_im2col_fp16_kernel_param &kp   = ker_param_;
+    const conv2d_n8cx_im2col_fp16_schedule_param &sp = sched_param_;
 
     const int64_t num_threads = PPL_OMP_MAX_THREADS();
 
@@ -273,7 +279,7 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
     const int64_t oc_g_pck = PACK_CHANNEL(oc_group);
 
     const int64_t num_batch = src_shape_->GetDim(0);
-    const int64_t src_hw     = src_shape_->GetDim(2) * src_shape_->GetDim(3);
+    const int64_t src_hw    = src_shape_->GetDim(2) * src_shape_->GetDim(3);
     const int64_t dst_hw    = dst_shape_->GetDim(2) * dst_shape_->GetDim(3);
 
     const int64_t k_input_g_stride  = ic_group * src_hw;
@@ -294,8 +300,8 @@ void conv2d_n8cx_im2col_fp16_runtime_executor::adjust_schedule_param()
         ++gl3;
     }
     sched_param_.group_block3 = gl3;
-    sched_param_.hw_block2    = kp.hgemm_n_block1;
-    sched_param_.oc_block2    = kp.hgemm_m_block1;
+    sched_param_.hw_block2    = sp.hgemm_n_block1;
+    sched_param_.oc_block2    = sp.hgemm_m_block1;
 
     sched_param_.use_im2col = (cp.kernel_h != 1 || cp.kernel_w != 1 ||
                                cp.pad_h != 0 || cp.pad_w != 0 ||
@@ -522,7 +528,7 @@ void conv_n8cx_tile_im2col_convert_filter(
         const __fp16 *filter_g_base = filter + g * oc_group * ic_group * flt_hw;
         __fp16 *cvt_filter_g_base   = converted_filter + g * oc_group_pck * ic_group_pck * flt_hw;
 
-        // NOTE: (num_g * oc_g, ic_g, kh, kw) -> ((num_g * oc_g/8, [ic_g/8, kh, kw, 8ic], 8oc)
+        // NOTE: (num_g * oc_g, ic_g, kh, kw) -> ((num_g * oc_g/16, [ic_g/8, kh, kw, 8ic], 16oc) w/ tailing: (..., 8ic, 8oc)
         for (int64_t oc = 0; oc < oc_group_pck; oc += 2 * OCBLK()) {
             for (int64_t ic = 0; ic < ic_group_pck; ic += ICBLK()) {
                 const int64_t ic_valid_blk  = std::min((int64_t)ICBLK(), ic_group - ic);
@@ -613,8 +619,8 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_offline_manager::pick_best_schedule
         candidate_k_blk_list = {64, 128, 192};
     }
 
-    int64_t best_m_blk    = 64;
-    int64_t best_n_blk    = 72;
+    int64_t best_m_blk    = 80;
+    int64_t best_n_blk    = 108;
     int64_t best_k_blk    = 128;
     int64_t best_run_time = std::numeric_limits<int64_t>::max();
 
@@ -623,9 +629,9 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_offline_manager::pick_best_schedule
     for (auto m_blk : candidate_m_blk_list) {
         for (auto n_blk : candidate_n_blk_list) {
             for (auto k_blk : candidate_k_blk_list) {
-                ker_param_.hgemm_m_block1 = m_blk;
-                ker_param_.hgemm_n_block1 = n_blk;
-                ker_param_.hgemm_k_block1 = k_blk;
+                sched_param_.hgemm_m_block1 = m_blk;
+                sched_param_.hgemm_n_block1 = n_blk;
+                sched_param_.hgemm_k_block1 = k_blk;
 
                 auto conv_exe = gen_executor();
                 conv_exe->set_cvt_filter(cvt_filter);
@@ -674,13 +680,13 @@ ppl::common::RetCode conv2d_n8cx_im2col_fp16_offline_manager::pick_best_schedule
     allocator_->Free(src);
     allocator_->Free(dst);
 
-    ker_param_.hgemm_m_block1 = best_m_blk;
-    ker_param_.hgemm_n_block1 = best_n_blk;
-    ker_param_.hgemm_k_block1 = best_k_blk;
+    sched_param_.hgemm_m_block1 = best_m_blk;
+    sched_param_.hgemm_n_block1 = best_n_blk;
+    sched_param_.hgemm_k_block1 = best_k_blk;
 #ifdef PPLNN_ENABLE_KERNEL_PROFILING
-    LOG(INFO) << "choose kp param m: " << ker_param_.hgemm_m_block1;
-    LOG(INFO) << "choose kp param n: " << ker_param_.hgemm_n_block1;
-    LOG(INFO) << "choose kp param k: " << ker_param_.hgemm_k_block1;
+    LOG(INFO) << "choose sp param m: " << sched_param_.hgemm_m_block1;
+    LOG(INFO) << "choose sp param n: " << sched_param_.hgemm_n_block1;
+    LOG(INFO) << "choose sp param k: " << sched_param_.hgemm_k_block1;
     LOG(INFO) << "best run time: " << best_run_time / num_benchmark_iter / 1000 << " ms";
 #endif
     run_time = (double)best_run_time / (double)num_benchmark_iter;
@@ -719,5 +725,10 @@ conv2d_runtime_executor *conv2d_n8cx_im2col_fp16_offline_manager::gen_executor()
 {
     return new conv2d_n8cx_im2col_fp16_runtime_executor(&param_, cvt_filter_, cvt_bias_, sched_param_, ker_param_);
 }
+
+#undef CBLK
+#undef ICBLK
+#undef OCBLK
+#undef PACK_CHANNEL
 
 }}}; // namespace ppl::kernel::arm_server
