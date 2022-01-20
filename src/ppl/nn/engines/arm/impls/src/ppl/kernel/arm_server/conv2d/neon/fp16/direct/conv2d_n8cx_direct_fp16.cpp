@@ -42,36 +42,55 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
 
-#define OUT_TILE_W() 10
+template<const int64_t ocblk, const int64_t dst_tile_w>
+void ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func(
+    const __fp16 *input_base,
+    const __fp16 *filter_base,
+    const __fp16 *bias_base,
+    __fp16       *output_base,
+    __fp16       *sum_base,
+    int64_t       ic_tile_pck,
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t flt_next_w_bytes,
+    const int64_t flt_next_hw_bytes,
+    const int64_t dst_ocblk_offset_byte,
+    const int64_t src_icblk_offset_byte,
+    const int64_t src_filter_row_offset_byte,
+    const int64_t src_filter_elem_offset_byte,
+    const int64_t src_out_elem_offset_byte,
+    const uint32_t fuse_flag);
+
+#define DST_TILE_W() 10
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 9
+#undef DST_TILE_W
+#define DST_TILE_W() 9
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 8
+#undef DST_TILE_W
+#define DST_TILE_W() 8
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 7
+#undef DST_TILE_W
+#define DST_TILE_W() 7
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 6
+#undef DST_TILE_W
+#define DST_TILE_W() 6
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 5
+#undef DST_TILE_W
+#define DST_TILE_W() 5
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 4
+#undef DST_TILE_W
+#define DST_TILE_W() 4
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 3
+#undef DST_TILE_W
+#define DST_TILE_W() 3
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 2
+#undef DST_TILE_W
+#define DST_TILE_W() 2
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
-#define OUT_TILE_W() 1
+#undef DST_TILE_W
+#define DST_TILE_W() 1
 #include "conv2d_direct_kernel_fp16.inc"
-#undef OUT_TILE_W
+#undef DST_TILE_W
 
 typedef void (*ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_t)(
     const __fp16 *input_base,
@@ -95,31 +114,31 @@ typedef void (*ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_t)(
 static ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_t ppl_arm_server_kernel_fp16_conv_direct_kernels_oc16[OW_CASE() + 1] =
     {
         nullptr,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow1_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow2_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow3_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow4_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow5_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow6_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow7_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow8_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow9_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc16_oh1_ow10_ext_layout_asm,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 1>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 2>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 3>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 4>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 5>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 6>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 7>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 8>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 9>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, 10>,
 };
 
 static ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_t ppl_arm_server_kernel_fp16_conv_direct_kernels_oc8[OW_CASE() + 1] =
     {
         nullptr,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow1_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow2_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow3_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow4_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow5_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow6_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow7_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow8_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow9_ext_layout_asm,
-        ppl_arm_server_kernel_fp16_conv_gen_direct_kernel_oc8_oh1_ow10_ext_layout_asm,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 1>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 2>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 3>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 4>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 5>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 6>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 7>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 8>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 9>,
+        ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<8, 10>,
 };
 #undef OW_CASE
 
