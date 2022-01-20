@@ -6,25 +6,25 @@
 #endif
 
 template<>
-void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, OUT_TILE_W()>(
+void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, DST_TILE_W()>(
     const float *input_base,
     const float *filter_base,
     const float *bias_base,
           float *output_base,
           float *sum_base,
-    int64_t inC_block_ceil4,
-    const int64_t fltH,
-    const int64_t fltW,
-    const int64_t fltDiffW_bytes,
-    const int64_t fltDiffHW_bytes,
+    int64_t       ic_tile_pck,
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t flt_next_w_ofs_bytes,
+    const int64_t flt_next_hw_ofs_bytes,
     const int64_t o_cb_ofs,
-    const int64_t inH_x_inW_x_icV_bytes,
-    const int64_t dltnH_x_inW_x_icV_bytes,
-    const int64_t dltnW_x_icV_bytes,
-    const int64_t strdW_x_icV_bytes,
+    const int64_t inh_x_inw_x_icblk_bytes,
+    const int64_t dltnh_x_inw_x_icblk_bytes,
+    const int64_t dltnw_x_icblk_bytes,
+    const int64_t strdw_x_icv_bytes,
     const uint32_t fuse_flag)
 {
-#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
+#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(DST_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
 
     // x9  : filter pointer
     // x10 : input pointer
@@ -462,15 +462,15 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, OUT_TILE_W()>
           [b_addr]                      "r"  (bias_base),
           [o_addr]                      "r"  (output_base),
           [s_addr]                      "r"  (sum_base),
-          [icS]                         "r"  (inC_block_ceil4),
-          [fltH]                        "r"  (fltH),
-          [fltW]                        "r"  (fltW),
-          [fltDiffHW_bytes]             "r"  ((intptr_t)fltDiffHW_bytes - 32),
-          [o_cb_ofs]     "r"  ((intptr_t)o_cb_ofs),
-          [inDiffH_x_inW_x_icV_bytes]   "r"  ((intptr_t)inH_x_inW_x_icV_bytes - (intptr_t)fltH * (intptr_t)dltnH_x_inW_x_icV_bytes),
-          [diffHW_x_icV_bytes]          "r"  ((intptr_t)dltnH_x_inW_x_icV_bytes - (intptr_t)fltW * (intptr_t)dltnW_x_icV_bytes),
-          [diffW_x_icV_bytes]           "r"  ((intptr_t)dltnW_x_icV_bytes - (intptr_t)(OUT_TILE_W()) * (intptr_t)strdW_x_icV_bytes),
-          [strdW_x_icV_bytes]           "r"  ((intptr_t)strdW_x_icV_bytes),
+          [icS]                         "r"  (ic_tile_pck),
+          [fltH]                        "r"  (flt_h),
+          [fltW]                        "r"  (flt_w),
+          [fltDiffHW_bytes]             "r"  ((intptr_t)flt_next_hw_ofs_bytes - 32),
+          [o_cb_ofs]                    "r"  ((intptr_t)o_cb_ofs),
+          [inDiffH_x_inW_x_icV_bytes]   "r"  ((intptr_t)inh_x_inw_x_icblk_bytes - (intptr_t)flt_h * (intptr_t)dltnh_x_inw_x_icblk_bytes),
+          [diffHW_x_icV_bytes]          "r"  ((intptr_t)dltnh_x_inw_x_icblk_bytes - (intptr_t)flt_w * (intptr_t)dltnw_x_icblk_bytes),
+          [diffW_x_icV_bytes]           "r"  ((intptr_t)dltnw_x_icblk_bytes - (intptr_t)(DST_TILE_W()) * (intptr_t)strdw_x_icv_bytes),
+          [strdW_x_icV_bytes]           "r"  ((intptr_t)strdw_x_icv_bytes),
           [fuse_op]                     "r"  (fuse_flag)
         :
           "cc",
@@ -486,7 +486,6 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, OUT_TILE_W()>
 #endif
     );
 #undef IF_OW_GT
-#undef IF_ELSE_OW_GT
 }
 
 
@@ -498,25 +497,25 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, OUT_TILE_W()>
 #endif
 
 template<>
-void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, OUT_TILE_W()>(
+void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, DST_TILE_W()>(
     const float *input_base,
     const float *filter_base,
     const float *bias_base,
           float *output_base,
           float *sum_base,
-    int64_t inC_block_ceil8,
-    const int64_t fltH,
-    const int64_t fltW,
-    const int64_t fltDiffW_bytes,
-    const int64_t fltDiffHW_bytes,
+    int64_t       ic_tile_pck,
+    const int64_t flt_h,
+    const int64_t flt_w,
+    const int64_t flt_next_w_ofs_bytes,
+    const int64_t flt_next_hw_ofs_bytes,
     const int64_t o_cb_ofs,
-    const int64_t inH_x_inW_x_icV_bytes,
-    const int64_t dltnH_x_inW_x_icV_bytes,
-    const int64_t dltnW_x_icV_bytes,
-    const int64_t strdW_x_icV_bytes,
+    const int64_t inh_x_inw_x_icblk_bytes,
+    const int64_t dltnh_x_inw_x_icblk_bytes,
+    const int64_t dltnw_x_icblk_bytes,
+    const int64_t strdw_x_icblk_bytes,
     const uint32_t fuse_flag)
 {
-#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
+#define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(DST_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
 
     // x9  : input 8-channel base pointer
     // x10 : input row base pointer
@@ -724,15 +723,15 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, OUT_TILE_W()>
           [b_addr]                      "r"  (bias_base),
           [o_addr]                      "r"  (output_base),
           [s_addr]                      "r"  (sum_base),
-          [icS]                         "r"  (inC_block_ceil8),
-          [fltH]                        "r"  (fltH),
-          [fltW]                        "r"  (fltW),
-          [fltDiffHW_bytes]             "r"  ((intptr_t)fltDiffHW_bytes - 64),
-          [o_cb_ofs]     "r"  ((intptr_t)o_cb_ofs),
-          [inDiffH_x_inW_x_icV_bytes]   "r"  ((intptr_t)inH_x_inW_x_icV_bytes - (intptr_t)fltH * (intptr_t)dltnH_x_inW_x_icV_bytes),
-          [diffHW_x_icV_bytes]          "r"  ((intptr_t)dltnH_x_inW_x_icV_bytes - (intptr_t)fltW * (intptr_t)dltnW_x_icV_bytes),
-          [diffW_x_icV_bytes]           "r"  ((intptr_t)dltnW_x_icV_bytes - (intptr_t)OUT_TILE_W() * (intptr_t)strdW_x_icV_bytes),
-          [strdW_x_icV_bytes]           "r"  ((intptr_t)strdW_x_icV_bytes),
+          [icS]                         "r"  (ic_tile_pck),
+          [fltH]                        "r"  (flt_h),
+          [fltW]                        "r"  (flt_w),
+          [fltDiffHW_bytes]             "r"  ((intptr_t)flt_next_hw_ofs_bytes - 64),
+          [o_cb_ofs]                    "r"  ((intptr_t)o_cb_ofs),
+          [inDiffH_x_inW_x_icV_bytes]   "r"  ((intptr_t)inh_x_inw_x_icblk_bytes - (intptr_t)flt_h * (intptr_t)dltnh_x_inw_x_icblk_bytes),
+          [diffHW_x_icV_bytes]          "r"  ((intptr_t)dltnh_x_inw_x_icblk_bytes - (intptr_t)flt_w * (intptr_t)dltnw_x_icblk_bytes),
+          [diffW_x_icV_bytes]           "r"  ((intptr_t)dltnw_x_icblk_bytes - (intptr_t)DST_TILE_W() * (intptr_t)strdw_x_icblk_bytes),
+          [strdW_x_icV_bytes]           "r"  ((intptr_t)strdw_x_icblk_bytes),
           [fuse_op]                     "r"  (fuse_flag)
         :
           "cc",
@@ -747,5 +746,4 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<4, OUT_TILE_W()>
 #endif
     );
 #undef IF_OW_GT
-#undef IF_ELSE_OW_GT
 }
