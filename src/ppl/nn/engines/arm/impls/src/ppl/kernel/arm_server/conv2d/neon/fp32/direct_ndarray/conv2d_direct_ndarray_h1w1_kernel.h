@@ -22,7 +22,7 @@
 #include <cstdlib>
 #include <iostream>
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define CBLK() 4
 
@@ -199,6 +199,6 @@ typedef void (*ppl_kernel_arm_server_conv2d_fp32_conv_direct_ndarray_h1w1_kernel
 
 #undef CBLK
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

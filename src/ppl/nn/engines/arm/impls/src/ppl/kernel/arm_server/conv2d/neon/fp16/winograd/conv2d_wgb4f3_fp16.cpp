@@ -24,7 +24,7 @@
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define CBLK()  8
 #define ICBLK() CBLK()
@@ -1713,4 +1713,4 @@ conv2d_runtime_executor *conv2d_wgb4f3_fp16_offline_manager::gen_executor()
 #undef ICBLK
 #undef OCBLK
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

@@ -25,9 +25,9 @@
 namespace ppl { namespace nn { namespace arm {
 
 struct Convolution2DParam {
-    ppl::kernel::arm_server::conv2d_param param;
-    ppl::kernel::arm_server::conv2d_offline_manager* mgr = nullptr;
-    ppl::kernel::arm_server::conv2d_offline_manager* fallback_mgr = nullptr;
+    ppl::kernel::arm_server::neon::conv2d_param param;
+    ppl::kernel::arm_server::neon::conv2d_offline_manager* mgr = nullptr;
+    ppl::kernel::arm_server::neon::conv2d_offline_manager* fallback_mgr = nullptr;
 };
 }}} // namespace ppl::nn::arm
 

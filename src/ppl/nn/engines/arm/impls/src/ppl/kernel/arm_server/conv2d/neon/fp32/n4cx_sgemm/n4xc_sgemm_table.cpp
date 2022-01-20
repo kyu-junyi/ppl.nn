@@ -17,7 +17,7 @@
 
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/n4cx_sgemm/n4cx_sgemm.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #include "n4cx_sgemm_m4nx_header.inc"
 #include "n4cx_sgemm_m8nx_header.inc"
@@ -1816,4 +1816,4 @@ const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m8nx_fp32_func_table[10][3][6] 
 #undef INIT_T
 #undef FUSE_T
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

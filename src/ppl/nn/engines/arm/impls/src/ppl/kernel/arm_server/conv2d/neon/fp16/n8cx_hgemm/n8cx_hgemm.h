@@ -20,7 +20,7 @@
 
 #include <cstdint>
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 enum class N8cxHgemmBlockingOrd {
     M_N_K,
@@ -136,6 +136,6 @@ extern const hgemm_n8cx_kernel_fp16_func_t hgemm_n8cx_kernel_m16nx_fp16_func_tab
 //     const int64_t k_block1,
 //     const uint32_t fuse_type);
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

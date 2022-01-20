@@ -37,7 +37,7 @@ ppl::common::RetCode Conv2dKernel::DoExecute(KernelExecContext* ctx) {
     cur_executor->set_dst(Y->GetBufferPtr<void>());
 
     TensorImpl* S = nullptr;
-    if (cur_executor->conv_param()->fuse_flag & ppl::kernel::arm_server::conv_fuse_flag::SUM) {
+    if (cur_executor->conv_param()->fuse_flag & ppl::kernel::arm_server::neon::conv_fuse_flag::SUM) {
         S = ctx->GetInput<TensorImpl>(ctx->GetInputCount() - 1);
         cur_executor->set_sum(S->GetBufferPtr<void>());
     }

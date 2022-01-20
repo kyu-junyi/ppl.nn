@@ -17,7 +17,7 @@
 
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/n8cx_hgemm/n8cx_hgemm.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #include "n8cx_hgemm_m8nx_header.inc"
 #include "n8cx_hgemm_m16nx_header.inc"
@@ -1709,4 +1709,4 @@ const hgemm_n8cx_kernel_fp16_func_t hgemm_n8cx_kernel_m16nx_fp16_func_table[10][
 #undef INIT_T
 #undef FUSE_T
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

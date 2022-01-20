@@ -25,7 +25,7 @@
 #include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define CBLK() 8
 
@@ -149,6 +149,6 @@ static ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_kernel_func_t ppl_a
 };
 #undef OW_CASE
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

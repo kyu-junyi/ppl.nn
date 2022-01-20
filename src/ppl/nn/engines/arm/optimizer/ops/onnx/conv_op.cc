@@ -107,7 +107,7 @@ ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const 
             return ppl::common::RC_OUT_OF_MEMORY;
         }
 
-        ppl::kernel::arm_server::conv2d_param& conv2d_kernel_param = conv2d_param_->param;
+        ppl::kernel::arm_server::neon::conv2d_param& conv2d_kernel_param = conv2d_param_->param;
         conv2d_kernel_param.kernel_h = conv_param.kernel_shape[0];
         conv2d_kernel_param.kernel_w = conv_param.kernel_shape[1];
         conv2d_kernel_param.stride_h = conv_param.strides[0];
@@ -121,7 +121,7 @@ ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const 
         conv2d_kernel_param.channels = conv_param.channels;
         conv2d_kernel_param.fuse_flag = 0;
 
-        conv2d_param_->mgr = ppl::kernel::arm_server::conv2d_algo_selector::fast_gen_algo(
+        conv2d_param_->mgr = ppl::kernel::arm_server::neon::conv2d_algo_selector::fast_gen_algo(
             *info.GetInput<TensorImpl>(0)->GetShape(), *options.engine_options, options.device->GetISA(),
             conv2d_param_->param, options.device->GetAllocator());
 
@@ -131,13 +131,13 @@ ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const 
         }
 
         auto selected_algo = conv2d_param_->mgr->algo_info();
-        if (selected_algo.algo_type == ppl::kernel::arm_server::conv2d_algo::unknown) {
+        if (selected_algo.algo_type == ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
             LOG(ERROR) << "Unsupported algorithm type: " << selected_algo.algo_type;
             return ppl::common::RC_UNSUPPORTED;
         }
 #ifdef PPLNN_ENABLE_KERNEL_PROFILING
         LOG(INFO) << "Op " << node->GetName() << " selected conv algorithm: " 
-            << ppl::kernel::arm_server::get_conv_algo_str(selected_algo.algo_type);
+            << ppl::kernel::arm_server::neon::get_conv_algo_str(selected_algo.algo_type);
 #endif
 
         ppl::common::RetCode normal_cvt_weights_ret = ppl::common::RC_SUCCESS;
@@ -197,7 +197,7 @@ ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const 
 RetCode ConvOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
                              vector<dataformat_t>* selected_output_formats) {
     if (conv2d_param_ && conv2d_param_->mgr &&
-        conv2d_param_->mgr->algo_info().algo_type != ppl::kernel::arm_server::conv2d_algo::unknown) {
+        conv2d_param_->mgr->algo_info().algo_type != ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
         selected_input_formats->at(0) = conv2d_param_->mgr->algo_info().input_format;
         selected_output_formats->at(0) = conv2d_param_->mgr->algo_info().output_format;
         return RC_SUCCESS;
@@ -216,37 +216,37 @@ RetCode ConvOp::SelectDataType(const InputOutputInfo& info, std::vector<ppl::com
 
 bool ConvOp::TryFuseReLU(void) {
     if (!conv2d_param_ || !conv2d_param_->mgr ||
-        conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::conv2d_algo::unknown) {
+        conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
         return false;
     }
-    ppl::kernel::arm_server::conv2d_param param = conv2d_param_->mgr->param();
-    param.fuse_flag |= ppl::kernel::arm_server::conv_fuse_flag::RELU;
+    ppl::kernel::arm_server::neon::conv2d_param param = conv2d_param_->mgr->param();
+    param.fuse_flag |= ppl::kernel::arm_server::neon::conv_fuse_flag::RELU;
     conv2d_param_->mgr->set_param(param);
     return true;
 }
 
 bool ConvOp::TryFuseReLU6(void) {
     if (!conv2d_param_ || !conv2d_param_->mgr ||
-        conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::conv2d_algo::unknown) {
+        conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
         return false;
     }
-    ppl::kernel::arm_server::conv2d_param param = conv2d_param_->mgr->param();
-    param.fuse_flag |= ppl::kernel::arm_server::conv_fuse_flag::RELU;
-    param.fuse_flag |= ppl::kernel::arm_server::conv_fuse_flag::RELU6;
+    ppl::kernel::arm_server::neon::conv2d_param param = conv2d_param_->mgr->param();
+    param.fuse_flag |= ppl::kernel::arm_server::neon::conv_fuse_flag::RELU;
+    param.fuse_flag |= ppl::kernel::arm_server::neon::conv_fuse_flag::RELU6;
     conv2d_param_->mgr->set_param(param);
     return true;
 }
 
 bool ConvOp::TryFuseSum(void) {
     if (!conv2d_param_ || !conv2d_param_->mgr ||
-        conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::conv2d_algo::unknown) {
+        conv2d_param_->mgr->algo_info().algo_type == ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
         return false;
     }
-    ppl::kernel::arm_server::conv2d_param param = conv2d_param_->mgr->param();
+    ppl::kernel::arm_server::neon::conv2d_param param = conv2d_param_->mgr->param();
     if (param.fuse_flag) { // already fused sum, relu or relu6
         return false;
     }
-    param.fuse_flag |= ppl::kernel::arm_server::conv_fuse_flag::SUM;
+    param.fuse_flag |= ppl::kernel::arm_server::neon::/*  */conv_fuse_flag::SUM;
     conv2d_param_->mgr->set_param(param);
     return true;
 }

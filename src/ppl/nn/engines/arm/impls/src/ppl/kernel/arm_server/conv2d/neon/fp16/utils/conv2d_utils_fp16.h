@@ -21,7 +21,7 @@
 #include "ppl/kernel/arm_server/common/internal_include.h"
 #include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 void conv2d_n8cx_load_group_fp16(
     const __fp16 *input_b_base,
@@ -41,6 +41,6 @@ void conv2d_n8cx_store_group_fp16(
     const int64_t gid_local,
     const uint32_t fuse_flag);
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

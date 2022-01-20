@@ -26,7 +26,7 @@
 #include "ppl/common/sys.h"
 #include "ppl/nn/engines/arm/arm_engine_options.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 typedef uint32_t conv_fuse_flag_t;
 
@@ -363,6 +363,6 @@ public:
     static conv2d_offline_manager *gen_fast_algo(const ppl::nn::TensorShape &shape, const ppl::nn::ArmEngineOptions &options, const ppl::common::isa_t isa_flags, const conv2d_param &param, ppl::common::Allocator *allocator);
 };
 
-}}}; // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

@@ -22,7 +22,7 @@
 
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define V_TRANSPOSE_FP16_8x8(v)                                                                               \
     do {                                                                                                      \
@@ -298,4 +298,4 @@ void hgemm_n8cx_blocking_fp16<N8cxHgemmBlockingOrd::M_N_K>(
     } // close loop over outer M blocks
 }
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

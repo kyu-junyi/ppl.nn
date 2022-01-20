@@ -25,7 +25,7 @@
 
 #include "ppl/common/arm/sysinfo.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define CBLK()  8
 #define ICBLK() CBLK()
@@ -175,4 +175,4 @@ void conv2d_n8cx_store_group_fp16(
 #undef ICBLK
 #undef OCBLK
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

@@ -32,7 +32,7 @@
 #include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define CBLK()  4
 #define ICBLK() CBLK()
@@ -345,4 +345,4 @@ conv2d_runtime_executor *conv2d_direct_ndarray_fp32_offline_manager::gen_executo
 #undef ICBLK
 #undef OCBLK
 
-}}}; // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

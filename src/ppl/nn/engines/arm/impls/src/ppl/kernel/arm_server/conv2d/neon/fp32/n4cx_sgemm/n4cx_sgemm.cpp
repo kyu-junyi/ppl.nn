@@ -21,8 +21,7 @@
 #include <arm_neon.h>
 
 #include "ppl/kernel/arm_server/common/internal_include.h"
-
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 #define V_TRANSPOSE_FP32_4x4(v)                                                                  \
     do {                                                                                         \
@@ -256,4 +255,4 @@ void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::N_K_M>(
     } // close loop over outer K blocks
 }
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon

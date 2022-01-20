@@ -21,7 +21,7 @@
 #include "ppl/kernel/arm_server/conv2d/neon/conv2d.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 // forward declare;
 class conv2d_n4cx_depthwise_fp32_offline_manager;
@@ -70,6 +70,6 @@ private:
     conv2d_n4cx_depthwise_fp32_schedule_param sched_param_;
 };
 
-}}}; // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

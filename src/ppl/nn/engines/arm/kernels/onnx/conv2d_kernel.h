@@ -48,8 +48,8 @@ private:
     ppl::common::RetCode DoExecute(KernelExecContext* ctx) override;
 private:
     const Convolution2DParam *param_ = nullptr;
-    ppl::kernel::arm_server::conv2d_runtime_executor *executor_ = nullptr;
-    ppl::kernel::arm_server::conv2d_runtime_executor *fallback_executor_ = nullptr;
+    ppl::kernel::arm_server::neon::conv2d_runtime_executor *executor_ = nullptr;
+    ppl::kernel::arm_server::neon::conv2d_runtime_executor *fallback_executor_ = nullptr;
     bool use_fallback_ = false;
 };
 

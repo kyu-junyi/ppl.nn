@@ -30,7 +30,7 @@
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 static inline void prefetch_l1(const void *ptr, size_t offset)
 {
@@ -1990,6 +1990,6 @@ conv2d_runtime_executor *conv2d_n8cx_depthwise_fp16_offline_manager::gen_executo
 #undef ICBLK
 #undef OCBLK
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif

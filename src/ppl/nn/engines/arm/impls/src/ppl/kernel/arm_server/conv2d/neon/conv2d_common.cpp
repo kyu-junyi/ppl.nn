@@ -37,7 +37,7 @@
 
 #include "ppl/nn/engines/arm/utils/macros.h"
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
     const ppl::nn::TensorShape &shape,
@@ -115,7 +115,7 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
 
     // check depthwise
     if (param.is_depthwise()) {
-        target_algo.algo_type          = ppl::kernel::arm_server::conv2d_algo::depthwise;
+        target_algo.algo_type          = ppl::kernel::arm_server::neon::conv2d_algo::depthwise;
         conv2d_offline_manager *dw_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
@@ -143,7 +143,7 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
     // check direct ndarray
     if (param.group == 1 &&
         target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
-        target_algo.algo_type                 = ppl::kernel::arm_server::conv2d_algo::direct_ndarray;
+        target_algo.algo_type                 = ppl::kernel::arm_server::neon::conv2d_algo::direct_ndarray;
         conv2d_offline_manager *direct_nd_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             direct_nd_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
@@ -182,19 +182,19 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         switch (options.winograd_level) {
             case ppl::nn::ARM_WG_ON:
                 if (src_shape_inferred && src_h % 4 == 0 && src_w % 4 == 0) {
-                    target_algo.algo_type = ppl::kernel::arm_server::conv2d_algo::winograd_b4f3;
+                    target_algo.algo_type = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b4f3;
                 } else {
-                    target_algo.algo_type = ppl::kernel::arm_server::conv2d_algo::winograd_b2f3;
+                    target_algo.algo_type = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3;
                 }
                 break;
             case ppl::nn::ARM_WG_ON_B2:
-                target_algo.algo_type = ppl::kernel::arm_server::conv2d_algo::winograd_b2f3;
+                target_algo.algo_type = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3;
                 break;
             case ppl::nn::ARM_WG_ON_B4:
-                target_algo.algo_type = ppl::kernel::arm_server::conv2d_algo::winograd_b4f3;
+                target_algo.algo_type = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b4f3;
                 break;
             default:
-                target_algo.algo_type = ppl::kernel::arm_server::conv2d_algo::winograd_b2f3;
+                target_algo.algo_type = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3;
                 break;
         }
 
@@ -202,11 +202,11 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32 &&
             target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
             switch (target_algo.algo_type) {
-                case ppl::kernel::arm_server::conv2d_algo::winograd_b2f3:
+                case ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3:
                     winograd_mgr = new conv2d_wgb2f3_fp32_offline_manager(param, allocator);
                     break;
 
-                case ppl::kernel::arm_server::conv2d_algo::winograd_b4f3:
+                case ppl::kernel::arm_server::neon::conv2d_algo::winograd_b4f3:
                     winograd_mgr = new conv2d_wgb4f3_fp32_offline_manager(param, allocator);
                     break;
 
@@ -218,11 +218,11 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16 &&
                  target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
             switch (target_algo.algo_type) {
-                case ppl::kernel::arm_server::conv2d_algo::winograd_b2f3:
+                case ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3:
                     winograd_mgr = new conv2d_wgb2f3_fp16_offline_manager(param, allocator);
                     break;
 
-                case ppl::kernel::arm_server::conv2d_algo::winograd_b4f3:
+                case ppl::kernel::arm_server::neon::conv2d_algo::winograd_b4f3:
                     winograd_mgr = new conv2d_wgb4f3_fp16_offline_manager(param, allocator);
                     break;
 
@@ -245,7 +245,7 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
     if (param.kernel_h == 1 && param.stride_h == 1 && param.pad_h == 0 && param.dilation_h == 1 &&
         param.kernel_w == 1 && param.stride_w == 1 && param.pad_w == 0 && param.dilation_w == 1 &&
         target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
-        target_algo.algo_type              = ppl::kernel::arm_server::conv2d_algo::tile_gemm;
+        target_algo.algo_type              = ppl::kernel::arm_server::neon::conv2d_algo::tile_gemm;
         conv2d_offline_manager *im2col_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             target_algo.input_format = ppl::common::DATAFORMAT_N4CX;
@@ -269,7 +269,7 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
     }
 
     // check direct
-    target_algo.algo_type              = ppl::kernel::arm_server::conv2d_algo::direct;
+    target_algo.algo_type              = ppl::kernel::arm_server::neon::conv2d_algo::direct;
     conv2d_offline_manager *direct_mgr = nullptr;
     if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
         if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
@@ -297,13 +297,13 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
 }
 
 static conv2d_offline_manager *get_conv2d_offline_manager_with_algo(
-    ppl::kernel::arm_server::conv2d_algo_t algo,
+    ppl::kernel::arm_server::neon::conv2d_algo_t algo,
     ppl::common::datatype_t datatype,
     const conv2d_param &param,
     ppl::common::Allocator *allocator)
 {
     switch (algo) {
-        case ppl::kernel::arm_server::conv2d_algo::direct:
+        case ppl::kernel::arm_server::neon::conv2d_algo::direct:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_n4cx_direct_fp32_offline_manager(param, allocator);
             }
@@ -314,7 +314,7 @@ static conv2d_offline_manager *get_conv2d_offline_manager_with_algo(
 #endif
             break;
 
-        case ppl::kernel::arm_server::conv2d_algo::winograd_b2f3:
+        case ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_wgb2f3_fp32_offline_manager(param, allocator);
             }
@@ -325,7 +325,7 @@ static conv2d_offline_manager *get_conv2d_offline_manager_with_algo(
 #endif
             break;
 
-        case ppl::kernel::arm_server::conv2d_algo::winograd_b4f3:
+        case ppl::kernel::arm_server::neon::conv2d_algo::winograd_b4f3:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_wgb4f3_fp32_offline_manager(param, allocator);
             }
@@ -336,7 +336,7 @@ static conv2d_offline_manager *get_conv2d_offline_manager_with_algo(
 #endif
             break;
 
-        case ppl::kernel::arm_server::conv2d_algo::tile_gemm:
+        case ppl::kernel::arm_server::neon::conv2d_algo::tile_gemm:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_n4cx_im2col_fp32_offline_manager(param, allocator);
             }
@@ -434,7 +434,7 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
 
     // no profiling for depthwise
     if (param.is_depthwise()) {
-        target_algo.algo_type          = ppl::kernel::arm_server::conv2d_algo::depthwise;
+        target_algo.algo_type          = ppl::kernel::arm_server::neon::conv2d_algo::depthwise;
         conv2d_offline_manager *dw_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
@@ -461,7 +461,7 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
 
     // no profiling for ndarray
     if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
-        target_algo.algo_type                      = ppl::kernel::arm_server::conv2d_algo::direct_ndarray;
+        target_algo.algo_type                      = ppl::kernel::arm_server::neon::conv2d_algo::direct_ndarray;
         conv2d_offline_manager *direct_ndarray_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             direct_ndarray_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
@@ -482,27 +482,27 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         }
     }
 
-    std::vector<ppl::kernel::arm_server::conv2d_algo_t> candidate_algo_list;
+    std::vector<ppl::kernel::arm_server::neon::conv2d_algo_t> candidate_algo_list;
     if (param.kernel_h == 3 &&
         param.kernel_w == 3 &&
         param.stride_h == 1 &&
         param.stride_w == 1 &&
         param.dilation_h == 1 &&
         param.dilation_w == 1) {
-        auto algo = ppl::kernel::arm_server::conv2d_algo::winograd_b2f3;
+        auto algo = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b2f3;
         candidate_algo_list.push_back(algo);
-        algo = ppl::kernel::arm_server::conv2d_algo::winograd_b4f3;
+        algo = ppl::kernel::arm_server::neon::conv2d_algo::winograd_b4f3;
         candidate_algo_list.push_back(algo);
     }
-    auto algo = ppl::kernel::arm_server::conv2d_algo::direct;
+    auto algo = ppl::kernel::arm_server::neon::conv2d_algo::direct;
     candidate_algo_list.push_back(algo);
-    algo = ppl::kernel::arm_server::conv2d_algo::tile_gemm;
+    algo = ppl::kernel::arm_server::neon::conv2d_algo::tile_gemm;
     candidate_algo_list.push_back(algo);
 
-    const bool tune_blocksize                        = (options.dynamic_tuning_level == ppl::nn::ARM_TUNING_SELECT_BLK_SIZE);
-    double best_run_time                             = std::numeric_limits<double>::max();
-    ppl::kernel::arm_server::conv2d_algo_t best_algo = ppl::kernel::arm_server::conv2d_algo::unknown;
-    conv2d_offline_manager *best_conv2d_mgr          = nullptr;
+    const bool tune_blocksize                              = (options.dynamic_tuning_level == ppl::nn::ARM_TUNING_SELECT_BLK_SIZE);
+    double best_run_time                                   = std::numeric_limits<double>::max();
+    ppl::kernel::arm_server::neon::conv2d_algo_t best_algo = ppl::kernel::arm_server::neon::conv2d_algo::unknown;
+    conv2d_offline_manager *best_conv2d_mgr                = nullptr;
     for (auto algo : candidate_algo_list) {
         conv2d_offline_manager *conv2d_mgr = get_conv2d_offline_manager_with_algo(algo, target_algo.data_type, param, allocator);
         if (conv2d_mgr == nullptr) {
@@ -534,4 +534,5 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
     LOG(DEBUG) << "Selected conv2d algorithm: " << best_algo;
     return best_conv2d_mgr;
 }
-}}}; // namespace ppl::kernel::arm_server
+
+}}}}; // namespace ppl::kernel::arm_server::neon

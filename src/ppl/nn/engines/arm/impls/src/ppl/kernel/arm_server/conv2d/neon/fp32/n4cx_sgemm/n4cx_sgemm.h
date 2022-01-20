@@ -20,7 +20,7 @@
 
 #include <cstdint>
 
-namespace ppl { namespace kernel { namespace arm_server {
+namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 
 enum class N4cxSgemmBlockingOrd {
     M_N_K,
@@ -79,6 +79,6 @@ typedef void (*sgemm_n4cx_kernel_func_t)(
 extern const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m4nx_fp32_func_table[12][3][6];
 extern const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m8nx_fp32_func_table[10][3][6];
 
-}}} // namespace ppl::kernel::arm_server
+}}}}; // namespace ppl::kernel::arm_server::neon
 
 #endif
