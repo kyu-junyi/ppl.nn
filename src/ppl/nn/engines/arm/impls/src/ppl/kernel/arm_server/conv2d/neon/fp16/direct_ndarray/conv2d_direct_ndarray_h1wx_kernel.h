@@ -49,46 +49,46 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_kernel(
     const uint32_t fuse_type);
 
 #define OUT_TILE_W() 14
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 13
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 12
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 11
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 10
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 9
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 8
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 7
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 6
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 5
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 4
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 3
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 2
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 #define OUT_TILE_W() 1
-#include "conv_direct_ndarray_kernel.inc"
+#include "conv2d_direct_ndarray_h1wx_kernel.inc"
 #undef OUT_TILE_W
 
 typedef void (*ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_kernel_func_t)(

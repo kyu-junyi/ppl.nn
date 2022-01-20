@@ -18,8 +18,8 @@
 #ifdef PPL_USE_ARM_SERVER_FP16
 
 #include "ppl/kernel/arm_server/conv2d/neon/fp16/direct_ndarray/conv2d_direct_ndarray_fp16.h"
-#include "ppl/kernel/arm_server/conv2d/neon/fp16/direct_ndarray/conv_direct_ndarray_kernel.h"
-#include "ppl/kernel/arm_server/conv2d/neon/fp16/direct_ndarray/conv_direct_ndarray_h1w1_kernel.h"
+#include "ppl/kernel/arm_server/conv2d/neon/fp16/direct_ndarray/conv2d_direct_ndarray_h1wx_kernel.h"
+#include "ppl/kernel/arm_server/conv2d/neon/fp16/direct_ndarray/conv2d_direct_ndarray_h1w1_kernel.h"
 
 #include <arm_neon.h>
 #include <new>
@@ -48,8 +48,6 @@ uint64_t conv2d_direct_ndarray_fp16_runtime_executor::cal_temp_buffer_size()
 
 void conv2d_direct_ndarray_fp16_runtime_executor::adjust_schedule_param()
 {
-    const int64_t num_threads                = PPL_OMP_MAX_THREADS();
-    sched_param_.temp_buffer_size_per_thread = cal_temp_buffer_size() / num_threads;
     return;
 }
 
@@ -68,6 +66,7 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_runtime_executor::execute()
     PRAGMA_OMP_PARALLEL()
     {
         const conv2d_param &cp                              = *conv_param_;
+        const conv2d_direct_ndarray_fp16_kernel_param &kp   = ker_param_;
         const conv2d_direct_ndarray_fp16_schedule_param &sp = sched_param_;
 
         const __fp16 *input                         = (const __fp16 *)src_;
@@ -75,20 +74,20 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_runtime_executor::execute()
         const __fp16 *bias                          = (const __fp16 *)cvt_bias_;
         __fp16 *output                              = (__fp16 *)dst_;
         __fp16 *sum                                 = (__fp16 *)sum_;
-        const int64_t src_h                           = src_shape_->GetDim(2);
-        const int64_t src_w                           = src_shape_->GetDim(3);
-        const int64_t channels                           = src_shape_->GetDim(1);
-        const int64_t num_output                          = cp.num_output;
-        const int64_t dst_h                          = dst_shape_->GetDim(2);
-        const int64_t dst_w                          = dst_shape_->GetDim(3);
-        const int64_t flt_h                          = cp.kernel_h;
-        const int64_t flt_w                          = cp.kernel_w;
-        const int64_t pad_h                          = cp.pad_h;
-        const int64_t pad_w                          = cp.pad_w;
-        const int64_t strd_h                         = cp.stride_h;
-        const int64_t strd_w                         = cp.stride_w;
-        const int64_t dltn_h                         = cp.dilation_h;
-        const int64_t dltn_w                         = cp.dilation_w;
+        const int64_t src_h                         = src_shape_->GetDim(2);
+        const int64_t src_w                         = src_shape_->GetDim(3);
+        const int64_t channels                      = src_shape_->GetDim(1);
+        const int64_t num_output                    = cp.num_output;
+        const int64_t dst_h                         = dst_shape_->GetDim(2);
+        const int64_t dst_w                         = dst_shape_->GetDim(3);
+        const int64_t flt_h                         = cp.kernel_h;
+        const int64_t flt_w                         = cp.kernel_w;
+        const int64_t pad_h                         = cp.pad_h;
+        const int64_t pad_w                         = cp.pad_w;
+        const int64_t strd_h                        = cp.stride_h;
+        const int64_t strd_w                        = cp.stride_w;
+        const int64_t dltn_h                        = cp.dilation_h;
+        const int64_t dltn_w                        = cp.dilation_w;
         const int64_t num_batch                     = src_shape_->GetDim(0);
 
         int64_t ow_inner_start = std::max((int64_t)0, DIV_CEIL((pad_w - 0 * dltn_w), strd_w)); // inclusive
@@ -98,11 +97,11 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_runtime_executor::execute()
 
         const int64_t num_output_pck = CEIL8(num_output);
 
-        const int64_t oth = 1;
-        const int64_t otw = 14;
+        const int64_t dst_tile_h = kp.dst_tile_h;
+        const int64_t dst_tile_w = kp.dst_tile_h;
 
-        const int64_t ocs = sp.oc_blk; // 64
-        const int64_t ics = 128;
+        const int64_t ocblk2 = kp.ocblk2;
+        const int64_t ic_tile = sp.ic_tile;
 
         const int64_t input_hw_num        = src_h * src_w;
         const int64_t input_chw_num       = channels * input_hw_num;
@@ -111,41 +110,41 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_runtime_executor::execute()
         const int64_t output_hwcb_num     = output_hw_num * CBLK();
         const int64_t output_wcb_num      = dst_w * CBLK();
         const int64_t flt_ichw_num        = channels * flt_h * flt_w;
-        const int64_t flt_ic_stride       = flt_h * flt_w * ocs;
+        const int64_t flt_ic_stride       = flt_h * flt_w * ocblk2;
 
 #if not defined PPL_USE_ARM_SERVER_OMP
         for (int64_t batch_id = 0; batch_id < num_batch; batch_id++) {
             const __fp16 *input_batch_base = input + batch_id * input_chw_num;
-            for (int64_t ic_l1 = 0; ic_l1 < channels; ic_l1 += ics) {
-                const int64_t ic_remain     = std::min(ics, channels - ic_l1);
-                const uint32_t fuse_flag    = (ic_l1 + ics >= channels) ? cp.fuse_flag : (const uint32_t)conv_fuse_flag::NONE;
+            for (int64_t ic_l1 = 0; ic_l1 < channels; ic_l1 += ic_tile) {
+                const int64_t ic_remain     = std::min(ic_tile, channels - ic_l1);
+                const uint32_t fuse_flag    = (ic_l1 + ic_tile >= channels) ? cp.fuse_flag : (const uint32_t)conv_fuse_flag::NONE;
                 const __fp16 *input_ic_base = input_batch_base + ic_l1 * input_hw_num;
-                for (int64_t oc_l1 = 0; oc_l1 < num_output_pck; oc_l1 += ocs) {
+                for (int64_t oc_l1 = 0; oc_l1 < num_output_pck; oc_l1 += ocblk2) {
                     const __fp16 *filter_cc_base     = cvt_filter + oc_l1 * flt_ichw_num + ic_l1 * flt_ic_stride;
                     const __fp16 *const bias_oc_base = (ic_l1 == 0) ? (bias + oc_l1) : nullptr;
-                    const int64_t oc_remains         = std::min(ocs, num_output_pck - oc_l1);
+                    const int64_t oc_remains         = std::min(ocblk2, num_output_pck - oc_l1);
                     const ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_kernel_func_t *const conv_direct_kernel_func_table =
                         (oc_remains > OCBLK()) ? ppl_arm_server_kernel_fp16_conv_direct_ndarray_oc16_kernel_func_table : ppl_arm_server_kernel_fp16_conv_direct_ndarray_oc8_kernel_func_table;
                     const ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel_func_t conv_direct_kernel_h1w1_func =
                         (oc_remains > OCBLK()) ? ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<16> : ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel<8>;
-                    for (int64_t oh = 0; oh < dst_h; oh += oth) {
+                    for (int64_t oh = 0; oh < dst_h; oh += dst_tile_h) {
                         __fp16 *output_h_base = output + batch_id * output_batch_stride + oc_l1 * output_hw_num + oh * output_wcb_num;
                         __fp16 *sum_h_base    = sum + batch_id * output_batch_stride + oc_l1 * output_hw_num + oh * output_wcb_num;
 #else
-        for (int64_t ic_l1 = 0; ic_l1 < channels; ic_l1 += ics) {
-            const uint32_t fuse_flag = (ic_l1 + ics >= channels) ? cp.fuse_flag : 0;
+        for (int64_t ic_l1 = 0; ic_l1 < channels; ic_l1 += ic_tile) {
+            const uint32_t fuse_flag = (ic_l1 + ic_tile >= channels) ? cp.fuse_flag : 0;
 
             PRAGMA_OMP_FOR_COLLAPSE(3)
             for (int64_t batch_id = 0; batch_id < num_batch; batch_id++) {
-                for (int64_t oc_l1 = 0; oc_l1 < num_output_pck; oc_l1 += ocs) {
-                    for (int64_t oh = 0; oh < dst_h; oh += oth) {
+                for (int64_t oc_l1 = 0; oc_l1 < num_output_pck; oc_l1 += ocblk2) {
+                    for (int64_t oh = 0; oh < dst_h; oh += dst_tile_h) {
                         const __fp16 *input_ic_base      = input + batch_id * input_chw_num + ic_l1 * input_hw_num;
                         __fp16 *output_h_base            = output + batch_id * output_batch_stride + oc_l1 * output_hw_num + oh * output_wcb_num;
                         __fp16 *sum_h_base               = sum + batch_id * output_batch_stride + oc_l1 * output_hw_num + oh * output_wcb_num;
                         const __fp16 *filter_cc_base     = cvt_filter + oc_l1 * flt_ichw_num + ic_l1 * flt_ic_stride;
                         const __fp16 *const bias_oc_base = (ic_l1 == 0) ? (bias + oc_l1) : nullptr;
-                        const int64_t ic_remain          = std::min(ics, channels - ic_l1);
-                        const int64_t oc_remains         = std::min(ocs, num_output_pck - oc_l1);
+                        const int64_t ic_remain          = std::min(ic_tile, channels - ic_l1);
+                        const int64_t oc_remains         = std::min(ocblk2, num_output_pck - oc_l1);
                         const ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_kernel_func_t *const conv_direct_kernel_func_table =
                             (oc_remains > OCBLK()) ? ppl_arm_server_kernel_fp16_conv_direct_ndarray_oc16_kernel_func_table : ppl_arm_server_kernel_fp16_conv_direct_ndarray_oc8_kernel_func_table;
                         const ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_h1w1_kernel_func_t conv_direct_kernel_h1w1_func =
@@ -182,8 +181,8 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_runtime_executor::execute()
                         } // close loop over ow(1/3):head
 
                         const __fp16 *input_kh_base = input_h_base + flt_h_start * dltn_h * src_w;
-                        for (int64_t ow = ow_inner_start; ow < ow_inner_end; ow += otw) {
-                            const int64_t ow_len = std::min(otw, ow_inner_end - ow);
+                        for (int64_t ow = ow_inner_start; ow < ow_inner_end; ow += dst_tile_w) {
+                            const int64_t ow_len = std::min(dst_tile_w, ow_inner_end - ow);
                             const int64_t iw     = -pad_w + ow * strd_w;
                             conv_direct_kernel_func_table[ow_len](
                                 input_kh_base + iw,
@@ -245,14 +244,8 @@ bool conv2d_direct_ndarray_fp16_offline_manager::is_supported()
 
 ppl::common::RetCode conv2d_direct_ndarray_fp16_offline_manager::fast_init_schedule_param()
 {
-    sched_param_.oh_blk = 1;
-    sched_param_.ow_blk = 14;
-    sched_param_.oc_blk = 16;
-    sched_param_.ic_blk = 128;
-    if (sched_param_.oc_blk != 16) {
-        return ppl::common::RC_INVALID_VALUE;
-    }
-    if (sched_param_.ic_blk != 128) {
+    sched_param_.ic_tile = 128;
+    if (sched_param_.ic_tile != 128) {
         return ppl::common::RC_INVALID_VALUE;
     }
     return ppl::common::RC_SUCCESS;
@@ -333,20 +326,17 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_offline_manager::gen_cvt_weights
     memcpy(cvt_bias_, bias, num_output * sizeof(__fp16));
     memset((uint8_t *)cvt_bias_ + padding_offset_bytes, 0, padding_bytes);
 
-    if (sched_param_.oc_blk == 16) {
-        cvt_filter_size_ = ppl_arm_server_kernel_fp16_conv_direct_n4cx_get_converted_filter_size(
-            channels, num_output, kernel_h, kernel_w);
-        cvt_filter_ = allocator_->Alloc(cvt_filter_size_);
-        ppl_arm_server_kernel_fp16_conv_direct_n4cx_convert_filter(
-            (const __fp16 *)filter,
-            (__fp16 *)cvt_filter_,
-            channels,
-            num_output,
-            kernel_h,
-            kernel_w);
-        return ppl::common::RC_SUCCESS;
-    }
-    return ppl::common::RC_INVALID_VALUE;
+    cvt_filter_size_ = ppl_arm_server_kernel_fp16_conv_direct_n4cx_get_converted_filter_size(
+        channels, num_output, kernel_h, kernel_w);
+    cvt_filter_ = allocator_->Alloc(cvt_filter_size_);
+    ppl_arm_server_kernel_fp16_conv_direct_n4cx_convert_filter(
+        (const __fp16 *)filter,
+        (__fp16 *)cvt_filter_,
+        channels,
+        num_output,
+        kernel_h,
+        kernel_w);
+    return ppl::common::RC_SUCCESS;
 }
 
 conv2d_runtime_executor *conv2d_direct_ndarray_fp16_offline_manager::gen_executor()
@@ -357,6 +347,7 @@ conv2d_runtime_executor *conv2d_direct_ndarray_fp16_offline_manager::gen_executo
 #undef CBLK
 #undef ICBLK
 #undef OCBLK
+
 }}}; // namespace ppl::kernel::arm_server
 
 #endif

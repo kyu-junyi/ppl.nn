@@ -25,8 +25,6 @@ void ppl_kernel_arm_server_conv2d_fp16_conv_direct_ndarray_kernel<16, OUT_TILE_W
     const uint32_t fuse_type)
 {
 #define IF_OW_GT(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " > " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-#define IF_OW_EQ(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " == " #OW "\n\t  " INSTRUCTION ".endif\n\t"
-#define IF_OW_GE(OW, INSTRUCTION) ".if " PPL_ARM_SK_STR(OUT_TILE_W()) " >= " #OW "\n\t  " INSTRUCTION ".endif\n\t"
 
     asm volatile (
         ".align 2\n\t"
