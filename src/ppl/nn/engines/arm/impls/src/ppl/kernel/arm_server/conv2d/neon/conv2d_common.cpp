@@ -69,17 +69,7 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         ppl::common::DATAFORMAT_N8CX};
     (void)fallback_info;
 
-    if (preferred_data_type == ppl::common::DATATYPE_FLOAT16) {
-        if (!(isa_flags & ppl::common::ISA_ARMV8_2)) {
-            LOG(ERROR) << "need armv8.2 for float16";
-            return nullptr;
-        }
-        if (src_format != ppl::common::DATAFORMAT_NDARRAY &&
-            src_format != ppl::common::DATAFORMAT_N8CX) {
-            LOG(ERROR) << "need ndarray/n8cx for float16";
-            return nullptr;
-        }
-    } else if (preferred_data_type == ppl::common::DATATYPE_FLOAT32) {
+    if (preferred_data_type == ppl::common::DATATYPE_FLOAT32) {
         if (!(isa_flags & ppl::common::ISA_ARMV8)) {
             LOG(ERROR) << "need armv8 for float32";
             return nullptr;
@@ -87,6 +77,16 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         if (src_format != ppl::common::DATAFORMAT_NDARRAY &&
             src_format != ppl::common::DATAFORMAT_N4CX) {
             LOG(ERROR) << "need ndarray/n4cx for float32";
+            return nullptr;
+        }
+    } else if (preferred_data_type == ppl::common::DATATYPE_FLOAT16) {
+        if (!(isa_flags & ppl::common::ISA_ARMV8_2)) {
+            LOG(ERROR) << "need armv8.2 for float16";
+            return nullptr;
+        }
+        if (src_format != ppl::common::DATAFORMAT_NDARRAY &&
+            src_format != ppl::common::DATAFORMAT_N8CX) {
+            LOG(ERROR) << "need ndarray/n8cx for float16";
             return nullptr;
         }
     } else {
@@ -121,11 +121,14 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
             if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
                 dw_mgr = new conv2d_n4cx_depthwise_fp32_offline_manager(param, allocator);
             }
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        }
+#ifdef PPL_USE_ARM_SERVER_FP16
+        else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
             if (target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
                 dw_mgr = new conv2d_n8cx_depthwise_fp16_offline_manager(param, allocator);
             }
         }
+#endif
         if (dw_mgr != nullptr) {
             if (dw_mgr->is_supported()) {
                 dw_mgr->set_algo_info(target_algo);
@@ -144,9 +147,12 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         conv2d_offline_manager *direct_nd_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             direct_nd_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        }
+#ifdef PPL_USE_ARM_SERVER_FP16
+        else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
             direct_nd_mgr = new conv2d_direct_ndarray_fp16_offline_manager(param, allocator);
         }
+#endif
         if (direct_nd_mgr != nullptr) {
             if (direct_nd_mgr->is_supported()) {
                 direct_nd_mgr->set_algo_info(target_algo);
@@ -207,8 +213,10 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
                 default:;
             }
 
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16 &&
-                   target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
+        }
+#ifdef PPL_USE_ARM_SERVER_FP16
+        else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16 &&
+                 target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
             switch (target_algo.algo_type) {
                 case ppl::kernel::arm_server::conv2d_algo::winograd_b2f3:
                     winograd_mgr = new conv2d_wgb2f3_fp16_offline_manager(param, allocator);
@@ -221,6 +229,7 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
                 default:;
             }
         }
+#endif
         if (winograd_mgr != nullptr) {
             if (winograd_mgr->is_supported()) {
                 winograd_mgr->set_algo_info(target_algo);
@@ -241,10 +250,13 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             target_algo.input_format = ppl::common::DATAFORMAT_N4CX;
             im2col_mgr               = new conv2d_n4cx_im2col_fp32_offline_manager(param, allocator);
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        }
+#ifdef PPL_USE_ARM_SERVER_FP16
+        else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
             target_algo.input_format = ppl::common::DATAFORMAT_N8CX;
             im2col_mgr               = new conv2d_n8cx_im2col_fp16_offline_manager(param, allocator);
         }
+#endif
         if (im2col_mgr != nullptr) {
             if (im2col_mgr->is_supported()) {
                 im2col_mgr->set_algo_info(target_algo);
@@ -262,16 +274,15 @@ conv2d_offline_manager *conv2d_algo_selector::fast_gen_algo(
     if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
         if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
             direct_mgr = new conv2d_n4cx_direct_fp32_offline_manager(param, allocator);
-        } else if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
-            direct_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
-        }
-    } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
-        if (target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
-            direct_mgr = new conv2d_n8cx_direct_fp16_offline_manager(param, allocator);
-        } else if (target_algo.input_format == ppl::common::DATAFORMAT_NDARRAY) {
-            direct_mgr = new conv2d_direct_ndarray_fp16_offline_manager(param, allocator);
         }
     }
+#ifdef PPL_USE_ARM_SERVER_FP16
+    else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        if (target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
+            direct_mgr = new conv2d_n8cx_direct_fp16_offline_manager(param, allocator);
+        }
+    }
+#endif
     if (direct_mgr != nullptr) {
         if (direct_mgr->is_supported()) {
             direct_mgr->set_algo_info(target_algo);
@@ -295,42 +306,49 @@ static conv2d_offline_manager *get_conv2d_offline_manager_with_algo(
         case ppl::kernel::arm_server::conv2d_algo::direct:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_n4cx_direct_fp32_offline_manager(param, allocator);
-            } else if (datatype == ppl::common::DATATYPE_FLOAT16) {
-                return new conv2d_n8cx_direct_fp16_offline_manager(param, allocator);
-            } else {
-                return nullptr;
             }
+#ifdef PPL_USE_ARM_SERVER_FP16
+            else if (datatype == ppl::common::DATATYPE_FLOAT16) {
+                return new conv2d_n8cx_direct_fp16_offline_manager(param, allocator);
+            }
+#endif
+            break;
 
         case ppl::kernel::arm_server::conv2d_algo::winograd_b2f3:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_wgb2f3_fp32_offline_manager(param, allocator);
-            } else if (datatype == ppl::common::DATATYPE_FLOAT16) {
-                return new conv2d_wgb2f3_fp16_offline_manager(param, allocator);
-            } else {
-                return nullptr;
             }
+#ifdef PPL_USE_ARM_SERVER_FP16
+            else if (datatype == ppl::common::DATATYPE_FLOAT16) {
+                return new conv2d_wgb2f3_fp16_offline_manager(param, allocator);
+            }
+#endif
+            break;
 
         case ppl::kernel::arm_server::conv2d_algo::winograd_b4f3:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_wgb4f3_fp32_offline_manager(param, allocator);
-            } else if (datatype == ppl::common::DATATYPE_FLOAT16) {
-                return new conv2d_wgb4f3_fp16_offline_manager(param, allocator);
-            } else {
-                return nullptr;
             }
+#ifdef PPL_USE_ARM_SERVER_FP16
+            else if (datatype == ppl::common::DATATYPE_FLOAT16) {
+                return new conv2d_wgb4f3_fp16_offline_manager(param, allocator);
+            }
+#endif
+            break;
 
         case ppl::kernel::arm_server::conv2d_algo::tile_gemm:
             if (datatype == ppl::common::DATATYPE_FLOAT32) {
                 return new conv2d_n4cx_im2col_fp32_offline_manager(param, allocator);
-            } else if (datatype == ppl::common::DATATYPE_FLOAT16) {
-                return new conv2d_n8cx_im2col_fp16_offline_manager(param, allocator);
-            } else {
-                return nullptr;
             }
-
-        default:
-            return nullptr;
+#ifdef PPL_USE_ARM_SERVER_FP16
+            else if (datatype == ppl::common::DATATYPE_FLOAT16) {
+                return new conv2d_n8cx_im2col_fp16_offline_manager(param, allocator);
+            }
+#endif
+            break;
     }
+
+    return nullptr;
 }
 
 conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
@@ -368,17 +386,7 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         ppl::common::DATAFORMAT_N8CX};
     (void)fallback_info;
 
-    if (preferred_data_type == ppl::common::DATATYPE_FLOAT16) {
-        if (!(isa_flags & ppl::common::ISA_ARMV8_2)) {
-            LOG(ERROR) << "need armv8.2 for float16";
-            return nullptr;
-        }
-        if (src_format != ppl::common::DATAFORMAT_NDARRAY &&
-            src_format != ppl::common::DATAFORMAT_N8CX) {
-            LOG(ERROR) << "need ndarray/n8cx for float16";
-            return nullptr;
-        }
-    } else if (preferred_data_type == ppl::common::DATATYPE_FLOAT32) {
+    if (preferred_data_type == ppl::common::DATATYPE_FLOAT32) {
         if (!(isa_flags & ppl::common::ISA_ARMV8)) {
             LOG(ERROR) << "need armv8 for float32";
             return nullptr;
@@ -388,7 +396,19 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
             LOG(ERROR) << "need ndarray/n4cx for float32";
             return nullptr;
         }
-    } else {
+    }
+    else if (preferred_data_type == ppl::common::DATATYPE_FLOAT16) {
+        if (!(isa_flags & ppl::common::ISA_ARMV8_2)) {
+            LOG(ERROR) << "need armv8.2 for float16";
+            return nullptr;
+        }
+        if (src_format != ppl::common::DATAFORMAT_NDARRAY &&
+            src_format != ppl::common::DATAFORMAT_N8CX) {
+            LOG(ERROR) << "need ndarray/n8cx for float16";
+            return nullptr;
+        }
+    }
+    else {
         LOG(ERROR) << "unaccepted data type";
         return nullptr;
     }
@@ -420,11 +440,14 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
             if (target_algo.input_format == ppl::common::DATAFORMAT_N4CX) {
                 dw_mgr = new conv2d_n4cx_depthwise_fp32_offline_manager(param, allocator);
             }
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        }
+#ifdef PPL_USE_ARM_SERVER_FP16
+        else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
             if (target_algo.input_format == ppl::common::DATAFORMAT_N8CX) {
                 dw_mgr = new conv2d_n8cx_depthwise_fp16_offline_manager(param, allocator);
             }
         }
+#endif
         if (dw_mgr != nullptr) {
             if (dw_mgr->is_supported()) {
                 dw_mgr->set_algo_info(target_algo);
@@ -442,9 +465,12 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         conv2d_offline_manager *direct_ndarray_mgr = nullptr;
         if (target_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
             direct_ndarray_mgr = new conv2d_direct_ndarray_fp32_offline_manager(param, allocator);
-        } else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
+        }
+#ifdef PPL_USE_ARM_SERVER_FP16
+        else if (target_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
             direct_ndarray_mgr = new conv2d_direct_ndarray_fp16_offline_manager(param, allocator);
         }
+#endif
         if (direct_ndarray_mgr != nullptr) {
             if (direct_ndarray_mgr->is_supported()) {
                 direct_ndarray_mgr->set_algo_info(target_algo);
@@ -505,6 +531,7 @@ conv2d_offline_manager *conv2d_algo_selector::gen_fast_algo(
         }
     }
 
+    LOG(DEBUG) << "Selected conv2d algorithm: " << best_algo;
     return best_conv2d_mgr;
 }
 }}}; // namespace ppl::kernel::arm_server
