@@ -27,20 +27,22 @@ namespace ppl { namespace kernel { namespace arm_server {
 class conv2d_n4cx_im2col_fp32_offline_manager;
 
 typedef struct {
-    // hardcoded in kernels
-    int32_t sgemm_m_block0 = 4;
-    int32_t sgemm_n_block0 = 12;
-    // tuned for l1 cache
-    int32_t sgemm_m_block1 = 40;
-    int32_t sgemm_n_block1 = 68;
-    int32_t sgemm_k_block1 = 128;
+    // constants in kernel design
+    int64_t k_m8_block0  = 8;
+    int64_t k_n10_block0 = 10;
+    int64_t k_m4_block0  = 4;
+    int64_t k_n12_block0 = 12;
 
     int64_t target_l3_cache_size = 32 * 1024 * 1024;
 } conv2d_n4cx_im2col_fp32_kernel_param;
 
 typedef struct {
-    int64_t oc_block2;
-    int64_t hw_block2;
+    int32_t sgemm_m_block1 = 40;
+    int32_t sgemm_n_block1 = 68;
+    int32_t sgemm_k_block1 = 128;
+
+    int64_t oc_block2; // not in use
+    int64_t hw_block2; // not in use
     int64_t batch_block3;
     int64_t group_block3;
     bool use_im2col;

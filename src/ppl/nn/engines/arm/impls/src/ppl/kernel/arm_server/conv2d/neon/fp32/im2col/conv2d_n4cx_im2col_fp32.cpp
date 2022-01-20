@@ -91,8 +91,8 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
     const int64_t ic_group = cp.channels / cp.group;
     const int64_t ic_g_pck = PACK_CHANNEL(ic_group);
 
-    const int64_t src_h   = src_shape_->GetDim(2);
-    const int64_t src_w   = src_shape_->GetDim(3);
+    const int64_t src_h  = src_shape_->GetDim(2);
+    const int64_t src_w  = src_shape_->GetDim(3);
     const int64_t dst_h  = dst_shape_->GetDim(2);
     const int64_t dst_w  = dst_shape_->GetDim(3);
     const int64_t flt_h  = cp.kernel_h;
@@ -104,19 +104,19 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
     const int64_t dltn_h = cp.dilation_h;
     const int64_t dltn_w = cp.dilation_w;
 
-    const int64_t m_block1 = kp.sgemm_m_block1;
-    const int64_t n_block1 = kp.sgemm_n_block1;
-    const int64_t k_block1 = kp.sgemm_k_block1;
+    const int64_t m_block1 = sp.sgemm_m_block1;
+    const int64_t n_block1 = sp.sgemm_n_block1;
+    const int64_t k_block1 = sp.sgemm_k_block1;
     const bool use_im2col  = sp.use_im2col;
 
     const int64_t src_hw  = src_h * src_w;
-    const int64_t dst_hw = dst_h * dst_w;
-    const int64_t flt_hw = flt_h * flt_w;
+    const int64_t dst_hw  = dst_h * dst_w;
+    const int64_t flt_hw  = flt_h * flt_w;
 
-    const int64_t k_m8_block0  = 8;
-    const int64_t k_n10_block0 = 10;
-    const int64_t k_m4_block0  = 4;
-    const int64_t k_n12_block0 = 12;
+    const int64_t k_m8_block0  = kp.k_m8_block0;
+    const int64_t k_n10_block0 = kp.k_n10_block0;
+    const int64_t k_m4_block0  = kp.k_m4_block0;
+    const int64_t k_n12_block0 = kp.k_n12_block0;
 
     int64_t prv_j2 = -1;
 
@@ -185,9 +185,6 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
             }
 
             const int64_t m_l1_align8 = FLOOR8(CEIL4(m_l1));
-            // make FMA chains evenly distributed
-            int64_t n10_block0        = k_n10_block0;
-            int64_t n12_block0        = k_n12_block0;
 
             for (int64_t p2 = 0; p2 < k; p2 += k_block1) {
                 const bool is_first_k = (p2 == 0);
@@ -205,9 +202,9 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                 uint32_t fuse_id = (is_last_k) ? fuse_type : 0;
 
                 for (int64_t i = 0; i < m_l1_align8; i += k_m8_block0) {
-                    for (int64_t j = 0; j < n_l1; j += n10_block0) {
+                    for (int64_t j = 0; j < n_l1; j += k_n10_block0) {
                         const int64_t m_l0 = std::min(m_l1_align8 - i, k_m8_block0);
-                        const int64_t n_l0 = std::min(n_l1 - j, n10_block0);
+                        const int64_t n_l0 = std::min(n_l1 - j, k_n10_block0);
 
                         sgemm_n4cx_kernel_m8nx_fp32_func_table[n_l0 - 1][init_id][fuse_id](
                             a_ptr + i * lda,
@@ -227,9 +224,9 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::conv_n4cx_tile_im2col_kernel(
                 if (m_l1_align8 < CEIL4(m_l1)) {
                     a_ptr = cvt_filter_oc_base + i2 * lda + p2 * OCBLK();
                     for (int64_t i = m_l1_align8; i < CEIL4(m_l1); i += k_m4_block0) {
-                        for (int64_t j = 0; j < n_l1; j += n12_block0) {
+                        for (int64_t j = 0; j < n_l1; j += k_n12_block0) {
                             const int64_t m_l0 = std::min(CEIL4(m_l1) - i, k_m4_block0);
-                            const int64_t n_l0 = std::min(n_l1 - j, n12_block0);
+                            const int64_t n_l0 = std::min(n_l1 - j, k_n12_block0);
 
                             sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fuse_id](
                                 a_ptr + i * lda,
@@ -270,8 +267,9 @@ uint64_t conv2d_n4cx_im2col_fp32_runtime_executor::cal_temp_buffer_size()
 
 void conv2d_n4cx_im2col_fp32_runtime_executor::adjust_schedule_param()
 {
-    const conv2d_param &cp                         = *conv_param_;
-    const conv2d_n4cx_im2col_fp32_kernel_param &kp = ker_param_;
+    const conv2d_param &cp                           = *conv_param_;
+    const conv2d_n4cx_im2col_fp32_kernel_param &kp   = ker_param_;
+    const conv2d_n4cx_im2col_fp32_schedule_param &sp = sched_param_;
 
     const int64_t num_threads = PPL_OMP_MAX_THREADS();
 
@@ -302,8 +300,8 @@ void conv2d_n4cx_im2col_fp32_runtime_executor::adjust_schedule_param()
         ++gl3;
     }
     sched_param_.group_block3 = gl3;
-    sched_param_.hw_block2    = kp.sgemm_n_block1;
-    sched_param_.oc_block2    = kp.sgemm_m_block1;
+    sched_param_.hw_block2    = sp.sgemm_n_block1;
+    sched_param_.oc_block2    = sp.sgemm_m_block1;
 
     sched_param_.use_im2col = (cp.kernel_h != 1 || cp.kernel_w != 1 ||
                                cp.pad_h != 0 || cp.pad_w != 0 ||
@@ -339,14 +337,14 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_runtime_executor::execute()
 
         const int64_t src_h      = src_shape_->GetDim(2);
         const int64_t src_w      = src_shape_->GetDim(3);
-        const int64_t channels      = src_shape_->GetDim(1);
-        const int64_t num_output     = cp.num_output;
-        const int64_t dst_h     = dst_shape_->GetDim(2);
-        const int64_t dst_w     = dst_shape_->GetDim(3);
-        const int64_t flt_h     = cp.kernel_h;
-        const int64_t flt_w     = cp.kernel_w;
-        const int64_t group = cp.group;
-        const int64_t num_batch = src_shape_->GetDim(0);
+        const int64_t channels   = src_shape_->GetDim(1);
+        const int64_t num_output = cp.num_output;
+        const int64_t dst_h      = dst_shape_->GetDim(2);
+        const int64_t dst_w      = dst_shape_->GetDim(3);
+        const int64_t flt_h      = cp.kernel_h;
+        const int64_t flt_w      = cp.kernel_w;
+        const int64_t group      = cp.group;
+        const int64_t num_batch  = src_shape_->GetDim(0);
 
         const int64_t group_block3 = sp.group_block3;
         const int64_t batch_block3 = sp.batch_block3;
@@ -616,8 +614,8 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::pick_best_schedule
     std::vector<int64_t> candidate_k_blk_list = {128};
 
     if (tune_blocksize) {
-        candidate_m_blk_list = {32, 48, 64};
-        candidate_n_blk_list = {48, 60, 72, 84, 96};
+        candidate_m_blk_list = {32, 40, 48, 64};
+        candidate_n_blk_list = {48, 68, 72, 84, 96};
         candidate_k_blk_list = {64, 128, 192};
     }
 
@@ -631,9 +629,9 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::pick_best_schedule
     for (auto m_blk : candidate_m_blk_list) {
         for (auto n_blk : candidate_n_blk_list) {
             for (auto k_blk : candidate_k_blk_list) {
-                ker_param_.sgemm_m_block1 = m_blk;
-                ker_param_.sgemm_n_block1 = n_blk;
-                ker_param_.sgemm_k_block1 = k_blk;
+                sched_param_.sgemm_m_block1 = m_blk;
+                sched_param_.sgemm_n_block1 = n_blk;
+                sched_param_.sgemm_k_block1 = k_blk;
 
                 auto conv_exe = gen_executor();
                 conv_exe->set_cvt_filter(cvt_filter);
@@ -682,13 +680,13 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::pick_best_schedule
     allocator_->Free(src);
     allocator_->Free(dst);
 
-    ker_param_.sgemm_m_block1 = best_m_blk;
-    ker_param_.sgemm_n_block1 = best_n_blk;
-    ker_param_.sgemm_k_block1 = best_k_blk;
+    sched_param_.sgemm_m_block1 = best_m_blk;
+    sched_param_.sgemm_n_block1 = best_n_blk;
+    sched_param_.sgemm_k_block1 = best_k_blk;
 #ifdef PPLNN_ENABLE_KERNEL_PROFILING
-    LOG(INFO) << "choose kp param m: " << ker_param_.sgemm_m_block1;
-    LOG(INFO) << "choose kp param n: " << ker_param_.sgemm_n_block1;
-    LOG(INFO) << "choose kp param k: " << ker_param_.sgemm_k_block1;
+    LOG(INFO) << "choose sp param m: " << sched_param_.sgemm_m_block1;
+    LOG(INFO) << "choose sp param n: " << sched_param_.sgemm_n_block1;
+    LOG(INFO) << "choose sp param k: " << sched_param_.sgemm_k_block1;
     LOG(INFO) << "best run time: " << best_run_time / num_benchmark_iter / 1000 << " ms";
 #endif
     run_time = (double)best_run_time / (double)num_benchmark_iter;
@@ -705,7 +703,7 @@ ppl::common::RetCode conv2d_n4cx_im2col_fp32_offline_manager::gen_cvt_weights(co
     const int64_t channels   = param_.channels;
     const int64_t kernel_h   = param_.kernel_h;
     const int64_t kernel_w   = param_.kernel_w;
-    const int64_t group  = param_.group;
+    const int64_t group      = param_.group;
 
     cvt_bias_size_               = CEIL4(num_output) * sizeof(float);
     cvt_bias_                    = allocator_->Alloc(cvt_bias_size_);
