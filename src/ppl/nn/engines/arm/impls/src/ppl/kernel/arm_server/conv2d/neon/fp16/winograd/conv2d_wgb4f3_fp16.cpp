@@ -26,14 +26,9 @@
 
 namespace ppl { namespace kernel { namespace arm_server {
 
-#define CHANNEL_VECTOR_LENGTH() 8
-
-#define IN_CHANNEL_VECTOR_LENGTH()  CHANNEL_VECTOR_LENGTH()
-#define OUT_CHANNEL_VECTOR_LENGTH() CHANNEL_VECTOR_LENGTH()
-
-#define CVL()  CHANNEL_VECTOR_LENGTH()
-#define ICVL() IN_CHANNEL_VECTOR_LENGTH()
-#define OCVL() OUT_CHANNEL_VECTOR_LENGTH()
+#define CBLK()  8
+#define ICBLK() CBLK()
+#define OCBLK() CBLK()
 
 #define WINOGRAD_B4F3_OUTPUT_BLOCKSIZE() 4
 #define WINOGRAD_B4F3_INPUT_BLOCKSIZE()  6
@@ -43,7 +38,8 @@ namespace ppl { namespace kernel { namespace arm_server {
 #define WGB4F3_IBLK() WINOGRAD_B4F3_INPUT_BLOCKSIZE()
 #define WGB4F3_NSET() WINOGRAD_B4F3_NUM_SET()
 
-#define N4CX_HGEMM_N_BLOCK0() 12
+#define N8CX_HGEMM_N10_BLOCK0() 10
+#define N8CX_HGEMM_N12_BLOCK0() 12
 
 #define LLC_CACHELINE_SIZE() 128
 
@@ -84,11 +80,11 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
     if (ih_valid[0]) {
         const __fp16 *input_base = input_block;
         v[0]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[3]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[4]                     = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[5]                     = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[3]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[4]                     = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[5]                     = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[0] = vzeros;
         v[1] = vzeros;
@@ -107,13 +103,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
 
     // D[2][:]
     if (ih_valid[2]) {
-        const __fp16 *input_base = input_block + 2 * src_w * ICVL();
+        const __fp16 *input_base = input_block + 2 * src_w * ICBLK();
         v[6]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[7]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[8]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[9]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[10]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[11]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[7]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[8]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[9]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[10]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[11]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[6]  = vzeros;
         v[7]  = vzeros;
@@ -131,13 +127,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
     vp[5] = vfmsq_laneq_f16(vp[5], v[11], vcoeff, 3);
 
     if (ih_valid[4]) {
-        const __fp16 *input_base = input_block + 4 * src_w * ICVL();
+        const __fp16 *input_base = input_block + 4 * src_w * ICBLK();
         v[18]                    = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[19]                    = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[20]                    = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[21]                    = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[22]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[23]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[19]                    = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[20]                    = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[21]                    = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[22]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[23]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[18] = vzeros;
         v[19] = vzeros;
@@ -174,13 +170,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
 
     // D[3][:]
     if (ih_valid[3]) {
-        const __fp16 *input_base = input_block + 3 * src_w * ICVL();
+        const __fp16 *input_base = input_block + 3 * src_w * ICBLK();
         v[12]                    = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[13]                    = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[14]                    = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[15]                    = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[16]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[17]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[13]                    = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[14]                    = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[15]                    = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[16]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[17]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[12] = vzeros;
         v[13] = vzeros;
@@ -199,13 +195,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
 
     // D[1][:]
     if (ih_valid[1]) {
-        const __fp16 *input_base = input_block + src_w * ICVL();
+        const __fp16 *input_base = input_block + src_w * ICBLK();
         v[0]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[3]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[4]                     = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[5]                     = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[3]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[4]                     = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[5]                     = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[0] = vzeros;
         v[1] = vzeros;
@@ -312,13 +308,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
     vst1q_f16(prep_input_block + 11 * in_wg_set_offset, v[5]);
 
     if (ih_valid[1]) {
-        const __fp16 *input_base = input_block + src_w * ICVL();
+        const __fp16 *input_base = input_block + src_w * ICBLK();
         v[0]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[3]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[4]                     = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[5]                     = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[1]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[2]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[3]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[4]                     = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[5]                     = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[0] = vzeros;
         v[1] = vzeros;
@@ -353,13 +349,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
     vst1q_f16(prep_input_block + 17 * in_wg_set_offset, v[17]);
 
     if (ih_valid[5]) {
-        const __fp16 *input_base = input_block + 5 * src_w * ICVL();
+        const __fp16 *input_base = input_block + 5 * src_w * ICBLK();
         v[12]                    = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[13]                    = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[14]                    = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[15]                    = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[16]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[17]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[13]                    = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[14]                    = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[15]                    = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[16]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[17]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[12] = vzeros;
         v[13] = vzeros;
@@ -402,13 +398,13 @@ static inline void conv2d_n8cx_wgb4f3_prep_input_block_fp16(
 
     // D[3][:]
     if (ih_valid[3]) {
-        const __fp16 *input_base = input_block + 3 * src_w * ICVL();
+        const __fp16 *input_base = input_block + 3 * src_w * ICBLK();
         v[6]                     = iw_valid[0] ? vld1q_f16(input_base) : vzeros;
-        v[7]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICVL()) : vzeros;
-        v[8]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICVL()) : vzeros;
-        v[9]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICVL()) : vzeros;
-        v[10]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICVL()) : vzeros;
-        v[11]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICVL()) : vzeros;
+        v[7]                     = iw_valid[1] ? vld1q_f16(input_base + 1 * ICBLK()) : vzeros;
+        v[8]                     = iw_valid[2] ? vld1q_f16(input_base + 2 * ICBLK()) : vzeros;
+        v[9]                     = iw_valid[3] ? vld1q_f16(input_base + 3 * ICBLK()) : vzeros;
+        v[10]                    = iw_valid[4] ? vld1q_f16(input_base + 4 * ICBLK()) : vzeros;
+        v[11]                    = iw_valid[5] ? vld1q_f16(input_base + 5 * ICBLK()) : vzeros;
     } else {
         v[6]  = vzeros;
         v[7]  = vzeros;
@@ -733,30 +729,30 @@ static inline void conv2d_n8cx_wgb4f3_postp_output_block_fp16(
     if (fuse_flag & conv_fuse_flag::SUM) {
         if (num_valid_oh > 0) {
             if (num_valid_ow > 0) vio[0] = vaddq_f16(vio[0], vld1q_f16(sum_block));
-            if (num_valid_ow > 1) vio[1] = vaddq_f16(vio[1], vld1q_f16(sum_block + (1 * OCVL())));
-            if (num_valid_ow > 2) vio[2] = vaddq_f16(vio[2], vld1q_f16(sum_block + (2 * OCVL())));
-            if (num_valid_ow > 3) vio[3] = vaddq_f16(vio[3], vld1q_f16(sum_block + (3 * OCVL())));
+            if (num_valid_ow > 1) vio[1] = vaddq_f16(vio[1], vld1q_f16(sum_block + (1 * OCBLK())));
+            if (num_valid_ow > 2) vio[2] = vaddq_f16(vio[2], vld1q_f16(sum_block + (2 * OCBLK())));
+            if (num_valid_ow > 3) vio[3] = vaddq_f16(vio[3], vld1q_f16(sum_block + (3 * OCBLK())));
         }
         if (num_valid_oh > 1) {
-            __fp16 *sum_ptr = sum_block + dst_w * OCVL();
+            __fp16 *sum_ptr = sum_block + dst_w * OCBLK();
             if (num_valid_ow > 0) vio[4] = vaddq_f16(vio[4], vld1q_f16(sum_ptr));
-            if (num_valid_ow > 1) vio[5] = vaddq_f16(vio[5], vld1q_f16(sum_ptr + (1 * OCVL())));
-            if (num_valid_ow > 2) vmid[0] = vaddq_f16(vmid[0], vld1q_f16(sum_ptr + (2 * OCVL())));
-            if (num_valid_ow > 3) vmid[1] = vaddq_f16(vmid[1], vld1q_f16(sum_ptr + (3 * OCVL())));
+            if (num_valid_ow > 1) vio[5] = vaddq_f16(vio[5], vld1q_f16(sum_ptr + (1 * OCBLK())));
+            if (num_valid_ow > 2) vmid[0] = vaddq_f16(vmid[0], vld1q_f16(sum_ptr + (2 * OCBLK())));
+            if (num_valid_ow > 3) vmid[1] = vaddq_f16(vmid[1], vld1q_f16(sum_ptr + (3 * OCBLK())));
         }
         if (num_valid_oh > 2) {
-            __fp16 *sum_ptr = sum_block + dst_w * (2 * OCVL());
+            __fp16 *sum_ptr = sum_block + dst_w * (2 * OCBLK());
             if (num_valid_ow > 0) vmid[2] = vaddq_f16(vmid[2], vld1q_f16(sum_ptr));
-            if (num_valid_ow > 1) vmid[3] = vaddq_f16(vmid[3], vld1q_f16(sum_ptr + (1 * OCVL())));
-            if (num_valid_ow > 2) vmid[4] = vaddq_f16(vmid[4], vld1q_f16(sum_ptr + (2 * OCVL())));
-            if (num_valid_ow > 3) vmid[5] = vaddq_f16(vmid[5], vld1q_f16(sum_ptr + (3 * OCVL())));
+            if (num_valid_ow > 1) vmid[3] = vaddq_f16(vmid[3], vld1q_f16(sum_ptr + (1 * OCBLK())));
+            if (num_valid_ow > 2) vmid[4] = vaddq_f16(vmid[4], vld1q_f16(sum_ptr + (2 * OCBLK())));
+            if (num_valid_ow > 3) vmid[5] = vaddq_f16(vmid[5], vld1q_f16(sum_ptr + (3 * OCBLK())));
         }
         if (num_valid_oh > 3) {
-            __fp16 *sum_ptr = sum_block + dst_w * (3 * OCVL());
+            __fp16 *sum_ptr = sum_block + dst_w * (3 * OCBLK());
             if (num_valid_ow > 0) vmid[6] = vaddq_f16(vmid[6], vld1q_f16(sum_ptr));
-            if (num_valid_ow > 1) vmid[7] = vaddq_f16(vmid[7], vld1q_f16(sum_ptr + (1 * OCVL())));
-            if (num_valid_ow > 2) vmid[8] = vaddq_f16(vmid[8], vld1q_f16(sum_ptr + (2 * OCVL())));
-            if (num_valid_ow > 3) vmid[9] = vaddq_f16(vmid[9], vld1q_f16(sum_ptr + (3 * OCVL())));
+            if (num_valid_ow > 1) vmid[7] = vaddq_f16(vmid[7], vld1q_f16(sum_ptr + (1 * OCBLK())));
+            if (num_valid_ow > 2) vmid[8] = vaddq_f16(vmid[8], vld1q_f16(sum_ptr + (2 * OCBLK())));
+            if (num_valid_ow > 3) vmid[9] = vaddq_f16(vmid[9], vld1q_f16(sum_ptr + (3 * OCBLK())));
         }
     }
 
@@ -804,16 +800,16 @@ static inline void conv2d_n8cx_wgb4f3_postp_output_block_fp16(
         case 4:
             switch (num_valid_ow) {
                 case 4:
-                    vst1q_f16(output_block + dst_w * (3 * OCVL()) + (3 * OCVL()), vmid[9]);
+                    vst1q_f16(output_block + dst_w * (3 * OCBLK()) + (3 * OCBLK()), vmid[9]);
                     __attribute__((fallthrough));
                 case 3:
-                    vst1q_f16(output_block + dst_w * (3 * OCVL()) + (2 * OCVL()), vmid[8]);
+                    vst1q_f16(output_block + dst_w * (3 * OCBLK()) + (2 * OCBLK()), vmid[8]);
                     __attribute__((fallthrough));
                 case 2:
-                    vst1q_f16(output_block + dst_w * (3 * OCVL()) + (1 * OCVL()), vmid[7]);
+                    vst1q_f16(output_block + dst_w * (3 * OCBLK()) + (1 * OCBLK()), vmid[7]);
                     __attribute__((fallthrough));
                 case 1:
-                    vst1q_f16(output_block + dst_w * (3 * OCVL()), vmid[6]);
+                    vst1q_f16(output_block + dst_w * (3 * OCBLK()), vmid[6]);
                     __attribute__((fallthrough));
                 default:;
             }
@@ -821,16 +817,16 @@ static inline void conv2d_n8cx_wgb4f3_postp_output_block_fp16(
         case 3:
             switch (num_valid_ow) {
                 case 4:
-                    vst1q_f16(output_block + dst_w * (2 * OCVL()) + (3 * OCVL()), vmid[5]);
+                    vst1q_f16(output_block + dst_w * (2 * OCBLK()) + (3 * OCBLK()), vmid[5]);
                     __attribute__((fallthrough));
                 case 3:
-                    vst1q_f16(output_block + dst_w * (2 * OCVL()) + (2 * OCVL()), vmid[4]);
+                    vst1q_f16(output_block + dst_w * (2 * OCBLK()) + (2 * OCBLK()), vmid[4]);
                     __attribute__((fallthrough));
                 case 2:
-                    vst1q_f16(output_block + dst_w * (2 * OCVL()) + (1 * OCVL()), vmid[3]);
+                    vst1q_f16(output_block + dst_w * (2 * OCBLK()) + (1 * OCBLK()), vmid[3]);
                     __attribute__((fallthrough));
                 case 1:
-                    vst1q_f16(output_block + dst_w * (2 * OCVL()), vmid[2]);
+                    vst1q_f16(output_block + dst_w * (2 * OCBLK()), vmid[2]);
                     __attribute__((fallthrough));
                 default:;
             }
@@ -838,16 +834,16 @@ static inline void conv2d_n8cx_wgb4f3_postp_output_block_fp16(
         case 2:
             switch (num_valid_ow) {
                 case 4:
-                    vst1q_f16(output_block + dst_w * (OCVL()) + (3 * OCVL()), vmid[1]);
+                    vst1q_f16(output_block + dst_w * (OCBLK()) + (3 * OCBLK()), vmid[1]);
                     __attribute__((fallthrough));
                 case 3:
-                    vst1q_f16(output_block + dst_w * (OCVL()) + (2 * OCVL()), vmid[0]);
+                    vst1q_f16(output_block + dst_w * (OCBLK()) + (2 * OCBLK()), vmid[0]);
                     __attribute__((fallthrough));
                 case 2:
-                    vst1q_f16(output_block + dst_w * (OCVL()) + (1 * OCVL()), vio[5]);
+                    vst1q_f16(output_block + dst_w * (OCBLK()) + (1 * OCBLK()), vio[5]);
                     __attribute__((fallthrough));
                 case 1:
-                    vst1q_f16(output_block + dst_w * (OCVL()), vio[4]);
+                    vst1q_f16(output_block + dst_w * (OCBLK()), vio[4]);
                     __attribute__((fallthrough));
                 default:;
             }
@@ -855,13 +851,13 @@ static inline void conv2d_n8cx_wgb4f3_postp_output_block_fp16(
         case 1:
             switch (num_valid_ow) {
                 case 4:
-                    vst1q_f16(output_block + (3 * OCVL()), vio[3]);
+                    vst1q_f16(output_block + (3 * OCBLK()), vio[3]);
                     __attribute__((fallthrough));
                 case 3:
-                    vst1q_f16(output_block + (2 * OCVL()), vio[2]);
+                    vst1q_f16(output_block + (2 * OCBLK()), vio[2]);
                     __attribute__((fallthrough));
                 case 2:
-                    vst1q_f16(output_block + (1 * OCVL()), vio[1]);
+                    vst1q_f16(output_block + (1 * OCBLK()), vio[1]);
                     __attribute__((fallthrough));
                 case 1:
                     vst1q_f16(output_block, vio[0]);
@@ -878,9 +874,9 @@ uint64_t conv2d_wgb4f3_fp16_runtime_executor::cal_temp_buffer_size()
     const conv2d_param &cp                      = *conv_param_;
     const conv2d_wgb4f3_fp16_schedule_param &sp = sched_param_;
     size_t input_buffer_size                    = conv_winograd_b4f3_get_input_buffer_size_fp16(
-        cp.channels, sp.tile_blk);
+        cp.channels, sp.tile_seg);
     size_t output_buffer_size = conv_winograd_b4f3_get_output_buffer_size_fp16(
-        cp.num_output, sp.tile_blk);
+        cp.num_output, sp.tile_seg);
 
     sched_param_.input_buffer_size  = input_buffer_size;
     sched_param_.output_buffer_size = output_buffer_size;
@@ -923,15 +919,14 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
     const int64_t pad_h                          = cp.pad_h;
     const int64_t pad_w                          = cp.pad_w;
     const int64_t group                     = cp.group;
-    const int64_t ics                           = sp.ic_blk;
-    const int64_t ocs                           = sp.oc_blk;
-    const int64_t tile_l2_size                  = sp.tile_blk;
+    const int64_t ics                           = sp.ic_seg;
+    const int64_t ocs                           = sp.oc_seg;
+    const int64_t tile_l2_size                  = sp.tile_seg;
     const int64_t num_batch                     = src_shape_->GetDim(0);
     const size_t input_prep_buffer_size         = sp.input_buffer_size;
 
     PRAGMA_OMP_PARALLEL()
     {
-        // Pack to 8:CVL()
         const int64_t ic_packed = CEIL8(channels);
         const int64_t oc_packed = CEIL8(num_output);
 
@@ -940,7 +935,6 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
         const int64_t ic_g_packed = CEIL8(ic_group);
         const int64_t oc_g_packed = CEIL8(oc_group);
 
-        // Pack to 8:CVL()
         const int64_t k_in_channel_section  = CEIL8(std::min(ics, ic_group));
         const int64_t k_out_channel_section = CEIL8(std::min(ocs, oc_group));
 
@@ -991,7 +985,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
                     const float16x8_t vcoeff_prep = {1.0f, 2.0f, 4.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
                     PRAGMA_OMP_FOR_COLLAPSE(2)
-                    for (int64_t ic = 0; ic < in_channel_section; ic += ICVL()) {
+                    for (int64_t ic = 0; ic < in_channel_section; ic += ICBLK()) {
                         for (int64_t tile_l0 = 0; tile_l0 < wg_blocks; tile_l0++) {
                             int64_t tile_id        = tile_l0 + tile_l2;
                             const int64_t batch_id = tile_id / num_hw_blocks;
@@ -1021,7 +1015,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
                             ih_valid[5] = (ih5 >= 0 && ih5 < src_h);
 
                             int64_t wg_block_idx  = tile_l0;
-                            __fp16 *prep_in_block = prep_in_c_base + wg_block_idx * ICVL();
+                            __fp16 *prep_in_block = prep_in_c_base + wg_block_idx * ICBLK();
 
                             const int64_t iw0 = -pad_w + ow;
                             const int64_t iw1 = iw0 + 1;
@@ -1038,7 +1032,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
                             iw_valid[5] = (iw5 >= 0 && iw5 < src_w);
 
                             conv2d_n8cx_wgb4f3_prep_input_block_fp16(
-                                input_c_base + ih0 * src_w * ICVL() + iw0 * ICVL(),
+                                input_c_base + ih0 * src_w * ICBLK() + iw0 * ICBLK(),
                                 vzeros,
                                 vcoeff_prep,
                                 prep_in_block,
@@ -1055,23 +1049,22 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
                     // Note: using `oc_group` in the loop is the same with using `oc_g_packed`.
                     for (int64_t oc_l2 = 0; oc_l2 < oc_g_packed; oc_l2 += k_out_channel_section) {
                         const int64_t out_channel_section              = std::min(oc_g_packed - oc_l2, k_out_channel_section);
-                        const int64_t out_channel_section_align_2ocblk = (out_channel_section / 16) * 16;
-                        const __fp16 *cvt_filter_cc_base               = filter_g_base + oc_l2 * ic_g_packed + ic_l2 * CEIL8(out_channel_section); // pack to 4:OCVL()
+                        const int64_t out_channel_section_align_2ocblk = (out_channel_section / (2*OCBLK())) * (2*OCBLK());
+                        const __fp16 *cvt_filter_cc_base               = filter_g_base + oc_l2 * ic_g_packed + ic_l2 * CEIL8(out_channel_section); // pack to 4:OCBLK()
                         __fp16 *raw_out_cl2_base                       = post_proc_buffer + oc_l2 * wg_blocks;
 
                         PRAGMA_OMP_FOR()
                         for (int64_t set_id = 0; set_id < WGB4F3_NSET(); set_id++) {
-                            for (int64_t oc = 0; oc < out_channel_section_align_2ocblk; oc += 2 * OCVL()) {
-                                for (int64_t block = 0; block < wg_blocks; block += 10) {
-                                    const int64_t m_l0 = std::min((int64_t)2 * OCVL(), out_channel_section_align_2ocblk - oc);
-                                    const int64_t n_l0 = std::min((int64_t)10, wg_blocks - block);
-
+                            for (int64_t oc = 0; oc < out_channel_section_align_2ocblk; oc += 2 * OCBLK()) {
+                                for (int64_t block = 0; block < wg_blocks; block += N8CX_HGEMM_N10_BLOCK0()) {
+                                    const int64_t m_l0 = std::min((int64_t)2 * OCBLK(), out_channel_section_align_2ocblk - oc);
+                                    const int64_t n_l0 = std::min((int64_t)N8CX_HGEMM_N10_BLOCK0(), wg_blocks - block);
                                     hgemm_n8cx_kernel_m16nx_fp16_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL8(in_channel_section),
-                                        pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICVL(),
+                                        pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
                                         nullptr, /* constant:bias */
                                         nullptr, /* fusedata:sum */
-                                        raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCVL(),
+                                        raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCBLK(),
                                         m_l0,
                                         n_l0,
                                         in_channel_section,
@@ -1083,15 +1076,15 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
                             } // close loop over oc(register)
                             if (out_channel_section > out_channel_section_align_2ocblk) {
                                 int64_t oc = out_channel_section_align_2ocblk;
-                                for (int64_t block = 0; block < wg_blocks; block += 12) {
-                                    const int64_t m_l0 = std::min((int64_t)OCVL(), out_channel_section - oc);
-                                    const int64_t n_l0 = std::min((int64_t)12, wg_blocks - block);
+                                for (int64_t block = 0; block < wg_blocks; block += N8CX_HGEMM_N12_BLOCK0()) {
+                                    const int64_t m_l0 = std::min((int64_t)OCBLK(), out_channel_section - oc);
+                                    const int64_t n_l0 = std::min((int64_t)N8CX_HGEMM_N12_BLOCK0(), wg_blocks - block);
                                     hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL8(in_channel_section),
-                                        pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICVL(),
+                                        pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
                                         nullptr, /* constant:bias */
                                         nullptr, /* fusedata:sum */
-                                        raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCVL(),
+                                        raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCBLK(),
                                         m_l0,
                                         n_l0,
                                         in_channel_section,
@@ -1110,7 +1103,7 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
 
                             const float16x8_t vcoeff_postp = {1.0f, 2.0f, 4.0f, 8.0f, 0.0f, 0.0f, 0.0f, 0.0f};
                             PRAGMA_OMP_FOR_COLLAPSE(2)
-                            for (int64_t oc = 0; oc < out_channel_section; oc += OCVL()) {
+                            for (int64_t oc = 0; oc < out_channel_section; oc += OCBLK()) {
                                 for (int64_t tile_l0 = 0; tile_l0 < wg_blocks; tile_l0++) {
                                     const __fp16 *raw_output_c_base = raw_out_cl2_base + oc * wg_blocks;
                                     const float16x8_t vbias         = vld1q_f16(bias_g_base + oc_l2 + oc);
@@ -1128,11 +1121,11 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_runtime_executor::execute()
                                     const int64_t ow = tile_w_id * WGB4F3_OBLK();
 
                                     conv2d_n8cx_wgb4f3_postp_output_block_fp16(
-                                        raw_output_c_base + tile_l0 * OCVL(),
+                                        raw_output_c_base + tile_l0 * OCBLK(),
                                         vbias,
                                         vcoeff_postp,
-                                        output_oc_base + batch_id * output_b_stride + (oh * dst_w + ow) * OCVL(),
-                                        sum_oc_base + batch_id * output_b_stride + (oh * dst_w + ow) * OCVL(),
+                                        output_oc_base + batch_id * output_b_stride + (oh * dst_w + ow) * OCBLK(),
+                                        sum_oc_base + batch_id * output_b_stride + (oh * dst_w + ow) * OCBLK(),
                                         k_out_wg_set_offset,
                                         dst_w,
                                         std::min((int64_t)WGB4F3_OBLK(), dst_h - oh),
@@ -1189,7 +1182,7 @@ static void conv_winograd_b4f3_convert_filter_fp16(
         // first pass
         // note: pack channels to 8channels
         __fp16 *aux_filter       = aux_filter_buffer;
-        const int64_t half_c_blk = ICVL() / 2;
+        const int64_t half_c_blk = ICBLK() / 2;
         float g_ic_pck[9 * half_c_blk];
         for (int64_t oc = 0; oc < oc_group; oc++) {
             for (int64_t ic = 0; ic < ic_group; ic += half_c_blk) {
@@ -1503,7 +1496,7 @@ bool conv2d_wgb4f3_fp16_offline_manager::is_supported()
     if (cp.group > 1) {
         const int64_t ic_group = cp.channels / cp.group;
         const int64_t oc_group = cp.num_output / cp.group;
-        if (ic_group % ICVL() != 0 || oc_group % OCVL()) {
+        if (ic_group % ICBLK() != 0 || oc_group % OCBLK()) {
             return false;
         }
     }
@@ -1517,17 +1510,17 @@ bool conv2d_wgb4f3_fp16_offline_manager::is_supported()
 
 ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::fast_init_schedule_param()
 {
-    sched_param_.oc_blk   = 1024;
-    sched_param_.ic_blk   = 192;
-    sched_param_.tile_blk = 140;
+    sched_param_.oc_seg   = 1024;
+    sched_param_.ic_seg   = 192;
+    sched_param_.tile_seg = 140;
 
-    if (sched_param_.oc_blk != 1024) {
+    if (sched_param_.oc_seg != 1024) {
         return ppl::common::RC_INVALID_VALUE;
     }
-    if (sched_param_.ic_blk != 192) {
+    if (sched_param_.ic_seg != 192) {
         return ppl::common::RC_INVALID_VALUE;
     }
-    if (sched_param_.tile_blk != 140) {
+    if (sched_param_.tile_seg != 140) {
         return ppl::common::RC_INVALID_VALUE;
     }
     return ppl::common::RC_SUCCESS;
@@ -1580,10 +1573,12 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
 
     int64_t ic_blk_est   = 192;
     int64_t tile_blk_est = 140;
+    const int64_t target_l1_cache_size = 64 * 1024;
+    const int64_t num_independent_fma  = 8;
     if (ic_blk_est > ic_g_pck) {
-        tile_blk_est = (64 * 1024 / sizeof(__fp16) - 2 * OCVL() * ic_g_pck) / (2 * OCVL() + ic_g_pck);
-        if (tile_blk_est % 10 != 0 && tile_blk_est % 10 < 8) {
-            tile_blk_est = (tile_blk_est / 10) * 10;
+        tile_blk_est = (target_l1_cache_size / sizeof(__fp16) - 2 * OCBLK() * ic_g_pck) / (2 * OCBLK() + ic_g_pck);
+        if (tile_blk_est % N8CX_HGEMM_N10_BLOCK0() != 0 && tile_blk_est % 10 < num_independent_fma) {
+            tile_blk_est = (tile_blk_est / N8CX_HGEMM_N10_BLOCK0()) * N8CX_HGEMM_N10_BLOCK0();
         }
         ic_blk_est = ic_g_pck;
     }
@@ -1591,9 +1586,9 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
     candidate_tile_blk_list[0] = tile_blk_est;
 
     if (tune_blocksize) {
-        candidate_oc_blk_list   = {/*64, 128, 192, 256, 384, 512, 640, 768, 896, */ 1024};
-        candidate_ic_blk_list   = {32, 64, 128, 256, /*384, 512*/};
-        candidate_tile_blk_list = {32, 64, 128, 256, /*384, 512*/};
+        candidate_oc_blk_list   = {1024};
+        candidate_ic_blk_list   = {64, 128, 192, 256};
+        candidate_tile_blk_list = {32, 64,  140, 256};
     }
 
     int64_t best_oc_blk   = 1024;
@@ -1603,12 +1598,12 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
 
     const int num_warmup_iter    = 1;
     const int num_benchmark_iter = 5;
-    for (auto oc_blk : candidate_oc_blk_list) {
-        for (auto ic_blk : candidate_ic_blk_list) {
-            for (auto tile_blk : candidate_tile_blk_list) {
-                sched_param_.oc_blk   = oc_blk;
-                sched_param_.ic_blk   = ic_blk;
-                sched_param_.tile_blk = tile_blk;
+    for (auto oc_seg : candidate_oc_blk_list) {
+        for (auto ic_seg : candidate_ic_blk_list) {
+            for (auto tile_seg : candidate_tile_blk_list) {
+                sched_param_.oc_seg   = oc_seg;
+                sched_param_.ic_seg   = ic_seg;
+                sched_param_.tile_seg = tile_seg;
 
                 auto conv_exe = gen_executor();
                 conv_exe->set_cvt_filter(cvt_filter);
@@ -1634,20 +1629,20 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
 
                 int64_t elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_ts - begin_ts).count();
                 if (elapsed_time < best_run_time) {
-                    best_oc_blk   = oc_blk;
-                    best_ic_blk   = ic_blk;
-                    best_tile_blk = tile_blk;
+                    best_oc_blk   = oc_seg;
+                    best_ic_blk   = ic_seg;
+                    best_tile_blk = tile_seg;
                     best_run_time = elapsed_time;
                 }
 
                 allocator_->Free(tmp_buffer);
                 delete conv_exe;
 
-                if ((int64_t)tile_blk >= num_batch * ((src_h + 3) / 4) * ((src_w + 3) / 4)) break;
+                if ((int64_t)tile_seg >= num_batch * ((src_h + 3) / 4) * ((src_w + 3) / 4)) break;
             }
-            if ((int64_t)ic_blk >= channels / param_.group) break;
+            if ((int64_t)ic_seg >= channels / param_.group) break;
         }
-        if ((int64_t)oc_blk >= num_output / param_.group) break;
+        if ((int64_t)oc_seg >= num_output / param_.group) break;
     }
 
     cvt_filter_ = nullptr;
@@ -1657,13 +1652,13 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::pick_best_schedule_para
     allocator_->Free(src);
     allocator_->Free(dst);
 
-    sched_param_.oc_blk   = best_oc_blk;
-    sched_param_.ic_blk   = best_ic_blk;
-    sched_param_.tile_blk = best_tile_blk;
+    sched_param_.oc_seg   = best_oc_blk;
+    sched_param_.ic_seg   = best_ic_blk;
+    sched_param_.tile_seg = best_tile_blk;
 #ifdef PPLNN_ENABLE_KERNEL_PROFILING
-    LOG(INFO) << "choose sp param oc: " << sched_param_.oc_blk;
-    LOG(INFO) << "choose sp param ic: " << sched_param_.ic_blk;
-    LOG(INFO) << "choose sp param tile: " << sched_param_.tile_blk;
+    LOG(INFO) << "choose sp param oc: " << sched_param_.oc_seg;
+    LOG(INFO) << "choose sp param ic: " << sched_param_.ic_seg;
+    LOG(INFO) << "choose sp param tile: " << sched_param_.tile_seg;
     LOG(INFO) << "best run time: " << best_run_time / num_benchmark_iter / 1000 << " ms";
 #endif
     run_time = (double)best_run_time / (double)num_benchmark_iter;
@@ -1702,8 +1697,8 @@ ppl::common::RetCode conv2d_wgb4f3_fp16_offline_manager::gen_cvt_weights(const v
         channels,
         num_output,
         param_.group,
-        sched_param_.ic_blk,
-        sched_param_.oc_blk);
+        sched_param_.ic_seg,
+        sched_param_.oc_seg);
 
     allocator_->Free(aux_buffer);
     return ppl::common::RC_SUCCESS;
@@ -1713,5 +1708,9 @@ conv2d_runtime_executor *conv2d_wgb4f3_fp16_offline_manager::gen_executor()
 {
     return new conv2d_wgb4f3_fp16_runtime_executor(&param_, cvt_filter_, cvt_bias_, sched_param_);
 }
+
+#undef CBLK
+#undef ICBLK
+#undef OCBLK
 
 }}} // namespace ppl::kernel::arm_server

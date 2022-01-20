@@ -28,12 +28,12 @@ class conv2d_wgb2f3_fp16_offline_manager;
 
 typedef struct {
     // weight conversion related; should be assigend offline
-    int64_t ic_blk;
-    int64_t oc_blk;
+    int64_t ic_seg;
+    int64_t oc_seg;
     int64_t input_buffer_size;
     int64_t output_buffer_size;
     // feature map related; can be adjusted during runtime
-    int64_t tile_blk;
+    int64_t tile_seg;
 } conv2d_wgb2f3_fp16_schedule_param;
 
 class conv2d_wgb2f3_fp16_runtime_executor final : public conv2d_runtime_executor {

@@ -34,8 +34,7 @@
 
 namespace ppl { namespace kernel { namespace arm_server {
 
-#define CBLK() 4
-
+#define CBLK()  4
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
 

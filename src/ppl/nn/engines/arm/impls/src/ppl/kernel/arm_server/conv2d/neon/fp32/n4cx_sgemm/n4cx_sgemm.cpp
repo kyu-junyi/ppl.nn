@@ -24,9 +24,6 @@
 
 namespace ppl { namespace kernel { namespace arm_server {
 
-#define CVL()            4
-#define SGEMM_N_BLOCK0() 12
-
 #define V_TRANSPOSE_FP32_4x4(v)                                                                  \
     do {                                                                                         \
         float32x4x2_t vpf32[2];                                                                  \
