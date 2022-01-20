@@ -52,89 +52,89 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, DST_TILE_W()>
     // x15 : 
     asm volatile (
         ".align 2\n\t"
-                    "cmp        %[b_addr],  #0                                  \n\t"
-                    "mov        x9,         %[f_addr]                           \n\t"
-                    "mov        x10,        %[i_addr]                           \n\t"
+        "cmp %[b_addr], #0\n\t"
+        "mov x9,  %[f_addr]\n\t"
+        "mov x10, %[i_addr]\n\t"
 
-                    "add        x12,        %[o_addr],  %[o_cb_ofs]             \n\t"  // scheduled earlier
-                    "beq        0f                                              \n\t"
+        "add x12,  %[o_addr], %[o_cb_ofs]\n\t"  // scheduled earlier
+        "beq 0f\n\t"
 
-                    "ldp        q10,        q20,        [%[b_addr]]             \n\t"
-        IF_OW_GT(1, "mov        v11.16b,    v10.16b                             \n\t")
-        IF_OW_GT(2, "mov        v12.16b,    v10.16b                             \n\t")
-        IF_OW_GT(3, "mov        v13.16b,    v10.16b                             \n\t")
-        IF_OW_GT(4, "mov        v14.16b,    v10.16b                             \n\t")
-        IF_OW_GT(5, "mov        v15.16b,    v10.16b                             \n\t")
-        IF_OW_GT(6, "mov        v16.16b,    v10.16b                             \n\t")
-        IF_OW_GT(7, "mov        v17.16b,    v10.16b                             \n\t")
-        IF_OW_GT(8, "mov        v18.16b,    v10.16b                             \n\t")
-        IF_OW_GT(9, "mov        v19.16b,    v10.16b                             \n\t")
+                    "ldp q10, q20, [%[b_addr]]\n\t"
+        IF_OW_GT(1, "mov v11.16b, v10.16b\n\t")
+        IF_OW_GT(2, "mov v12.16b, v10.16b\n\t")
+        IF_OW_GT(3, "mov v13.16b, v10.16b\n\t")
+        IF_OW_GT(4, "mov v14.16b, v10.16b\n\t")
+        IF_OW_GT(5, "mov v15.16b, v10.16b\n\t")
+        IF_OW_GT(6, "mov v16.16b, v10.16b\n\t")
+        IF_OW_GT(7, "mov v17.16b, v10.16b\n\t")
+        IF_OW_GT(8, "mov v18.16b, v10.16b\n\t")
+        IF_OW_GT(9, "mov v19.16b, v10.16b\n\t")
 
-        IF_OW_GT(1, "mov        v21.16b,    v20.16b                             \n\t")
-        IF_OW_GT(2, "mov        v22.16b,    v20.16b                             \n\t")
-        IF_OW_GT(3, "mov        v23.16b,    v20.16b                             \n\t")
-        IF_OW_GT(4, "mov        v24.16b,    v20.16b                             \n\t")
-        IF_OW_GT(5, "mov        v25.16b,    v20.16b                             \n\t")
-        IF_OW_GT(6, "mov        v26.16b,    v20.16b                             \n\t")
-        IF_OW_GT(7, "mov        v27.16b,    v20.16b                             \n\t")
-        IF_OW_GT(8, "mov        v28.16b,    v20.16b                             \n\t")
-        IF_OW_GT(9, "mov        v29.16b,    v20.16b                             \n\t")
+        IF_OW_GT(1, "mov v21.16b, v20.16b\n\t")
+        IF_OW_GT(2, "mov v22.16b, v20.16b\n\t")
+        IF_OW_GT(3, "mov v23.16b, v20.16b\n\t")
+        IF_OW_GT(4, "mov v24.16b, v20.16b\n\t")
+        IF_OW_GT(5, "mov v25.16b, v20.16b\n\t")
+        IF_OW_GT(6, "mov v26.16b, v20.16b\n\t")
+        IF_OW_GT(7, "mov v27.16b, v20.16b\n\t")
+        IF_OW_GT(8, "mov v28.16b, v20.16b\n\t")
+        IF_OW_GT(9, "mov v29.16b, v20.16b\n\t")
         "b 1f\n\t"
 
 "0:\n\t" // RELOAD OUTPUT
-                    "ldr        q10,        [%[o_addr]             ]            \n\t"
-        IF_OW_GT(1, "ldr        q11,        [%[o_addr], #16        ]            \n\t")
-        IF_OW_GT(2, "ldr        q12,        [%[o_addr], #32        ]            \n\t")
-        IF_OW_GT(3, "ldr        q13,        [%[o_addr], #48        ]            \n\t")
-        IF_OW_GT(4, "ldr        q14,        [%[o_addr], #64        ]            \n\t")
-        IF_OW_GT(5, "ldr        q15,        [%[o_addr], #80        ]            \n\t")
-        IF_OW_GT(6, "ldr        q16,        [%[o_addr], #96        ]            \n\t")
-        IF_OW_GT(7, "ldr        q17,        [%[o_addr], #112       ]            \n\t")
-        IF_OW_GT(8, "ldr        q18,        [%[o_addr], #128       ]            \n\t")
-        IF_OW_GT(9, "ldr        q19,        [%[o_addr], #144       ]            \n\t")
-                    "ldr        q20,        [x12                   ]            \n\t"
-        IF_OW_GT(1, "ldr        q21,        [x12,       #16        ]            \n\t")
-        IF_OW_GT(2, "ldr        q22,        [x12,       #32        ]            \n\t")
-        IF_OW_GT(3, "ldr        q23,        [x12,       #48        ]            \n\t")
-        IF_OW_GT(4, "ldr        q24,        [x12,       #64        ]            \n\t")
-        IF_OW_GT(5, "ldr        q25,        [x12,       #80        ]            \n\t")
-        IF_OW_GT(6, "ldr        q26,        [x12,       #96        ]            \n\t")
-        IF_OW_GT(7, "ldr        q27,        [x12,       #112       ]            \n\t")
-        IF_OW_GT(8, "ldr        q28,        [x12,       #128       ]            \n\t")
-        IF_OW_GT(9, "ldr        q29,        [x12,       #144       ]            \n\t")
+                    "ldr q10, [%[o_addr]      ]\n\t"
+        IF_OW_GT(1, "ldr q11, [%[o_addr], #16 ]\n\t")
+        IF_OW_GT(2, "ldr q12, [%[o_addr], #32 ]\n\t")
+        IF_OW_GT(3, "ldr q13, [%[o_addr], #48 ]\n\t")
+        IF_OW_GT(4, "ldr q14, [%[o_addr], #64 ]\n\t")
+        IF_OW_GT(5, "ldr q15, [%[o_addr], #80 ]\n\t")
+        IF_OW_GT(6, "ldr q16, [%[o_addr], #96 ]\n\t")
+        IF_OW_GT(7, "ldr q17, [%[o_addr], #112]\n\t")
+        IF_OW_GT(8, "ldr q18, [%[o_addr], #128]\n\t")
+        IF_OW_GT(9, "ldr q19, [%[o_addr], #144]\n\t")
+                    "ldr q20, [x12            ]\n\t"
+        IF_OW_GT(1, "ldr q21, [x12,       #16 ]\n\t")
+        IF_OW_GT(2, "ldr q22, [x12,       #32 ]\n\t")
+        IF_OW_GT(3, "ldr q23, [x12,       #48 ]\n\t")
+        IF_OW_GT(4, "ldr q24, [x12,       #64 ]\n\t")
+        IF_OW_GT(5, "ldr q25, [x12,       #80 ]\n\t")
+        IF_OW_GT(6, "ldr q26, [x12,       #96 ]\n\t")
+        IF_OW_GT(7, "ldr q27, [x12,       #112]\n\t")
+        IF_OW_GT(8, "ldr q28, [x12,       #128]\n\t")
+        IF_OW_GT(9, "ldr q29, [x12,       #144]\n\t")
 
 "1:\n\t"  // NANO KERNEL
 "3:\n\t"  // LOOP OVER INPUT CHANNEL BY 4C
-                    "ldp        q30,        q31,        [x9],       #32         \n\t"  // scheduled earlier
-                    "ldr        q0,         [x10],      #16                     \n\t"
-        IF_OW_GT(1, "ldr        q1,         [x10],      #16                     \n\t")
-        IF_OW_GT(2, "ldr        q2,         [x10],      #16                     \n\t")
-        IF_OW_GT(3, "ldr        q3,         [x10],      #16                     \n\t")
-        IF_OW_GT(4, "ldr        q4,         [x10],      #16                     \n\t")
-        IF_OW_GT(5, "ldr        q5,         [x10],      #16                     \n\t")
-        IF_OW_GT(6, "ldr        q6,         [x10],      #16                     \n\t")
-        IF_OW_GT(7, "ldr        q7,         [x10],      #16                     \n\t")
-        IF_OW_GT(8, "ldr        q8,         [x10],      #16                     \n\t")
-        IF_OW_GT(9, "ldr        q9,         [x10],      #16                     \n\t")
-                    "add        x10,        x10,        %[diffW_x_icV_bytes]    \n\t"
-                    "add        x10,        x10,        %[diffHW_x_icV_bytes]   \n\t"
-                    "add        x10,        x10,        %[inDiffH_x_inW_x_icV_bytes]\n\t"
+                    "ldp q30, q31, [x9], #32\n\t"  // scheduled earlier
+                    "ldr q0, [x10], #16\n\t"
+        IF_OW_GT(1, "ldr q1, [x10], #16\n\t")
+        IF_OW_GT(2, "ldr q2, [x10], #16\n\t")
+        IF_OW_GT(3, "ldr q3, [x10], #16\n\t")
+        IF_OW_GT(4, "ldr q4, [x10], #16\n\t")
+        IF_OW_GT(5, "ldr q5, [x10], #16\n\t")
+        IF_OW_GT(6, "ldr q6, [x10], #16\n\t")
+        IF_OW_GT(7, "ldr q7, [x10], #16\n\t")
+        IF_OW_GT(8, "ldr q8, [x10], #16\n\t")
+        IF_OW_GT(9, "ldr q9, [x10], #16\n\t")
+                    "add x10, x10, %[diffW_x_icV_bytes]\n\t"
+                    "add x10, x10, %[diffHW_x_icV_bytes]\n\t"
+                    "add x10, x10, %[inDiffH_x_inW_x_icV_bytes]\n\t"
 
 "4:\n\t"
 
-                    "subs       %[icS],     %[icS],     #4                      \n\t"
-                    "beq        5f                                              \n\t"
-                    "fmla       v10.4s,     v30.4s,     v0.s[0]                 \n\t"
-        IF_OW_GT(1, "fmla       v11.4s,     v30.4s,     v1.s[0]                 \n\t")
-        IF_OW_GT(2, "fmla       v12.4s,     v30.4s,     v2.s[0]                 \n\t")
-        IF_OW_GT(3, "fmla       v13.4s,     v30.4s,     v3.s[0]                 \n\t")
-        IF_OW_GT(4, "fmla       v14.4s,     v30.4s,     v4.s[0]                 \n\t")
-        IF_OW_GT(5, "fmla       v15.4s,     v30.4s,     v5.s[0]                 \n\t")
-        IF_OW_GT(6, "fmla       v16.4s,     v30.4s,     v6.s[0]                 \n\t")
-        IF_OW_GT(7, "fmla       v17.4s,     v30.4s,     v7.s[0]                 \n\t")
-        IF_OW_GT(8, "fmla       v18.4s,     v30.4s,     v8.s[0]                 \n\t")
-        IF_OW_GT(9, "fmla       v19.4s,     v30.4s,     v9.s[0]                 \n\t")
-                    "ldr        q30,        [x9],       #16                     \n\t"
+        "subs  %[icS], %[icS], #4\n\t"
+        "beq 5f\n\t"
+                    "fmla v10.4s, v30.4s, v0.s[0]\n\t"
+        IF_OW_GT(1, "fmla v11.4s, v30.4s, v1.s[0]\n\t")
+        IF_OW_GT(2, "fmla v12.4s, v30.4s, v2.s[0]\n\t")
+        IF_OW_GT(3, "fmla v13.4s, v30.4s, v3.s[0]\n\t")
+        IF_OW_GT(4, "fmla v14.4s, v30.4s, v4.s[0]\n\t")
+        IF_OW_GT(5, "fmla v15.4s, v30.4s, v5.s[0]\n\t")
+        IF_OW_GT(6, "fmla v16.4s, v30.4s, v6.s[0]\n\t")
+        IF_OW_GT(7, "fmla v17.4s, v30.4s, v7.s[0]\n\t")
+        IF_OW_GT(8, "fmla v18.4s, v30.4s, v8.s[0]\n\t")
+        IF_OW_GT(9, "fmla v19.4s, v30.4s, v9.s[0]\n\t")
+                    "ldr q30, [x9], #16\n\t"
                     "fmla v20.4s, v31.4s, v0.s[0]\n\t"
         IF_OW_GT(1, "fmla v21.4s, v31.4s, v1.s[0]\n\t")
         IF_OW_GT(2, "fmla v22.4s, v31.4s, v2.s[0]\n\t")
@@ -225,8 +225,8 @@ void ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, DST_TILE_W()>
         IF_OW_GT(8, "fmla v18.4s, v30.4s, v8.s[3]\n\t")
         IF_OW_GT(9, "fmla v19.4s, v30.4s, v9.s[3]\n\t")
 
-                    "add x9,  x9,  %[fltDiffHW_bytes]\n\t"
-                    "add x9,  x9,  #32\n\t"
+                    "add x9, x9, %[fltDiffHW_bytes]\n\t"
+                    "add x9, x9, #32\n\t"
                     "ldr q30, [x9], #16\n\t"
 
         IF_OW_GT(7, "fmla v27.4s, v31.4s, v7.s[3]\n\t")

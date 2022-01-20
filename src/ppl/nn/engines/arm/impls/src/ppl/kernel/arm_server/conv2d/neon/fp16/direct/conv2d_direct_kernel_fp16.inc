@@ -111,16 +111,16 @@ void ppl_arm_server_kernel_fp16_conv_direct_n8cx_h1wx_func<16, DST_TILE_W()>(
 "5:\n\t"  // LOOP OVER FILTER WIDTH
         "subs x14, x14, #1\n\t"  // scheduled earlier
 
-                    "ld1 {v0.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/
-        IF_OW_GT(1, "ld1 {v1.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(2, "ld1 {v2.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(3, "ld1 {v3.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(4, "ld1 {v4.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(5, "ld1 {v5.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(6, "ld1 {v6.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(7, "ld1 {v7.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(8, "ld1 {v8.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
-        IF_OW_GT(9, "ld1 {v9.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t" /*"add %[inPtr], %[inPtr], %[strdW_x_icV_bytes]\n\t"*/)
+                    "ld1 {v0.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t"
+        IF_OW_GT(1, "ld1 {v1.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(2, "ld1 {v2.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(3, "ld1 {v3.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(4, "ld1 {v4.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(5, "ld1 {v5.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(6, "ld1 {v6.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(7, "ld1 {v7.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(8, "ld1 {v8.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
+        IF_OW_GT(9, "ld1 {v9.8h}, [%[inPtr]], %[strdW_x_icV_bytes]\n\t")
         "add %[inPtr], %[inPtr], %[diffW_x_icV_bytes]\n\t"
 
         "fmla v10.8h, v30.8h, v0.h[0]\n\t"
