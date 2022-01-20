@@ -169,9 +169,7 @@ static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp3
         ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 9>,
         ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<8, 10>,
 };
-#undef OW_CASE
 
-#define OW_CASE() 10
 static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc4_kernel_func_table[OW_CASE() + 1] =
     {
         nullptr,
@@ -186,9 +184,7 @@ static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp3
         ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 9>,
         ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_func<4, 10>,
 };
-#undef OW_CASE
 
-#define OW_CASE() 10
 static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc8_f1s1_kernel_func_table[OW_CASE() + 1] =
     {
         nullptr,
@@ -203,9 +199,7 @@ static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp3
         ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 9>,
         ppl_arm_server_kernel_fp32_conv_direct_n4cx_h1wx_f1s1_func<8, 10>,
 };
-#undef OW_CASE
 
-#define OW_CASE() 10
 static ppl_arm_server_kernel_fp32_conv_direct_kernel_t ppl_arm_server_kernel_fp32_conv_direct_oc4_f1s1_kernel_func_table[OW_CASE() + 1] =
     {
         nullptr,
@@ -306,8 +300,8 @@ ppl::common::RetCode conv2d_n4cx_direct_fp32_runtime_executor::execute()
         const int64_t ocblk2  = kp.ocblk2;
         const int64_t ic_tile = sp.ic_tile;
 
-        const int64_t icblk_bytes = 16; // ICBLK() * sizeof(float);
-        const int64_t ocblk_bytes = 16; // OCBLK() * sizeof(float);
+        const int64_t icblk_bytes = 16;
+        const int64_t ocblk_bytes = 16;
 
         const int64_t src_icblk_offset_byte    = src_h * src_w * icblk_bytes;
         const int64_t dst_ocblk_offset_byte    = dst_h * dst_w * ocblk_bytes;

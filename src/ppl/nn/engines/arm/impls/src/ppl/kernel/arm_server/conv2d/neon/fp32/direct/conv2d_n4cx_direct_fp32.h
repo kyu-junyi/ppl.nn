@@ -59,8 +59,6 @@ private:
     void adjust_schedule_param();
 
 private:
-    uint64_t get_padding_buffer_size();
-
     friend conv2d_n4cx_direct_fp32_offline_manager;
 };
 

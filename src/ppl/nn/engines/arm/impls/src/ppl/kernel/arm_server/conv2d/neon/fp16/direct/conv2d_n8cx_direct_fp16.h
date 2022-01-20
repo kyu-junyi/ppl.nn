@@ -28,13 +28,15 @@ namespace ppl { namespace kernel { namespace arm_server {
 class conv2d_n8cx_direct_fp16_offline_manager;
 
 typedef struct {
+    // constants in kernel design
+    int64_t dst_tile_h = 1;
+    int64_t dst_tile_w = 10;
+    int64_t ocblk2 = 16;
+} conv2d_n8cx_direct_fp16_kernel_param;
+
+typedef struct {
     // weight conversion related; should be assigend offline
-    int64_t ic_blk;
-    int64_t oc_blk;
-    // feature map related; can be adjusted during runtime
-    int64_t oh_blk;
-    int64_t ow_blk;
-    int64_t padding_buffer_size_per_thread;
+    int64_t ic_tile;
 } conv2d_n8cx_direct_fp16_schedule_param;
 
 class conv2d_n8cx_direct_fp16_runtime_executor final : public conv2d_runtime_executor {
@@ -51,13 +53,12 @@ public:
     ppl::common::RetCode execute() override;
 
 private:
+    const conv2d_n8cx_direct_fp16_kernel_param ker_param_;
     conv2d_n8cx_direct_fp16_schedule_param sched_param_;
     // adjust scheduling params if needed during preparation.
     void adjust_schedule_param();
 
 private:
-    uint64_t get_padding_buffer_size();
-
     friend conv2d_n8cx_direct_fp16_offline_manager;
 };
 
