@@ -28,12 +28,19 @@ enum class N4cxSgemmBlockingOrd {
     N_K_M
 };
 
-enum class N4cxSgemmFusionOp {
-    NONE, // C <- A x B
-    RELU, //
-    SUM, // C' <- A x B + C
-    SUM_BDCT, // C <- A x B + __broadcast(vector_c)
-};
+void sgemm_n4cx_inner_blocking_4x4_fp32(
+    const float *a,
+    float *converted_a,
+    const int64_t lda,
+    const int64_t m,
+    const int64_t k);
+
+void sgemm_n4cx_inner_blocking_8x4_fp32(
+    const float *a,
+    float *converted_a,
+    const int64_t lda,
+    const int64_t m,
+    const int64_t k);
 
 template <N4cxSgemmBlockingOrd order>
 void sgemm_n4cx_blocking_fp32(
@@ -45,21 +52,15 @@ void sgemm_n4cx_blocking_fp32(
     const int64_t m_block1,
     const int64_t k_block1);
 
-template <N4cxSgemmBlockingOrd order, N4cxSgemmFusionOp fusion>
-void sgemm_n4cx_fp32(
+template <>
+void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
     const float *a,
-    const float *b,
-    const float *vc,
-    float *c,
+    float *converted_a,
     const int64_t lda,
-    const int64_t ldb,
-    const int64_t ldc,
     const int64_t m,
-    const int64_t n,
     const int64_t k,
-    const int64_t M_blocksize,
-    const int64_t N_blocksize,
-    const int64_t K_blocksize);
+    const int64_t m_block1,
+    const int64_t k_block1);
 
 typedef void (*sgemm_n4cx_kernel_func_t)(
     const float *A,
@@ -77,73 +78,6 @@ typedef void (*sgemm_n4cx_kernel_func_t)(
 
 extern const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m4nx_fp32_func_table[12][3][6];
 extern const sgemm_n4cx_kernel_func_t sgemm_n4cx_kernel_m8nx_fp32_func_table[10][3][6];
-
-template <>
-void sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
-    const float *a,
-    float *converted_a,
-    const int64_t lda,
-    const int64_t m,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t k_block1);
-
-template <N4cxSgemmBlockingOrd order>
-void sgemm_n4cx_fp32(
-    const float *a,
-    const float *b,
-    const float *contant,
-    const float *fused_data,
-    float *c,
-    const int64_t lda,
-    const int64_t ldb,
-    const int64_t ld_fused_data,
-    const int64_t ldc,
-    const int64_t m,
-    const int64_t n,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t n_block1,
-    const int64_t k_block1,
-    const uint32_t fuse_type);
-
-template <>
-void sgemm_n4cx_fp32<N4cxSgemmBlockingOrd::M_N_K>(
-    const float *a,
-    const float *b,
-    const float *contant,
-    const float *fused_data,
-    float *c,
-    const int64_t lda,
-    const int64_t ldb,
-    const int64_t ld_fused_data,
-    const int64_t ldc,
-    const int64_t m,
-    const int64_t n,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t n_block1,
-    const int64_t k_block1,
-    const uint32_t fuse_type);
-
-template <>
-void sgemm_n4cx_fp32<N4cxSgemmBlockingOrd::N_M_K>(
-    const float *a,
-    const float *b,
-    const float *contant,
-    const float *fused_data,
-    float *c,
-    const int64_t lda,
-    const int64_t ldb,
-    const int64_t ld_fused_data,
-    const int64_t ldc,
-    const int64_t m,
-    const int64_t n,
-    const int64_t k,
-    const int64_t m_block1,
-    const int64_t n_block1,
-    const int64_t k_block1,
-    const uint32_t fuse_type);
 
 }}} // namespace ppl::kernel::arm_server
 

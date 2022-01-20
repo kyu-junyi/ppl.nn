@@ -1165,108 +1165,6 @@ static size_t conv2d_n4cx_wgb4f3_get_converted_filter_size_fp32(
     return converted_filter_size;
 }
 
-static void ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_inner_8x4(
-    const float *a,
-    float *converted_a,
-    const int64_t lda,
-    const int64_t m,
-    const int64_t k)
-{
-    const float32x4_t vzeros = vdupq_n_f32(0.0f);
-
-    int64_t i = 0;
-    for (; i < m; i += 8) {
-        for (int64_t p = 0; p < k; p += 4) {
-            int64_t m_l = std::min(m - i, (int64_t)8);
-            int64_t k_l = std::min(k - p, (int64_t)4);
-
-            float32x4_t v[8]; // 8 vec reg
-            float32x4x2_t vpf32[2]; // 4 vec reg
-
-            const float *a_ptr = a + i * lda + p;
-
-            int64_t cvt_a_offset;
-            if (k_l == 4 && m_l == 8) {
-                v[0] = vld1q_f32(a_ptr + 0 * lda);
-                v[1] = vld1q_f32(a_ptr + 1 * lda);
-                v[2] = vld1q_f32(a_ptr + 2 * lda);
-                v[3] = vld1q_f32(a_ptr + 3 * lda);
-                v[4] = vld1q_f32(a_ptr + 4 * lda);
-                v[5] = vld1q_f32(a_ptr + 5 * lda);
-                v[6] = vld1q_f32(a_ptr + 6 * lda);
-                v[7] = vld1q_f32(a_ptr + 7 * lda);
-
-                vpf32[0] = vtrnq_f32(v[0], v[1]);
-                vpf32[1] = vtrnq_f32(v[2], v[3]);
-                v[0]     = vcombine_f32(vget_low_f32(vpf32[0].val[0]), vget_low_f32(vpf32[1].val[0]));
-                v[1]     = vcombine_f32(vget_low_f32(vpf32[0].val[1]), vget_low_f32(vpf32[1].val[1]));
-                v[2]     = vcombine_f32(vget_high_f32(vpf32[0].val[0]), vget_high_f32(vpf32[1].val[0]));
-                v[3]     = vcombine_f32(vget_high_f32(vpf32[0].val[1]), vget_high_f32(vpf32[1].val[1]));
-
-                vst1q_f32(converted_a + 0, v[0]);
-                vst1q_f32(converted_a + 8, v[1]);
-                vst1q_f32(converted_a + 16, v[2]);
-                vst1q_f32(converted_a + 24, v[3]);
-
-                vpf32[0] = vtrnq_f32(v[4], v[5]);
-                vpf32[1] = vtrnq_f32(v[6], v[7]);
-                v[4]     = vcombine_f32(vget_low_f32(vpf32[0].val[0]), vget_low_f32(vpf32[1].val[0]));
-                v[5]     = vcombine_f32(vget_low_f32(vpf32[0].val[1]), vget_low_f32(vpf32[1].val[1]));
-                v[6]     = vcombine_f32(vget_high_f32(vpf32[0].val[0]), vget_high_f32(vpf32[1].val[0]));
-                v[7]     = vcombine_f32(vget_high_f32(vpf32[0].val[1]), vget_high_f32(vpf32[1].val[1]));
-
-                vst1q_f32(converted_a + 4, v[4]);
-                vst1q_f32(converted_a + 12, v[5]);
-                vst1q_f32(converted_a + 20, v[6]);
-                vst1q_f32(converted_a + 28, v[7]);
-
-                cvt_a_offset = 32;
-            } else if (k_l == 4 && m_l == 4) {
-                v[0] = vld1q_f32(a_ptr + 0 * lda);
-                v[1] = vld1q_f32(a_ptr + 1 * lda);
-                v[2] = vld1q_f32(a_ptr + 2 * lda);
-                v[3] = vld1q_f32(a_ptr + 3 * lda);
-
-                vpf32[0] = vtrnq_f32(v[0], v[1]);
-                vpf32[1] = vtrnq_f32(v[2], v[3]);
-                v[0]     = vcombine_f32(vget_low_f32(vpf32[0].val[0]), vget_low_f32(vpf32[1].val[0]));
-                v[1]     = vcombine_f32(vget_low_f32(vpf32[0].val[1]), vget_low_f32(vpf32[1].val[1]));
-                v[2]     = vcombine_f32(vget_high_f32(vpf32[0].val[0]), vget_high_f32(vpf32[1].val[0]));
-                v[3]     = vcombine_f32(vget_high_f32(vpf32[0].val[1]), vget_high_f32(vpf32[1].val[1]));
-
-                vst1q_f32(converted_a + 0, v[0]);
-                vst1q_f32(converted_a + 4, v[1]);
-                vst1q_f32(converted_a + 8, v[2]);
-                vst1q_f32(converted_a + 12, v[3]);
-
-                cvt_a_offset = 16;
-            } else {
-                const int64_t m_l_pck = CEIL4(m_l);
-                for (int64_t pp = 0; pp < k_l; pp++) {
-                    for (int64_t ii = 0; ii < m_l; ii++) {
-                        converted_a[pp * m_l_pck + ii] = a_ptr[ii * lda + pp];
-                    }
-                    for (int64_t ii = m_l; ii < m_l_pck; ii++) {
-                        converted_a[pp * m_l_pck + ii] = 0.0f;
-                    }
-                }
-                for (int64_t pp = k_l; pp < 4; pp++) {
-                    if (m_l_pck == 4) {
-                        vst1q_f32(converted_a + pp * 4, vzeros);
-                    } else if (m_l_pck == 8) {
-                        vst1q_f32(converted_a + pp * 8, vzeros);
-                        vst1q_f32(converted_a + pp * 8 + 4, vzeros);
-                    }
-                }
-
-                cvt_a_offset = m_l_pck * 4;
-            }
-
-            converted_a += cvt_a_offset;
-        } // close loop over inner k blocks
-    } // close loop over inner m blocks
-}
-
 static void conv2d_n4cx_wgb4f3_convert_filter_fp32(
     const float *filter,
     float *converted_filter,
@@ -1591,7 +1489,7 @@ static void conv2d_n4cx_wgb4f3_convert_filter_fp32(
                 for (int64_t p = 0; p < ic_group_packed; p += in_ch_section) {
                     int64_t m_l1 = std::min(oc_group - i, out_ch_section);
                     int64_t k_l1 = std::min(ic_group_packed - p, in_ch_section);
-                    ppl_arm_server_kernel_fp32_n4cx_sgemm_blocking_an_inner_8x4(
+                    sgemm_n4cx_inner_blocking_8x4_fp32(
                         aux_filter_base + i * ic_group_packed + p,
                         converted_filter_base + i * CEIL4(ic_group_packed) + p * CEIL4(m_l1),
                         ic_group_packed,

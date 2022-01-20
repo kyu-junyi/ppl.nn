@@ -174,8 +174,8 @@ void conv2d_n4cx_store_group_fp32(
     }
 }
 
-#define CBLK
-#define ICBLK
-#define OCBLK
+#undef CBLK
+#undef ICBLK
+#undef OCBLK
 
 }}} // namespace ppl::kernel::arm_server
