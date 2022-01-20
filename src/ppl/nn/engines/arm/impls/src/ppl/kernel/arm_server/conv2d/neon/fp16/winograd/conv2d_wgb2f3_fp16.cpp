@@ -38,6 +38,7 @@ namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 #define WGB2F3_IBLK() WINOGRAD_B2F3_INPUT_BLOCKSIZE()
 #define WGB2F3_NSET() WINOGRAD_B2F3_NUM_SET()
 
+#define N8CX_HGEMM_N10_BLOCK0() 10
 #define N8CX_HGEMM_N12_BLOCK0() 12
 
 #define LLC_CACHELINE_SIZE() 128
@@ -604,6 +605,8 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
                         } // close loop over tile
                     } // close loop over ic(register)
 
+                    const int32_t init_id = (is_first_ic) ? 0 : 2;
+                    const int64_t fini_id = 0;
                     // Note: using `oc_group` in the loop is the same with using `oc_g_packed`.
                     for (int64_t oc_l2 = 0; oc_l2 < oc_g_packed; oc_l2 += k_out_channel_section) {
                         const int64_t out_channel_section = std::min(oc_g_packed - oc_l2, k_out_channel_section);
@@ -612,27 +615,44 @@ ppl::common::RetCode conv2d_wgb2f3_fp16_runtime_executor::execute()
 
                         PRAGMA_OMP_FOR_COLLAPSE(2)
                         for (int64_t set_id = 0; set_id < WGB2F3_NSET(); set_id++) {
-                            for (int64_t oc = 0; oc < out_channel_section; oc += OCBLK()) {
-                                for (int64_t block = 0; block < wg_blocks; block += N8CX_HGEMM_N12_BLOCK0()) {
-                                    const int64_t m_l0 = std::min((int64_t)OCBLK(), out_channel_section - oc);
-                                    const int64_t n_l0 = std::min((int64_t)N8CX_HGEMM_N12_BLOCK0(), wg_blocks - block);
-
-                                    const int32_t init_id = (is_first_ic) ? 0 : 2;
-                                    const int64_t fini_id = 0;
-                                    hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0 - 1][init_id][fini_id](
-                                        cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL8(in_channel_section),
-                                        pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
-                                        nullptr, /* constant:bias */
-                                        nullptr, /* fusedata:sum */
-                                        raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCBLK(),
-                                        m_l0,
-                                        n_l0,
-                                        in_channel_section,
-                                        oc_g_packed,
-                                        wg_blocks,
-                                        0,
-                                        wg_blocks);
-                                } // close loop over wg-block(register)
+                            for (int64_t oc = 0; oc < out_channel_section; oc += 2 * OCBLK()) {
+                                const int64_t m_l0 = std::min((int64_t)2 * OCBLK(), out_channel_section - oc);
+                                if (m_l0 > OCBLK()) {
+                                    for (int64_t block = 0; block < wg_blocks; block += N8CX_HGEMM_N10_BLOCK0()) {
+                                        const int64_t n_l0 = std::min((int64_t)N8CX_HGEMM_N10_BLOCK0(), wg_blocks - block);
+                                        hgemm_n8cx_kernel_m16nx_fp16_func_table[n_l0 - 1][init_id][fini_id](
+                                            cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL8(in_channel_section),
+                                            pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
+                                            nullptr, /* constant:bias */
+                                            nullptr, /* fusedata:sum */
+                                            raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCBLK(),
+                                            m_l0,
+                                            n_l0,
+                                            in_channel_section,
+                                            oc_g_packed,
+                                            wg_blocks,
+                                            0,
+                                            wg_blocks);
+                                    } // close loop over wg-block(register)
+                                }
+                                else {
+                                    for (int64_t block = 0; block < wg_blocks; block += N8CX_HGEMM_N12_BLOCK0()) {
+                                        const int64_t n_l0 = std::min((int64_t)N8CX_HGEMM_N12_BLOCK0(), wg_blocks - block);
+                                        hgemm_n8cx_kernel_m8nx_fp16_func_table[n_l0 - 1][init_id][fini_id](
+                                            cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL8(in_channel_section),
+                                            pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
+                                            nullptr, /* constant:bias */
+                                            nullptr, /* fusedata:sum */
+                                            raw_out_cl2_base + set_id * k_out_wg_set_offset + oc * wg_blocks + block * OCBLK(),
+                                            m_l0,
+                                            n_l0,
+                                            in_channel_section,
+                                            oc_g_packed,
+                                            wg_blocks,
+                                            0,
+                                            wg_blocks);
+                                    } // close loop over wg-block(register)
+                                }
                             } // close loop over oc(register)
                         } // close loop over wg-set
                         // NOTE: implicit omp barrier
@@ -895,14 +915,18 @@ static void conv2d_n8cx_wgb2f3_convert_filter_fp16(
             const __fp16 *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             __fp16 *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
 
-            hgemm_n8cx_blocking_fp16<N8cxHgemmBlockingOrd::M_N_K>(
-                aux_filter_base,
-                converted_filter_base,
-                ic_g_pck,
-                oc_group,
-                ic_g_pck,
-                out_ch_section,
-                in_ch_section);
+            for (int64_t i = 0; i < oc_group; i += out_ch_section) {
+                for (int64_t p = 0; p < ic_g_pck; p += in_ch_section) {
+                    int64_t m_l1 = std::min(oc_group - i, out_ch_section);
+                    int64_t k_l1 = std::min(ic_g_pck - p, in_ch_section);
+                    hgemm_n8cx_inner_blocking_16x8_fp16(
+                        aux_filter_base + i * ic_g_pck + p,
+                        converted_filter_base + i * CEIL8(ic_g_pck) + p * CEIL8(m_l1),
+                        ic_g_pck,
+                        m_l1,
+                        k_l1);
+                } // close loop over outer K blocks
+            } // close loop over outer M blocks
         } // close loop over wg-sets
     }
 }

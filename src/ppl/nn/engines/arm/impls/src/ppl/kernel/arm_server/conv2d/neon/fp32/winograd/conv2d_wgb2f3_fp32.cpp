@@ -38,6 +38,7 @@ namespace ppl { namespace kernel { namespace arm_server { namespace neon {
 #define WGB2F3_IBLK() WINOGRAD_B2F3_INPUT_BLOCKSIZE()
 #define WGB2F3_NSET() WINOGRAD_B2F3_NUM_SET()
 
+#define N4CX_SGEMM_N10_BLOCK0() 10
 #define N4CX_SGEMM_N12_BLOCK0() 12
 
 #define LLC_CACHELINE_SIZE() 128
@@ -614,12 +615,12 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
                             const float *cvt_filter_cc_base         = filter_g_base + oc_l2 * ic_g_packed + ic_l2 * CEIL4(out_channel_section); // pack to 4:OCBLK()
                             float *raw_out_cl2_base                 = post_proc_buffer + WGB2F3_NSET() * oc_l2 * wg_blocks + set_id * k_out_wg_set_local_offset;
 
-                            for (int64_t oc = 0; oc < out_channel_section; oc += OCBLK()) {
-                                for (int64_t block = 0; block < wg_blocks; block += N4CX_SGEMM_N12_BLOCK0()) {
+                            const int64_t out_channel_section_align_2ocblk = FLOOR8(out_channel_section);
+                            for (int64_t oc = 0; oc < out_channel_section_align_2ocblk; oc += 2 * OCBLK()) {
+                                for (int64_t block = 0; block < wg_blocks; block += N4CX_SGEMM_N10_BLOCK0()) {
                                     const int64_t m_l0 = std::min((int64_t)OCBLK(), out_channel_section - oc);
-                                    const int64_t n_l0 = std::min((int64_t)N4CX_SGEMM_N12_BLOCK0(), wg_blocks - block);
-
-                                    sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fini_id](
+                                    const int64_t n_l0 = std::min((int64_t)N4CX_SGEMM_N10_BLOCK0(), wg_blocks - block);
+                                    sgemm_n4cx_kernel_m8nx_fp32_func_table[n_l0 - 1][init_id][fini_id](
                                         cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL4(in_channel_section),
                                         pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
                                         nullptr, /* constant:bias */
@@ -634,6 +635,26 @@ ppl::common::RetCode conv2d_wgb2f3_fp32_runtime_executor::execute()
                                         wg_blocks);
                                 } // close loop over wg-block(register)
                             } // close loop over oc(register)
+                            if (out_channel_section > out_channel_section_align_2ocblk) {
+                                int64_t oc = out_channel_section_align_2ocblk;
+                                for (int64_t block = 0; block < wg_blocks; block += N4CX_SGEMM_N12_BLOCK0()) {
+                                    const int64_t m_l0 = std::min((int64_t)OCBLK(), out_channel_section - oc);
+                                    const int64_t n_l0 = std::min((int64_t)N4CX_SGEMM_N12_BLOCK0(), wg_blocks - block);
+                                    sgemm_n4cx_kernel_m4nx_fp32_func_table[n_l0 - 1][init_id][fini_id](
+                                        cvt_filter_cc_base + set_id * filter_wgset_stride + oc * CEIL4(in_channel_section),
+                                        pre_proc_buffer + set_id * k_in_wg_set_offset + block * ICBLK(),
+                                        nullptr, /* constant:bias */
+                                        nullptr, /* fusedata:sum */
+                                        raw_out_cl2_base + oc * wg_blocks + block * OCBLK(),
+                                        m_l0,
+                                        n_l0,
+                                        in_channel_section,
+                                        oc_g_packed,
+                                        wg_blocks,
+                                        0,
+                                        wg_blocks);
+                                } // close loop over wg-block(register)
+                            }
                         } // close loop over oc(l2)
                     } // close loop over wg-set
                     // NOTE: implicit omp barrier
@@ -843,14 +864,18 @@ void conv2d_n4cx_wgb2f3_convert_filter_fp32(
             const float *aux_filter_base = aux_filter_buffer + set_id * filter_wg_set_offset;
             float *converted_filter_base = converted_filter_g_base + set_id * filter_wg_set_offset;
 
-            sgemm_n4cx_blocking_fp32<N4cxSgemmBlockingOrd::M_N_K>(
-                aux_filter_base,
-                converted_filter_base,
-                ic_g_pck,
-                oc_group,
-                ic_g_pck,
-                out_ch_section,
-                in_ch_section);
+            for (int64_t i = 0; i < oc_group; i += out_ch_section) {
+                for (int64_t p = 0; p < ic_g_pck; p += in_ch_section) {
+                    int64_t m_l1 = std::min(oc_group - i, out_ch_section);
+                    int64_t k_l1 = std::min(ic_g_pck - p, in_ch_section);
+                    sgemm_n4cx_inner_blocking_8x4_fp32(
+                        aux_filter_base + i * ic_g_pck + p,
+                        converted_filter_base + i * CEIL4(ic_g_pck) + p * CEIL4(m_l1),
+                        ic_g_pck,
+                        m_l1,
+                        k_l1);
+                } // close loop over outer K blocks
+            } // close loop over outer M blocks
         } // close loop over wg-sets
     }
 }
