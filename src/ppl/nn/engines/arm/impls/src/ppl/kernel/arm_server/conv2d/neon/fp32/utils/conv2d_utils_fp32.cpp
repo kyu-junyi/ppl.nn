@@ -26,11 +26,11 @@
 #include "ppl/common/arm/sysinfo.h"
 #include "ppl/kernel/arm_server/common/internal_include.h"
 
+namespace ppl { namespace kernel { namespace arm_server {
+
 #define CBLK()  4
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
-
-namespace ppl { namespace kernel { namespace arm_server {
 
 void conv2d_n4cx_load_group_fp32(
     const float *input_b_base,
@@ -152,7 +152,7 @@ void conv2d_n4cx_store_group_fp32(
 
     PRAGMA_OMP_SINGLE_NOWAIT()
     if (oc_tail) {
-        const int64_t global_oc_base = global_oc_inner_end; // FLOOR4(global_oc_inner_end);
+        const int64_t global_oc_base = global_oc_inner_end;
         const int64_t group_oc_ofs   = global_oc_inner_end - global_oc_start;
         for (int64_t idx = 0; idx < hw_out; idx++) {
             for (int64_t lane = 0; lane < oc_tail; lane++) {
@@ -173,5 +173,9 @@ void conv2d_n4cx_store_group_fp32(
         }
     }
 }
+
+#define CBLK
+#define ICBLK
+#define OCBLK
 
 }}} // namespace ppl::kernel::arm_server
