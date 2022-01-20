@@ -23,6 +23,8 @@
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/n4cx_sgemm/n4cx_sgemm.h"
 #include "ppl/kernel/arm_server/conv2d/neon/fp32/utils/conv2d_utils_fp32.h"
 
+namespace ppl { namespace kernel { namespace arm_server {
+
 #define CBLK()  4
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
@@ -34,8 +36,6 @@
 #else
 #error
 #endif
-
-namespace ppl { namespace kernel { namespace arm_server {
 
 static inline void prefetch_l1(const void *ptr, size_t offset)
 {
@@ -725,5 +725,10 @@ conv2d_runtime_executor *conv2d_n4cx_im2col_fp32_offline_manager::gen_executor()
 {
     return new conv2d_n4cx_im2col_fp32_runtime_executor(&param_, cvt_filter_, cvt_bias_, sched_param_, ker_param_);
 }
+
+#undef CBLK
+#undef ICBLK
+#undef OCBLK
+#undef PACK_CHANNEL
 
 }}}; // namespace ppl::kernel::arm_server

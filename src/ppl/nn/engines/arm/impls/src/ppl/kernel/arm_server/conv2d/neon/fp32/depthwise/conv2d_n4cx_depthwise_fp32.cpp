@@ -22,11 +22,11 @@
 #include <cstdlib>
 #include <iostream>
 
+namespace ppl { namespace kernel { namespace arm_server {
+
 #define CBLK()  4
 #define ICBLK() CBLK()
 #define OCBLK() CBLK()
-
-namespace ppl { namespace kernel { namespace arm_server {
 
 static inline void conv_n4cx_depthwise_general_h1w1_kernel(
     const float *cvt_filter_ptr,
@@ -413,10 +413,6 @@ void conv_n4cx_depthwise_f3sx_h1w4<1, 1>(
         ow_inner_end = std::max(ow_inner_end, ow_inner_start);
 
         int64_t ow_inner_end_align4 = ((ow_inner_end - ow_inner_start) & (~3)) + ow_inner_start;
-
-        // std::cout << oh_inner_end << std::endl;
-        // std::cout << ow_inner_end_align4 << std::endl;
-        // std::cout << ow_inner_end << std::endl;
 
         const int64_t fltC_pck            = CEIL4(fltC);
         const int64_t src_hW                = src_h * src_w;
@@ -2066,5 +2062,9 @@ conv2d_runtime_executor *conv2d_n4cx_depthwise_fp32_offline_manager::gen_executo
 {
     return new conv2d_n4cx_depthwise_fp32_runtime_executor(&param_, cvt_filter_, cvt_bias_, sched_param_);
 }
+
+#define CBLK
+#define ICBLK
+#define OCBLK
 
 }}} // namespace ppl::kernel::arm_server
