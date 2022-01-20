@@ -27,12 +27,16 @@ namespace ppl { namespace kernel { namespace arm_server {
 class conv2d_direct_ndarray_fp32_offline_manager;
 
 typedef struct {
+    // constants for kernel design
+    int64_t ocblk2 = 8;
+    int64_t dst_tile_h = 1;
+    int64_t dst_tile_w = 14;
+} conv2d_direct_ndarray_fp32_kernel_param;
+
+typedef struct {
     // weight conversion related; should be assigend offline
-    int64_t ic_blk;
-    int64_t oc_blk;
+    int64_t ic_tile;
     // feature map related; can be adjusted during runtime
-    int64_t oh_blk;
-    int64_t ow_blk;
     int64_t temp_buffer_size_per_thread;
 } conv2d_direct_ndarray_fp32_schedule_param;
 
@@ -50,6 +54,7 @@ public:
     ppl::common::RetCode execute() override;
 
 private:
+    const conv2d_direct_ndarray_fp32_kernel_param ker_param_;
     conv2d_direct_ndarray_fp32_schedule_param sched_param_;
     // adjust scheduling params if needed during preparation.
     void adjust_schedule_param();

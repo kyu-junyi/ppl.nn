@@ -197,6 +197,8 @@ typedef void (*ppl_kernel_arm_server_conv2d_fp32_conv_direct_ndarray_h1w1_kernel
     const int64_t dst_bchw_stride,
     const uint32_t fuse_type);
 
+#undef CBLK
+
 }}} // namespace ppl::kernel::arm_server
 
 #endif

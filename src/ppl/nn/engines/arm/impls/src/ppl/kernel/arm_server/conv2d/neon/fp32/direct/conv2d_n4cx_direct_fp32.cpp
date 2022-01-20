@@ -708,7 +708,7 @@ static void ppl_arm_server_kernel_fp32_conv_direct_n4cx_convert_filter(
     const int64_t flt_h,
     const int64_t flt_w)
 {
-    const int64_t ocblk2       = OCBLK() * 2;
+    const int64_t ocblk2    = OCBLK() * 2;
     const int64_t ic_group  = in_c / group;
     const int64_t oc_group  = out_c / group;
     const int64_t ic_g_pck  = CEIL4(ic_group);
