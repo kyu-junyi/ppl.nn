@@ -32,7 +32,7 @@ typedef struct {
     // constants in kerrnel design
     int64_t ocblk2 = 16;
     int64_t dst_tile_h = 1;
-    int64_t dst_tile_w = 10;
+    int64_t dst_tile_w = 14;
 } conv2d_direct_ndarray_fp16_kernel_param;
 
 typedef struct {

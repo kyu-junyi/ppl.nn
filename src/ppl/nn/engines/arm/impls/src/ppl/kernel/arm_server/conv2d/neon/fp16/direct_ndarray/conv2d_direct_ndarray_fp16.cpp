@@ -97,7 +97,7 @@ ppl::common::RetCode conv2d_direct_ndarray_fp16_runtime_executor::execute()
         const int64_t num_output_pck = CEIL8(num_output);
 
         const int64_t dst_tile_h = kp.dst_tile_h;
-        const int64_t dst_tile_w = kp.dst_tile_h;
+        const int64_t dst_tile_w = kp.dst_tile_w;
 
         const int64_t ocblk2 = kp.ocblk2;
         const int64_t ic_tile = sp.ic_tile;
