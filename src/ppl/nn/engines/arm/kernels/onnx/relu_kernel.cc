@@ -50,6 +50,17 @@ ppl::common::RetCode ReluKernel::DoExecute(KernelExecContext* ctx) {
         }
     }
 #endif
+#ifdef PPLNN_USE_ARMV8_2_BF16
+    else if (data_type == ppl::common::DATATYPE_BFLOAT16) {
+        if (MayUseISA(ppl::common::ISA_ARMV8_2_BF16)) {
+            return ppl::kernel::arm_server::neon::relu_bf16(input->GetShape(), input->GetBufferPtr<const __bf16>(),
+                                                            output->GetBufferPtr<__bf16>());
+        } else {
+            LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << "with isa " << GetISA()
+                       << ".";
+        }
+    }
+#endif
     else {
         LOG(ERROR) << "unsupported datatype: " << ppl::common::GetDataTypeStr(data_type) << ".";
     }
