@@ -34,7 +34,7 @@ LeakyReLUOp::LeakyReLUOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeLeakyReLU(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode LeakyReLUOp::Init(const OptKernelOptions& options) {
@@ -47,19 +47,18 @@ RetCode LeakyReLUOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode LeakyReLUOp::SelectDataType(const InputOutputInfo& info,
-                                    std::vector<ppl::common::datatype_t>* selected_input_types,
-                                    std::vector<ppl::common::datatype_t>* selected_output_types,
-                                    const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    return RC_SUCCESS;
-}
+RetCode LeakyReLUOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) { // fallback bfloat16
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+        common_param_.input_formats[0] = GetMajorFormat_(common_param_.input_types[0], common_param_.input_formats[0]);
+    }
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input for LeakyReLU Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
 
-RetCode LeakyReLUOp::SelectFormat(const InputOutputInfo& info,
-                                  std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                  std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

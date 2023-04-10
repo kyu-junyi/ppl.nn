@@ -29,10 +29,31 @@ RangeOp::RangeOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeRange(info, nullptr);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode RangeOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode RangeOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    datatype_t common_dtype = common_param_.input_types[0];
+    for (int i = 1; i < options.io_info->GetInputCount(); i++) {
+        common_dtype = (common_dtype == common_param_.input_types[i]) ? common_param_.input_types[0] : DATATYPE_UNKNOWN;
+    }
+
+    if (common_dtype == DATATYPE_UNKNOWN) {
+        LOG(ERROR) << "Unsupported different input types for Range Op";
+        return RC_UNSUPPORTED;
+    }
+    if (!CheckDTypes<DATATYPE_FLOAT32, DATATYPE_FLOAT16, DATATYPE_INT64>(common_dtype)) {
+        LOG(ERROR) << "Unsupported input type for Range Op: " << GetDataTypeStr(common_dtype);
+        return RC_UNSUPPORTED;
+    }
+    // Skip format - scalars to 1-d array
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

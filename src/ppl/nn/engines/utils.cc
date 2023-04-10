@@ -190,6 +190,9 @@ RetCode LoadConstants(const ConstantVisitor& visitor, Device* dev, map<edgeid_t,
                 LOG(ERROR) << "constant[" << edge->GetName() << "] already exists.";
                 return RC_EXISTS;
             }
+            {
+                LOG(INFO) << "load constant[" << edge->GetName() << "]";
+            }
             return RC_SUCCESS;
         });
 }

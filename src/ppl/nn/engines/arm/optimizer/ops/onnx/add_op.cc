@@ -16,6 +16,7 @@
 // under the License.
 
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/add_op.h"
+#include "ppl/nn/engines/arm/optimizer/opt_kernel.h"
 #include "ppl/nn/engines/arm/kernels/onnx/add_kernel.h"
 #include "ppl/nn/oputils/onnx/reshape_add.h"
 #include "ppl/nn/common/logger.h"
@@ -29,26 +30,15 @@ AddOp::AddOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeAdd(info, nullptr);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode AddOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode AddOp::SelectAlgorithm(const InputOutputInfo& info, const OptKernelOptions& options) {
-    if (info.GetInputCount() != 2) {
-        LOG(ERROR) << "Add Op should have 2 inputs.";
-        return RC_INVALID_VALUE;
-    }
-    return RC_SUCCESS;
-}
-
-RetCode AddOp::SelectFormat(const InputOutputInfo& info, std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                            std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_input_formats->at(1) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    return RC_SUCCESS;
+RetCode AddOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    return ArithmeticSelectTwoInputsLayout("Add", options.io_info, common_param_);
 }
 
 #ifdef PPLNN_ENABLE_PMX_MODEL

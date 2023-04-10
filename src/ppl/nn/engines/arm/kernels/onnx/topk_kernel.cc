@@ -42,7 +42,7 @@ ppl::common::RetCode TopKKernel::DoExecute(KernelExecContext* ctx) {
     auto tmp_buffer = tmp_buffer_desc.addr;
 
     PPLNN_ARM_REQUIRED_INPUT(x, 0);
-    PPLNN_ARM_OPTIONAL_INPUT(k, 1);
+    PPLNN_ARM_REQUIRED_INPUT(k, 1);
     PPLNN_ARM_REQUIRED_OUTPUT(values, 0);
     PPLNN_ARM_REQUIRED_OUTPUT(indices, 1);
 
@@ -51,11 +51,8 @@ ppl::common::RetCode TopKKernel::DoExecute(KernelExecContext* ctx) {
     PPLNN_ARM_DEBUG_TRACE("Op: %s\n", GetName().c_str());
     PPLNN_ARM_DEBUG_TRACE("Input [x]:\n");
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(x);
-    if (k) {
-        PPLNN_ARM_DEBUG_TRACE("Input [k]:\n");
-        PPL_ARM_TENSOR_PRINT_DEBUG_MSG(k);
-        k_val = k->GetBufferPtr<const int64_t>()[0];
-    }
+    PPLNN_ARM_DEBUG_TRACE("Input [k]:\n");
+    PPL_ARM_TENSOR_PRINT_DEBUG_MSG(k);
     PPLNN_ARM_DEBUG_TRACE("k: %ld\n", k_val);
     PPLNN_ARM_DEBUG_TRACE("Output [values]:\n");
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(values);

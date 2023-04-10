@@ -24,8 +24,8 @@ using namespace ppl::common;
 namespace ppl { namespace nn { namespace arm {
 
 HardSigmoidOp::HardSigmoidOp(const ir::Node* node) : ArmOptKernel(node) {
-    infer_type_func_ = GenericInferType;
     infer_dims_func_ = GenericInferDims;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode HardSigmoidOp::Init(const OptKernelOptions& options) {
@@ -38,10 +38,18 @@ RetCode HardSigmoidOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode HardSigmoidOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
-                                    vector<dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
+RetCode HardSigmoidOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) {
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+        common_param_.input_formats[0] = GetMajorFormat_(common_param_.input_types[0], common_param_.input_formats[0]);
+    }
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for HardSigmoid Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

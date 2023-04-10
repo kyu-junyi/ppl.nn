@@ -34,7 +34,7 @@ ResizeOp::ResizeOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeResize(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ResizeOp::Init(const OptKernelOptions& options) {
@@ -47,39 +47,50 @@ RetCode ResizeOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ResizeOp::SelectDataType(const InputOutputInfo& info,
-                                 std::vector<ppl::common::datatype_t>* selected_input_types,
-                                 std::vector<ppl::common::datatype_t>* selected_output_types,
-                                 const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    const int64_t input_count = info.GetInputCount();
-    if (input_count >= 2) {
-        selected_input_types->at(1) = ppl::common::DATATYPE_FLOAT32;
+RetCode ResizeOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto& in0_shape = *options.io_info->GetInput<TensorImpl>(0)->GetShape();
+    common_param_.input_types[0] = in0_shape.GetDataType();
+    common_param_.input_formats[0] = in0_shape.GetDataFormat();
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) {
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+        common_param_.input_formats[0] = GetMajorFormat_(common_param_.input_types[0], common_param_.input_formats[0]);
     }
-    if (input_count >= 3) {
-        selected_input_types->at(2) = ppl::common::DATATYPE_FLOAT32;
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input[0] type for Resize Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
     }
-    if (input_count >= 4) {
-        selected_input_types->at(3) = ppl::common::DATATYPE_INT64;
-    }
-    return RC_SUCCESS;
-}
-
-RetCode ResizeOp::SelectFormat(const InputOutputInfo& info,
-                               std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                               std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    const auto input_shape = info.GetInput<TensorImpl>(0)->GetShape();
-    auto selected_format = input_shape->GetDataFormat();
     if (param_->mode == param_->RESIZE_MODE_CUBIC) {
-        const auto input_type = input_shape->GetDataType();
-        const int64_t channels = input_shape->GetDimCount() == 4 ? input_shape->GetDim(1) : 0;
-        if (input_type == ppl::common::DATATYPE_FLOAT32 && channels >= 2) {
-            selected_format = ppl::common::DATAFORMAT_N4CX;
-        } else if (input_type == ppl::common::DATATYPE_FLOAT16 && channels >= 4) {
-            selected_format = ppl::common::DATAFORMAT_N8CX;
+        const int64_t channels = in0_shape.GetDimCount() == 4 ? in0_shape.GetDim(1) : 0;
+        if (common_param_.input_types[0] == DATATYPE_FLOAT32 && channels >= 2) {
+            common_param_.input_formats[0] = DATAFORMAT_N4CX;
+        } else if (common_param_.input_types[0] == DATATYPE_FLOAT16 && channels >= 4) {
+            common_param_.input_formats[0] = DATAFORMAT_N8CX;
         }
     }
-    selected_input_formats->at(0) = selected_output_formats->at(0) = selected_format;
+    const int64_t input_count = options.io_info->GetInputCount();
+    if (input_count >= 2) {
+        // common_param_.input_types[1] = DATATYPE_FLOAT32;
+        if (!CheckMajorFloat_(common_param_.input_types[1])) {
+            LOG(ERROR) << "Unsupported input[1] type for Resize Op: " << GetDataTypeStr(common_param_.input_types[1]);
+        }
+        common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+    }
+    if (input_count >= 3) {
+        // common_param_.input_types[2] = DATATYPE_FLOAT32;
+        if (common_param_.input_types[2] != DATATYPE_FLOAT32) {
+            LOG(ERROR) << "Unsupported input[2] type for Resize Op: " << GetDataTypeStr(common_param_.input_types[2]);
+        }
+        common_param_.input_formats[2] = DATAFORMAT_NDARRAY;
+    }
+    if (input_count >= 4) {
+        // common_param_.input_types[3] = DATATYPE_INT64;
+        if (common_param_.input_types[3] != DATATYPE_INT64) {
+            LOG(ERROR) << "Unsupported input[3] type for Resize Op: " << GetDataTypeStr(common_param_.input_types[3]);
+        }
+        common_param_.input_formats[3] = DATAFORMAT_NDARRAY;
+    }
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

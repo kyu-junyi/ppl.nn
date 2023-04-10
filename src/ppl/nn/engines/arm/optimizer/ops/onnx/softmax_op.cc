@@ -29,7 +29,7 @@ namespace ppl { namespace nn { namespace arm {
 
 SoftmaxOp::SoftmaxOp(const ir::Node* node) : ArmOptKernel(node) {
     infer_dims_func_ = GenericInferDims;
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode SoftmaxOp::Init(const OptKernelOptions& options) {
@@ -42,10 +42,18 @@ RetCode SoftmaxOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode SoftmaxOp::SelectFormat(const InputOutputInfo& info,
-                                std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) = DATAFORMAT_NDARRAY;
+RetCode SoftmaxOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) {
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+    }
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for Softmax Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

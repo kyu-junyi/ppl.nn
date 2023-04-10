@@ -26,21 +26,32 @@ namespace ppl { namespace nn { namespace arm {
 
 ClipOp::ClipOp(const ir::Node* node) : ArmOptKernel(node) {
     infer_dims_func_ = GenericInferDims;
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ClipOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ClipOp::SelectFormat(const InputOutputInfo& info,
-                             std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                             std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    for (uint32_t i = 1; i < info.GetInputCount(); i++) {
-        selected_input_formats->at(i) = ppl::common::DATAFORMAT_NDARRAY;
+RetCode ClipOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto info = options.io_info;
+    common_param_.input_types[0] = info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    common_param_.input_formats[0] = info->GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) {
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+        common_param_.input_formats[0] = GetMajorFormat_(common_param_.input_types[0], common_param_.input_formats[0]);
     }
+    if (!CheckDTypes<DATATYPE_FLOAT32, DATATYPE_FLOAT16, DATATYPE_INT64>(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for Clip Op: "
+                   << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    for (uint32_t i = 1; i < info->GetInputCount(); i++) {
+        common_param_.input_types[i] = common_param_.input_types[0];
+        common_param_.input_formats[i] = DATAFORMAT_NDARRAY;
+    }
+
+    GenericSelectOutputLayout(info, common_param_);
     return RC_SUCCESS;
 }
 

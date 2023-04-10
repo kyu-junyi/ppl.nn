@@ -38,7 +38,7 @@ ppl::common::RetCode ReduceMaxKernel::DoExecute(KernelExecContext* ctx) {
     PPLNN_ARM_DEBUG_TRACE("Op: %s\n", GetName().c_str());
     PPLNN_ARM_DEBUG_TRACE("Input [data]:\n");
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(data);
-    PPLNN_ARM_DEBUG_TRACE("Input [reduced]:\n");
+    PPLNN_ARM_DEBUG_TRACE("Output [reduced]:\n");
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(reduced);
     for (uint32_t i = 0; i < fixed_axes.size(); ++i) {
         PPLNN_ARM_DEBUG_TRACE("axes[%d]: %d\n", i, fixed_axes[i]);

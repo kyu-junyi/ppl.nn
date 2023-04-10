@@ -36,7 +36,7 @@ ConcatOp::ConcatOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeConcat(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ConcatOp::Init(const OptKernelOptions& options) {
@@ -49,27 +49,57 @@ RetCode ConcatOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ConcatOp::SelectFormat(const InputOutputInfo& info,
-                               std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                               std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    const uint32_t input_count = info.GetInputCount();
-    std::set<dataformat_t> input_dataformats;
-    for (uint32_t i = 0; i < input_count; i++) {
-        input_dataformats.insert(info.GetInput<TensorImpl>(i)->GetShape()->GetDataFormat());
+RetCode ConcatOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto info = options.io_info;
+    auto const num_inputs = info->GetInputCount();
+    if (num_inputs == 1) {
+        GenericSelectInputLayout(info, common_param_);
+        GenericSelectOutputLayout(info, common_param_);
+
+        return RC_SUCCESS;
     }
 
-    dataformat_t data_format;
-    if (input_dataformats.size() == 1) { // all input has same dataformat
-        data_format = *input_dataformats.begin();
-    } else { // all data format fall back to NDARRAY
-        data_format = DATAFORMAT_NDARRAY;
+    GenericSelectInputLayout(info, common_param_);
+
+    datatype_t common_type = common_param_.input_types[0];
+    datatype_t common_major_fp = CheckMajorFloat_(common_param_.input_types[0]) ? common_param_.input_types[0] : DATATYPE_UNKNOWN;
+    bool has_integer = CheckDTypes<DATATYPE_INT64>(common_param_.input_types[0]);
+    int num_ndarray = (common_param_.input_formats[0] == DATAFORMAT_NDARRAY) ? 1 : 0;
+    for (auto i = 1; i < num_inputs; i++) {
+        common_type = (common_type == common_param_.input_types[i]) ? common_type : DATATYPE_UNKNOWN;
+        if (CheckMajorFloat_(common_param_.input_types[i])) {
+            if (DATATYPE_UNKNOWN == common_major_fp) {
+                common_major_fp = common_param_.input_types[i];
+            } else {
+                common_major_fp = (common_major_fp == common_param_.input_types[i]) ? common_major_fp : options.engine_options->forward_precision;
+            }
+        }
+        has_integer = has_integer || CheckDTypes<DATATYPE_INT64>(common_param_.input_types[i]);
+
+        if (common_param_.input_formats[i] == DATAFORMAT_NDARRAY) {
+            num_ndarray++;
+        }
     }
 
-    for (uint32_t i = 0; i < input_count; i++) {
-        selected_input_formats->at(i) = data_format;
+    if (common_type != DATATYPE_UNKNOWN) {
+        if (num_ndarray != 0 && num_ndarray != num_inputs) {
+            const dataformat_t common_format = (num_ndarray >= num_inputs - num_inputs) ? DATAFORMAT_NDARRAY : GetNbcxFormat_(common_type);
+            for (auto i = 0; i < num_inputs; i++) {
+                common_param_.input_formats[i] = common_format;
+            }
+        }
+    } else if (common_major_fp != DATATYPE_UNKNOWN && !has_integer) {
+        const dataformat_t common_format = (num_ndarray >= num_inputs - num_inputs) ? DATAFORMAT_NDARRAY : GetNbcxFormat_(common_major_fp);
+        for (auto i = 0; i < num_inputs; i++) {
+            common_param_.input_types[i] = common_major_fp;
+            common_param_.input_formats[i] = common_format;
+        }
+    } else {
+        LOG(ERROR) << "Unsupported input types for Concat Op: found both floating-point types and integer types.";
+        return RC_UNSUPPORTED;
     }
-    selected_output_formats->at(0) = data_format;
 
+    GenericSelectOutputLayout(info, common_param_);
     return RC_SUCCESS;
 }
 

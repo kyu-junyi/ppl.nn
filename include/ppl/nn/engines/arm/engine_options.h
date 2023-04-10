@@ -22,6 +22,7 @@
 #include "ppl/common/types.h"
 #include "ppl/nn/engines/arm/options.h"
 #include <stdint.h>
+#include <string>
 
 namespace ppl { namespace nn { namespace arm {
 
@@ -34,6 +35,7 @@ struct PPLNN_PUBLIC EngineOptions final {
     // bind engine to speicified numa node, range [0, numa_max_node). other value will not bind.
     int32_t numa_node_id = -1;
     uint32_t enable_bf16 = 0;
+    std::string marked_tensors = "";
 };
 
 }}} // namespace ppl::nn::arm

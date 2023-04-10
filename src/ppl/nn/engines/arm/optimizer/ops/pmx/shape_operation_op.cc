@@ -26,8 +26,15 @@ using namespace ppl::common;
 namespace ppl { namespace nn { namespace arm {
 
 ShapeOperationOp::ShapeOperationOp(const ir::Node* node) : ArmOptKernel(node), op_(node) {
-    infer_type_func_ = GenericInferType;
     infer_dims_func_ = GenericInferDims;
+    infer_layout_func_ = [this](InputOutputInfo* info) -> void {
+        auto in0_shape = info->GetInput<TensorImpl>(0)->GetShape();
+        for (int i = 0; i < info->GetOutputCount(); i++) {
+            auto output_shape = info->GetOutput<TensorImpl>(i)->GetShape();
+            output_shape->SetDataType(DATATYPE_INT64);
+            output_shape->SetDataFormat(DATAFORMAT_NDARRAY);
+        }
+    };
 }
 
 RetCode ShapeOperationOp::Init(const OptKernelOptions& options) {
@@ -39,12 +46,14 @@ RetCode ShapeOperationOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ShapeOperationOp::SelectDataType(const InputOutputInfo& info,
-                                 std::vector<ppl::common::datatype_t>* selected_input_types,
-                                 std::vector<ppl::common::datatype_t>* selected_output_types,
-                                 const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    selected_output_types->at(0) = DATATYPE_INT64;
+RetCode ShapeOperationOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+
+    // Op
+    for (int i = 0; i < options.io_info->GetOutputCount(); i++) {
+        common_param_.input_types[i] = DATATYPE_INT64;
+        common_param_.input_formats[i] = DATAFORMAT_NDARRAY;
+    }
     return RC_SUCCESS;
 }
 

@@ -18,74 +18,46 @@
 #include "ppl/nn/engines/arm/data_converter.h"
 #include <cstring>
 #include "ppl/nn/common/logger.h"
-#include "ppl/kernel/arm_server/common/data_trans.h"
+#include "ppl/nn/engines/arm/optimizer/opt_layout.h"
+// #include "ppl/kernel/arm_server/reorder/neon/reorder.h"
 #include "ppl/kernel/arm_server/common/memory.h"
 #include "ppl/kernel/arm_server/cast/neon/cast.h"
 using namespace ppl::common;
 using namespace ppl::kernel::arm_server;
+using namespace ppl::kernel::arm_server::neon;
 
 namespace ppl { namespace nn { namespace arm {
 
 ppl::common::RetCode ArmDataConverter::Convert(BufferDesc* dst, const TensorShape& dst_desc, const BufferDesc& src,
                                                const TensorShape& src_desc, const void*, const void*) const {
-    LOG(DEBUG) << "ARM Data Converter from data format " << src_desc.GetDataFormat() << " to "
-               << dst_desc.GetDataFormat();
-    LOG(DEBUG) << "ARM Data Converter from data type " << src_desc.GetDataType() << " to " << dst_desc.GetDataType();
-    if (dst_desc.GetDataFormat() == src_desc.GetDataFormat() && dst_desc.GetDataType() == src_desc.GetDataType()) {
-        return memory_copy(src.addr, src_desc.CalcBytesIncludingPadding(), dst->addr);
-    } else if (dst_desc.GetDataFormat() != src_desc.GetDataFormat() &&
-               dst_desc.GetDataType() == src_desc.GetDataType()) {
-        if (dst_desc.GetDataType() == DATATYPE_FLOAT32) {
-            if (dst_desc.GetDataFormat() == DATAFORMAT_N4CX && src_desc.GetDataFormat() == DATAFORMAT_NDARRAY) {
-                NdarrayToN4cxFp32((float*)(src.addr), src_desc.GetDim(0), src_desc.GetDim(1), src_desc.GetDim(2),
-                                  src_desc.GetDim(3), (float*)(dst->addr));
-                return RC_SUCCESS;
-            } else if (dst_desc.GetDataFormat() == DATAFORMAT_NDARRAY && src_desc.GetDataFormat() == DATAFORMAT_N4CX) {
-                N4cxToNdarrayFp32((float*)(src.addr), src_desc.GetDim(0), src_desc.GetDim(1), src_desc.GetDim(2),
-                                  src_desc.GetDim(3), (float*)(dst->addr));
-                return RC_SUCCESS;
-            }
-#ifdef PPLNN_USE_ARMV8_2_FP16
-        } else if (dst_desc.GetDataType() == DATATYPE_FLOAT16) {
-            if (dst_desc.GetDataFormat() == DATAFORMAT_N8CX && src_desc.GetDataFormat() == DATAFORMAT_NDARRAY) {
-                NdarrayToN8cxFp16((__fp16*)(src.addr), src_desc.GetDim(0), src_desc.GetDim(1), src_desc.GetDim(2),
-                                  src_desc.GetDim(3), (__fp16*)(dst->addr));
-                return RC_SUCCESS;
-            } else if (dst_desc.GetDataFormat() == DATAFORMAT_NDARRAY && src_desc.GetDataFormat() == DATAFORMAT_N8CX) {
-                N8cxToNdarrayFp16((__fp16*)(src.addr), src_desc.GetDim(0), src_desc.GetDim(1), src_desc.GetDim(2),
-                                  src_desc.GetDim(3), (__fp16*)(dst->addr));
-                return RC_SUCCESS;
-            }
-#endif
-        }
-#ifdef PPLNN_USE_ARMV8_2_FP16
-    } else if (dst_desc.GetDataFormat() != src_desc.GetDataFormat() &&
-               dst_desc.GetDataType() != src_desc.GetDataType()) {
-        if (dst_desc.GetDataType() == DATATYPE_FLOAT32 && dst_desc.GetDataFormat() == DATAFORMAT_NDARRAY &&
-            src_desc.GetDataType() == DATATYPE_FLOAT16 && src_desc.GetDataFormat() == DATAFORMAT_N8CX) {
-            N8cxFp16ToNdarrayFp32((__fp16*)(src.addr), src_desc.GetDim(0), src_desc.GetDim(1), src_desc.GetDim(2),
-                                  src_desc.GetDim(3), (float*)(dst->addr));
-            return RC_SUCCESS;
-        } else if (dst_desc.GetDataType() == DATATYPE_FLOAT16 && dst_desc.GetDataFormat() == DATAFORMAT_N8CX &&
-                   src_desc.GetDataType() == DATATYPE_FLOAT32 && src_desc.GetDataFormat() == DATAFORMAT_NDARRAY) {
-            NdarrayFp32ToN8cxFp16((float*)(src.addr), src_desc.GetDim(0), src_desc.GetDim(1), src_desc.GetDim(2),
-                                  src_desc.GetDim(3), (__fp16*)(dst->addr));
-            return RC_SUCCESS;
-        }
-    } else if (dst_desc.GetDataFormat() == src_desc.GetDataFormat() &&
-               dst_desc.GetDataType() != src_desc.GetDataType()) {
-        if (dst_desc.GetDataType() == DATATYPE_FLOAT32 && src_desc.GetDataType() == DATATYPE_FLOAT16) {
-            Fp16ToFp32((__fp16*)src.addr, src_desc.CalcElementsIncludingPadding(), (float*)dst->addr);
-            return RC_SUCCESS;
-        } else if (dst_desc.GetDataType() == DATATYPE_FLOAT16 && src_desc.GetDataType() == DATATYPE_FLOAT32) {
-            Fp32ToFp16((float*)src.addr, src_desc.CalcElementsIncludingPadding(), (__fp16*)dst->addr);
-            return RC_SUCCESS;
-        } else {
-            return ppl::kernel::arm_server::neon::cast(&src_desc, &dst_desc, src.addr, dst->addr);
-        }
-#endif
+    const auto src_dtype = src_desc.GetDataType();
+    const auto dst_dtype = dst_desc.GetDataType();
+    const auto src_dformat = src_desc.GetDataFormat();
+    const auto dst_dformat = dst_desc.GetDataFormat();
+
+    LOG(DEBUG) << "ARM Data Converter from data format " << src_dformat << "(" << GetDataFormatStr(src_dformat) << ") to " << dst_dformat << "(" << GetDataFormatStr(dst_dformat) << ")";
+    LOG(DEBUG) << "ARM Data Converter from data type " << src_dtype << "(" << GetDataTypeStr(src_dtype) << ") to " << dst_dtype << "(" << GetDataTypeStr(dst_dtype) << ")";
+
+    if (dst_dformat == src_dformat && dst_dtype == src_dtype) {
+        auto status = memory_copy(src.addr, src_desc.CalcBytesIncludingPadding(), dst->addr);
+        return status;
     }
+
+    const auto num_dims = src_desc.GetDimCount();
+    const int64_t shape_desc[4] = {                 src_desc.GetDim(0),    (num_dims > 1) ? src_desc.GetDim(1) : 1,
+                                   (num_dims > 2) ? src_desc.GetDim(2) : 1, (num_dims > 3) ? src_desc.GetDim(3) : 1 };
+    auto rc = OptLayoutManager::ConvertLayout(src.addr, shape_desc, src_dtype, src_dformat, dst_dtype, dst_dformat, dst->addr);
+    if (rc == RC_SUCCESS) {
+        return RC_SUCCESS;
+    }
+
+    if (dst_dformat == src_dformat && dst_dtype != src_dtype) {
+        return cast(&src_desc, &dst_desc, src.addr, dst->addr);
+    }
+
     LOG(ERROR) << "Invalid data type conversion";
+    LOG(ERROR) << "ARM Data Converter from data format " << src_dformat << "(" << GetDataFormatStr(src_dformat) << ") to " << dst_dformat << "(" << GetDataFormatStr(dst_dformat) << ")";
+    LOG(ERROR) << "ARM Data Converter from data type " << src_dtype << "(" << GetDataTypeStr(src_dtype) << ") to " << dst_dtype << "(" << GetDataTypeStr(dst_dtype) << ")";
     return RC_UNSUPPORTED;
 }
 

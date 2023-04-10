@@ -34,7 +34,7 @@ FlattenOp::FlattenOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeFlatten(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode FlattenOp::Init(const OptKernelOptions& options) {
@@ -44,6 +44,14 @@ RetCode FlattenOp::Init(const OptKernelOptions& options) {
         return status;
     }
 
+    return RC_SUCCESS;
+}
+
+RetCode FlattenOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    common_param_.input_types[0] = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

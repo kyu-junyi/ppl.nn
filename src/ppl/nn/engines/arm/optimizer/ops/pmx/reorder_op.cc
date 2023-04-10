@@ -22,6 +22,21 @@ using namespace ppl::common;
 
 namespace ppl { namespace nn { namespace arm {
 
+
+// uint32_t ReorderOp::reorder_cases_[8][4] = {
+//     {DATATYPE_FLOAT32,  DATAFORMAT_NDARRAY,  /**/    DATATYPE_FLOAT32,  DATAFORMAT_N4CX},
+//     {DATATYPE_FLOAT32,  DATAFORMAT_N4CX,     /**/    DATATYPE_FLOAT32,  DATAFORMAT_NDARRAY},
+
+//     {DATATYPE_FLOAT16,  DATAFORMAT_NDARRAY,  /**/    DATATYPE_FLOAT16,  DATAFORMAT_N8CX},
+//     {DATATYPE_FLOAT16,  DATAFORMAT_N8CX,     /**/    DATATYPE_FLOAT16,  DATAFORMAT_NDARRAY},
+
+//     {DATATYPE_FLOAT32,  DATAFORMAT_NDARRAY,  /**/    DATATYPE_FLOAT16,  DATAFORMAT_NDARRAY},
+//     {DATATYPE_FLOAT16,  DATAFORMAT_NDARRAY,  /**/    DATATYPE_FLOAT32,  DATAFORMAT_NDARRAY},
+
+//     {DATATYPE_FLOAT32,  DATAFORMAT_N4CX,     /**/    DATATYPE_FLOAT16,  DATAFORMAT_N8CX},
+//     {DATATYPE_FLOAT16,  DATAFORMAT_N8CX,     /**/    DATATYPE_FLOAT32,  DATAFORMAT_N4CX},
+// };
+
 ReorderOp::ReorderOp(const ir::Node* node) : ArmOptKernel(node) {
     infer_dims_func_ = [](InputOutputInfo* info) -> RetCode {
         auto& input = *info->GetInput<TensorImpl>(0)->GetShape();
@@ -40,14 +55,45 @@ ReorderOp::ReorderOp(const ir::Node* node) : ArmOptKernel(node) {
                 output.Reshape(input.GetDims(), input.GetDimCount());
             }
         }
+        LOG(DEBUG) << "Call ReorderOp::[]::infer_dims_func_";
         return RC_SUCCESS;
     };
 
-    infer_type_func_ = PassiveInferType;
+    infer_layout_func_ = [this](InputOutputInfo* info) -> void {
+        DynamicInferLayout(info, &this->common_param_);
+    };
 }
 
 RetCode ReorderOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
+}
+
+RetCode ReorderOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto in_type = common_param_.input_types[0];
+    auto in_format = common_param_.input_formats[0];
+    auto out_type = common_param_.output_types[0];
+    auto out_format = common_param_.output_formats[0];
+
+    // for (int i = 0; i < 8; i++) {
+    //     if (in_type == reorder_cases_[i][0] && in_format == reorder_cases_[i][1] &&
+    //         out_type == reorder_cases_[i][2] && out_format == reorder_cases_[i][3]) {
+            
+    //         return RC_SUCCESS;
+    //     }
+    // }
+    if (in_type == out_type && in_format == out_format) {
+        return RC_SUCCESS;
+    }
+    if (OptLayoutManager::Check(in_type, in_format, out_type, out_format)) {
+        return RC_SUCCESS;
+    }
+    if (in_format == out_format) {  // cast
+        return RC_SUCCESS;
+    }
+
+    LOG(ERROR) << "Cannot reorder data from <" << GetDataTypeStr(in_type) << ", " << GetDataFormatStr(in_format) << "> "
+               << "to <" << GetDataTypeStr(out_type) << ", " << GetDataFormatStr(out_format) << ">.";
+    return RC_UNSUPPORTED;
 }
 
 #ifdef PPLNN_ENABLE_PMX_MODEL

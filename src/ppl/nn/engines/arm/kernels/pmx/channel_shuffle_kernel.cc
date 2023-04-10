@@ -46,15 +46,17 @@ ppl::common::RetCode ChannelShuffleKernel::DoExecute(KernelExecContext* ctx) {
 
     if (fuse_concat && fuse_split) {
         return ppl::kernel::arm_server::neon::channel_shuffle_concat_split(
-            X->GetShape(), X1->GetShape(), Y->GetShape(), Y1->GetShape(), X->GetBufferPtr<void>(),
-            X1->GetBufferPtr<void>(), param_->group, Y->GetBufferPtr<void>(), Y1->GetBufferPtr<void>());
+            X->GetShape(), X1->GetShape(), Y->GetShape(), Y1->GetShape(),
+            X->GetBufferPtr<void>(), X1->GetBufferPtr<void>(), param_->group,
+            Y->GetBufferPtr<void>(), Y1->GetBufferPtr<void>());
     } else if (fuse_concat && !fuse_split) {
-        return ppl::kernel::arm_server::neon::channel_shuffle_concat(X->GetShape(), X1->GetShape(), Y->GetShape(),
-                                                                     X->GetBufferPtr<void>(), X1->GetBufferPtr<void>(),
-                                                                     param_->group, Y->GetBufferPtr<void>());
+        return ppl::kernel::arm_server::neon::channel_shuffle_concat(
+            X->GetShape(), X1->GetShape(), Y->GetShape(),
+            X->GetBufferPtr<void>(), X1->GetBufferPtr<void>(), param_->group,
+            Y->GetBufferPtr<void>());
     } else if (!fuse_concat && !fuse_split) {
-        return ppl::kernel::arm_server::neon::channel_shuffle(X->GetShape(), Y->GetShape(), X->GetBufferPtr<void>(),
-                                                              param_->group, Y->GetBufferPtr<void>());
+        return ppl::kernel::arm_server::neon::channel_shuffle(
+            X->GetShape(), Y->GetShape(), X->GetBufferPtr<void>(), param_->group, Y->GetBufferPtr<void>());
     } else {
         LOG(ERROR) << "arm channel shuffle not support fuse_split & not fuse_concat case now.";
         return ppl::common::RC_UNSUPPORTED;

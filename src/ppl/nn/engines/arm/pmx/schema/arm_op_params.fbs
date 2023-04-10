@@ -14,6 +14,8 @@ table FusionData {
 table ConvAlgoInfo {
     algo_type: uint32;
     dtype: uint32;
+    iformat: uint32;
+    oformat: uint32;
     isa: uint32;
     sched_param: [int64];
 }
@@ -26,9 +28,17 @@ table ConvParamInfo{
     has_bias: byte;
 }
 
+table ConvWeights{
+    cvt_filter_size: uint64;
+    cvt_bias_size: uint64;
+    cvt_filter: [byte];
+    cvt_bias: [byte];
+}
+
 table ConvData {
     algo_info: ConvAlgoInfo;
     param_info: ConvParamInfo;
+    cvt_weights: ConvWeights;
 }
 
 table FCAlgoInfo {

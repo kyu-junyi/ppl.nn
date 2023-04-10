@@ -34,7 +34,7 @@ ReduceMinOp::ReduceMinOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeReduce(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ReduceMinOp::Init(const OptKernelOptions& options) {
@@ -47,37 +47,8 @@ RetCode ReduceMinOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ReduceMinOp::SelectFormat(const InputOutputInfo& info,
-                                  std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                  std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    const TensorShape& input_shape = *info.GetInput<TensorImpl>(0)->GetShape();
-    ppl::common::dataformat_t selected_data_format = ppl::common::DATAFORMAT_NDARRAY;
-    const int64_t dim_count = input_shape.GetDimCount();
-
-    if (dim_count > 0) { // dims has been infered
-        if (input_shape.GetDataFormat() != ppl::common::DATAFORMAT_NDARRAY) { // for NBCX
-            if (param_->keepdims == true) {
-                selected_data_format = input_shape.GetDataFormat();
-            } else {
-                const int64_t remain_dim_count = dim_count - param_->axes.size();
-                if (remain_dim_count >= 3) {
-                    bool no_reduce_on_batch_channel_dim = true;
-                    for (auto axis : param_->axes) {
-                        if (axis == 0 || axis + dim_count == 0 || axis == 1 || axis + dim_count == 1) {
-                            no_reduce_on_batch_channel_dim = false;
-                            break;
-                        }
-                    }
-                    if (no_reduce_on_batch_channel_dim) {
-                        selected_data_format = input_shape.GetDataFormat();
-                    }
-                }
-            }
-        }
-    }
-
-    selected_input_formats->at(0) = selected_output_formats->at(0) = selected_data_format;
-    return RC_SUCCESS;
+RetCode ReduceMinOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    return ReduceSelectLayout("ReduceMin", options.io_info, options.engine_options->forward_precision, param_->keepdims, param_->axes, common_param_);
 }
 
 #ifdef PPLNN_ENABLE_PMX_MODEL

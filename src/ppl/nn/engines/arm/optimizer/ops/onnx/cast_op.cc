@@ -34,8 +34,10 @@ CastOp::CastOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeCast(info, param_.get());
     };
 
-    infer_type_func_ = [this](InputOutputInfo* info) -> void {
+    infer_layout_func_ = [this](InputOutputInfo* info) -> void {
         info->GetOutput<TensorImpl>(0)->GetShape()->SetDataType(this->param_->to);
+        info->GetOutput<TensorImpl>(0)->GetShape()->SetDataFormat(info->GetInput<TensorImpl>(0)->GetShape()->GetDataFormat());
+
     };
 }
 
@@ -49,19 +51,13 @@ RetCode CastOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode CastOp::SelectDataType(const InputOutputInfo& info, std::vector<ppl::common::datatype_t>* selected_input_types,
-                               std::vector<ppl::common::datatype_t>* selected_output_types,
-                               const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    selected_output_types->at(0) = info.GetOutput<TensorImpl>(0)->GetShape()->GetDataType();
-    return RC_SUCCESS;
-}
+RetCode CastOp::SelectAlgoDTypeDFormat(const OptKernelOptions options)  {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    //!CAVEAT: layout unchecked
 
-RetCode CastOp::SelectFormat(const InputOutputInfo& info,
-                             std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                             std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
+    // Op, param
+    common_param_.output_types[0] = this->param_->to;
+    common_param_.output_formats[0] = common_param_.input_formats[0];
     return RC_SUCCESS;
 }
 

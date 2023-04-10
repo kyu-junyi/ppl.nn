@@ -28,6 +28,7 @@
 #include "ppl/nn/engines/arm/arm_common_param.h"
 #include "ppl/nn/engines/arm/utils/macros.h"
 #include "ppl/nn/engines/arm/engine_options.h"
+#include "ppl/nn/engines/arm/optimizer/opt_layout.h"
 
 #ifdef PPLNN_ENABLE_PMX_MODEL
 #include "ppl/nn/models/pmx/generated/onnx_op_generated.h"
@@ -49,6 +50,7 @@ struct OptKernelOptions final {
     RuntimePartitionInfo* info = nullptr;
     std::map<edgeid_t, std::unique_ptr<TensorImpl>>* tensors = nullptr;
     EngineOptions* engine_options = nullptr;
+    InputOutputInfo* io_info = nullptr;
 };
 
 class ArmOptKernel : public OptKernel {
@@ -64,36 +66,35 @@ public:
         }
         return ppl::common::RC_NOT_FOUND;
     }
-    void InferTypes(InputOutputInfo* info) const {
-        if (infer_type_func_) {
-            infer_type_func_(info);
-        }
+
+    virtual ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+        return ppl::common::RC_NOT_FOUND;
     }
 
-    virtual ppl::common::RetCode SelectFormat(const InputOutputInfo& info,
-                                              std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                              std::vector<ppl::common::dataformat_t>* selected_output_formats) {
+    virtual ppl::common::RetCode OmitConstantsData(std::map<edgeid_t, int64_t>* constants_data_refcount) {
         return ppl::common::RC_SUCCESS;
     }
 
-    virtual ppl::common::RetCode SelectDataType(const InputOutputInfo& info,
-                                                std::vector<ppl::common::datatype_t>* selected_input_types,
-                                                std::vector<ppl::common::datatype_t>* selected_output_types,
-                                                const ppl::common::datatype_t preferred_fp_datatype) {
-        GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
+    virtual ppl::common::RetCode ConvertConstants(const OptKernelOptions options) {
         return ppl::common::RC_SUCCESS;
     }
 
-    virtual ppl::common::RetCode SelectAlgorithm(const InputOutputInfo&, const OptKernelOptions&) {
-        return ppl::common::RC_SUCCESS;
+    const std::vector<ppl::common::dataformat_t>& GetInputDataFormats() {
+        return common_param_.input_formats;
     }
 
-    void SetOutputDataFormat(uint32_t idx, ppl::common::dataformat_t format) {
-        common_param_.output_formats[idx] = format;
+    const std::vector<ppl::common::datatype_t>& GetInputDataTypes() {
+        return common_param_.input_types;
     }
 
-    void SetOutputDataType(uint32_t idx, ppl::common::datatype_t type) {
+    void SetInputDataLayout(uint32_t idx, ppl::common::datatype_t type, ppl::common::dataformat_t format) {
+        common_param_.input_types[idx] = type;
+        common_param_.input_formats[idx] = format;
+    }
+
+    void SetOutputDataLayout(uint32_t idx, ppl::common::datatype_t type, ppl::common::dataformat_t format) {
         common_param_.output_types[idx] = type;
+        common_param_.output_formats[idx] = format;
     }
 
     virtual void SetAllocator(ppl::common::Allocator*) { }
@@ -127,7 +128,7 @@ protected:
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataType(input0_type);
                 }
             }
-            infer_type_func_(info);
+            infer_layout_func_(info);
             for (uint32_t i = 0; i < info->GetOutputCount(); i++) {
                 if (i < common_param_.output_types.size()) {
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataFormat(common_param_.output_formats[i]);
@@ -153,7 +154,7 @@ protected:
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataType(input0_type);
                 }
             }
-            infer_type_func_(info);
+            infer_layout_func_(info);
             for (uint32_t i = 0; i < info->GetOutputCount(); i++) {
                 if (i < common_param_.output_types.size()) {
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataFormat(common_param_.output_formats[i]);
@@ -180,37 +181,72 @@ protected:
         return ppl::common::RC_SUCCESS;
     }
 
-    static void GenericInferType(InputOutputInfo* info) {
+    static void GenericSelectInputLayout(InputOutputInfo* info, ArmCommonParam& common_param) {
+        const uint32_t num_inputs = info->GetInputCount();
+        for (uint32_t i = 0; i < num_inputs; ++i) {
+            auto& in_shape = *info->GetInput<TensorImpl>(i)->GetShape();
+            common_param.input_types[i] = in_shape.GetDataType();
+            common_param.input_formats[i] = in_shape.GetDataFormat();
+        }
+    }
+
+    static ppl::common::RetCode ArithmeticSelectTwoInputsLayout(const std::string& op_name, InputOutputInfo* info, ArmCommonParam &common_param);
+    
+    static ppl::common::RetCode RelationSelectTwoInputsLayout(const std::string& op_name, InputOutputInfo* info, ArmCommonParam &common_param);
+
+    static ppl::common::RetCode ReduceSelectLayout(const std::string& op_name, InputOutputInfo* info,
+                                                   ppl::common::datatype_t major_float_type, bool keep_dims, const std::vector<int32_t>& axes,
+                                                   ArmCommonParam &common_param);
+
+    static void GenericSelectOutputLayout(InputOutputInfo* info, ArmCommonParam& common_param) {
+        ppl::common::datatype_t in0_type = ppl::common::DATATYPE_FLOAT32;
+        ppl::common::dataformat_t in0_format = ppl::common::DATAFORMAT_NDARRAY;
+        if (common_param.input_types.size() > 0) {
+            in0_type = common_param.input_types[0];
+            in0_format = common_param.input_formats[0];
+        }
+
+        const uint32_t num_outputs = info->GetOutputCount();
+        for (uint32_t i = 0; i < num_outputs; ++i) {
+            common_param.output_types[i] = in0_type;
+            common_param.output_formats[i] = in0_format;
+        }
+    }
+
+    static void StaticInferLayout(InputOutputInfo* info) {
+        for (uint32_t i = 0; i < info->GetOutputCount(); ++i) {
+            auto out_shape = info->GetOutput<TensorImpl>(i)->GetShape();
+            out_shape->SetDataFormat(ppl::common::DATAFORMAT_NDARRAY);
+            out_shape->SetDataType(ppl::common::DATATYPE_FLOAT32);
+        }
+    }
+
+    static void GenericInferLayout(InputOutputInfo* info) {
         auto& in_shape0 = *info->GetInput<TensorImpl>(0)->GetShape();
         for (uint32_t i = 0; i < info->GetOutputCount(); ++i) {
             auto out_shape = info->GetOutput<TensorImpl>(i)->GetShape();
+            out_shape->SetDataFormat(in_shape0.GetDataFormat());
             out_shape->SetDataType(in_shape0.GetDataType());
         }
     }
 
-    static void GenericSelectDataType(const InputOutputInfo& info,
-                                      std::vector<ppl::common::datatype_t>* selected_input_types,
-                                      std::vector<ppl::common::datatype_t>* selected_output_types,
-                                      const ppl::common::datatype_t preferred_fp_datatype) {
-        for (uint32_t i = 0; i < info.GetInputCount(); i++) {
-            const auto input_datatype = info.GetInput<ppl::nn::TensorImpl>(i)->GetShape()->GetDataType();
-            if (input_datatype == ppl::common::DATATYPE_FLOAT16 || input_datatype == ppl::common::DATATYPE_FLOAT32) {
-                selected_input_types->at(i) = preferred_fp_datatype;
-            } else {
-                selected_input_types->at(i) = input_datatype;
+    static void DynamicInferLayout(InputOutputInfo* info, const ArmCommonParam* common_param = nullptr,
+                                   std::function<ppl::common::dataformat_t(InputOutputInfo*, uint32_t)> dynamic_format_func = [](InputOutputInfo*, uint32_t)
+                                        {return ppl::common::DATAFORMAT_NDARRAY;},
+                                   std::function<ppl::common::datatype_t(InputOutputInfo*, uint32_t)> dynamic_type_func = [](InputOutputInfo*, uint32_t)
+                                        {return ppl::common::DATATYPE_FLOAT32;}
+                                   ) {
+        if (common_param) {
+            for (uint32_t i = 0; i < info->GetOutputCount(); ++i) {
+                auto out_shape = info->GetOutput<TensorImpl>(i)->GetShape();
+                out_shape->SetDataFormat( (i < common_param->output_formats.size()) ? common_param->output_formats[i] : dynamic_format_func(info, i) );
+                out_shape->SetDataType( (i < common_param->output_types.size()) ? common_param->output_types[i] : dynamic_type_func(info, i) );
             }
-        }
-        for (uint32_t i = 0; i < info.GetOutputCount(); i++) {
-            selected_output_types->at(i) = selected_input_types->at(0);
-        }
-    }
-
-    static void PassiveInferType(InputOutputInfo* info) {
-        auto& in_shape0 = *info->GetInput<TensorImpl>(0)->GetShape();
-        for (uint32_t i = 0; i < info->GetOutputCount(); ++i) {
-            auto out_shape = info->GetOutput<TensorImpl>(i)->GetShape();
-            if (out_shape->GetDataType() == ppl::common::DATATYPE_UNKNOWN) {
-                out_shape->SetDataType(in_shape0.GetDataType());
+        } else {
+            for (uint32_t i = 0; i < info->GetOutputCount(); ++i) {
+                auto out_shape = info->GetOutput<TensorImpl>(i)->GetShape();
+                out_shape->SetDataFormat( dynamic_format_func(info, i) );
+                out_shape->SetDataType( dynamic_type_func(info, i) );
             }
         }
     }
@@ -226,7 +262,7 @@ protected:
 #endif
 
 protected:
-    std::function<void(InputOutputInfo*)> infer_type_func_;
+    std::function<void(InputOutputInfo*)> infer_layout_func_;
     std::function<ppl::common::RetCode(InputOutputInfo*)> infer_dims_func_;
 public:
     ArmCommonParam common_param_;

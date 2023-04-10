@@ -30,9 +30,10 @@ ShapeOp::ShapeOp(const ir::Node* node) : ArmOptKernel(node) {
         return RC_SUCCESS;
     };
 
-    infer_type_func_ = [](InputOutputInfo* info) -> void {
+    infer_layout_func_ = [](InputOutputInfo* info) -> void {
         auto output_shape = info->GetOutput<TensorImpl>(0)->GetShape();
         output_shape->SetDataType(DATATYPE_INT64);
+        output_shape->SetDataFormat(DATAFORMAT_NDARRAY);
     };
 }
 
@@ -40,19 +41,12 @@ RetCode ShapeOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ShapeOp::SelectDataType(const InputOutputInfo& info, std::vector<ppl::common::datatype_t>* selected_input_types,
-                                std::vector<ppl::common::datatype_t>* selected_output_types,
-                                const ppl::common::datatype_t preferred_fp_datatype) {
-    selected_input_types->at(0) = info.GetInput<TensorImpl>(0)->GetShape()->GetDataType();
-    selected_output_types->at(0) = DATATYPE_INT64;
-    return RC_SUCCESS;
-}
+RetCode ShapeOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
 
-RetCode ShapeOp::SelectFormat(const InputOutputInfo& info,
-                              std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                              std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    selected_output_formats->at(0) = DATAFORMAT_NDARRAY;
+    // Op
+    common_param_.output_types[0] = DATATYPE_INT64;
+    common_param_.output_formats[0] = DATAFORMAT_NDARRAY;
     return RC_SUCCESS;
 }
 

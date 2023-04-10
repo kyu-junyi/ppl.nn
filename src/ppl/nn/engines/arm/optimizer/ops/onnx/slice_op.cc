@@ -61,21 +61,24 @@ SliceOp::SliceOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeSlice(info);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode SliceOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-ppl::common::RetCode SliceOp::SelectDataType(const InputOutputInfo& info,
-                                             std::vector<ppl::common::datatype_t>* selected_input_types,
-                                             std::vector<ppl::common::datatype_t>* selected_output_types,
-                                             const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    for (int64_t i = 1; i < info.GetInputCount(); i++) {
-        selected_input_types->at(i) = DATATYPE_INT64;
+RetCode SliceOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    for (int64_t i = 1; i < options.io_info->GetInputCount(); i++) {
+        if (!CheckDTypes<DATATYPE_INT64, DATATYPE_INT32>(common_param_.input_types[i])) {
+            LOG(ERROR) << "Unsupported input[" << i << "] type for Split Op: " << GetDataTypeStr(common_param_.input_types[i]);
+        }
+        common_param_.input_formats[i] = DATAFORMAT_NDARRAY;
     }
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

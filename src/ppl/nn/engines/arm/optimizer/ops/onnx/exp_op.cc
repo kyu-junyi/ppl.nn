@@ -24,10 +24,27 @@ namespace ppl { namespace nn { namespace arm {
 
 ExpOp::ExpOp(const ir::Node* node) : ArmOptKernel(node) {
     infer_dims_func_ = GenericInferDims;
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ExpOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode ExpOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto info = options.io_info;
+    GenericSelectInputLayout(info, common_param_);
+
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) {
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+        common_param_.input_formats[0] = GetMajorFormat_(common_param_.input_types[0], common_param_.input_formats[0]);
+    }
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for Exp Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+
+    GenericSelectOutputLayout(info, common_param_);
     return RC_SUCCESS;
 }
 

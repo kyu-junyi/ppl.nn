@@ -26,6 +26,7 @@ class ExpOp final : public ArmOptKernel {
 public:
     ExpOp(const ir::Node* node);
     ppl::common::RetCode Init(const OptKernelOptions& options) override;
+    ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) override;
     KernelImpl* CreateKernelImpl() const override;
 };
 

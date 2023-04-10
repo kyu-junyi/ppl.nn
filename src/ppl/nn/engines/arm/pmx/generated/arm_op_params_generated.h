@@ -30,6 +30,9 @@ struct ConvAlgoInfoBuilder;
 struct ConvParamInfo;
 struct ConvParamInfoBuilder;
 
+struct ConvWeights;
+struct ConvWeightsBuilder;
+
 struct ConvData;
 struct ConvDataBuilder;
 
@@ -321,14 +324,22 @@ struct ConvAlgoInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ALGO_TYPE = 4,
     VT_DTYPE = 6,
-    VT_ISA = 8,
-    VT_SCHED_PARAM = 10
+    VT_IFORMAT = 8,
+    VT_OFORMAT = 10,
+    VT_ISA = 12,
+    VT_SCHED_PARAM = 14
   };
   uint32_t algo_type() const {
     return GetField<uint32_t>(VT_ALGO_TYPE, 0);
   }
   uint32_t dtype() const {
     return GetField<uint32_t>(VT_DTYPE, 0);
+  }
+  uint32_t iformat() const {
+    return GetField<uint32_t>(VT_IFORMAT, 0);
+  }
+  uint32_t oformat() const {
+    return GetField<uint32_t>(VT_OFORMAT, 0);
   }
   uint32_t isa() const {
     return GetField<uint32_t>(VT_ISA, 0);
@@ -340,6 +351,8 @@ struct ConvAlgoInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_ALGO_TYPE, 4) &&
            VerifyField<uint32_t>(verifier, VT_DTYPE, 4) &&
+           VerifyField<uint32_t>(verifier, VT_IFORMAT, 4) &&
+           VerifyField<uint32_t>(verifier, VT_OFORMAT, 4) &&
            VerifyField<uint32_t>(verifier, VT_ISA, 4) &&
            VerifyOffset(verifier, VT_SCHED_PARAM) &&
            verifier.VerifyVector(sched_param()) &&
@@ -356,6 +369,12 @@ struct ConvAlgoInfoBuilder {
   }
   void add_dtype(uint32_t dtype) {
     fbb_.AddElement<uint32_t>(ConvAlgoInfo::VT_DTYPE, dtype, 0);
+  }
+  void add_iformat(uint32_t iformat) {
+    fbb_.AddElement<uint32_t>(ConvAlgoInfo::VT_IFORMAT, iformat, 0);
+  }
+  void add_oformat(uint32_t oformat) {
+    fbb_.AddElement<uint32_t>(ConvAlgoInfo::VT_OFORMAT, oformat, 0);
   }
   void add_isa(uint32_t isa) {
     fbb_.AddElement<uint32_t>(ConvAlgoInfo::VT_ISA, isa, 0);
@@ -378,11 +397,15 @@ inline flatbuffers::Offset<ConvAlgoInfo> CreateConvAlgoInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t algo_type = 0,
     uint32_t dtype = 0,
+    uint32_t iformat = 0,
+    uint32_t oformat = 0,
     uint32_t isa = 0,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> sched_param = 0) {
   ConvAlgoInfoBuilder builder_(_fbb);
   builder_.add_sched_param(sched_param);
   builder_.add_isa(isa);
+  builder_.add_oformat(oformat);
+  builder_.add_iformat(iformat);
   builder_.add_dtype(dtype);
   builder_.add_algo_type(algo_type);
   return builder_.Finish();
@@ -392,6 +415,8 @@ inline flatbuffers::Offset<ConvAlgoInfo> CreateConvAlgoInfoDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t algo_type = 0,
     uint32_t dtype = 0,
+    uint32_t iformat = 0,
+    uint32_t oformat = 0,
     uint32_t isa = 0,
     const std::vector<int64_t> *sched_param = nullptr) {
   auto sched_param__ = sched_param ? _fbb.CreateVector<int64_t>(*sched_param) : 0;
@@ -399,6 +424,8 @@ inline flatbuffers::Offset<ConvAlgoInfo> CreateConvAlgoInfoDirect(
       _fbb,
       algo_type,
       dtype,
+      iformat,
+      oformat,
       isa,
       sched_param__);
 }
@@ -484,11 +511,101 @@ inline flatbuffers::Offset<ConvParamInfo> CreateConvParamInfo(
   return builder_.Finish();
 }
 
+struct ConvWeights FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ConvWeightsBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_CVT_FILTER_SIZE = 4,
+    VT_CVT_BIAS_SIZE = 6,
+    VT_CVT_FILTER = 8,
+    VT_CVT_BIAS = 10
+  };
+  uint64_t cvt_filter_size() const {
+    return GetField<uint64_t>(VT_CVT_FILTER_SIZE, 0);
+  }
+  uint64_t cvt_bias_size() const {
+    return GetField<uint64_t>(VT_CVT_BIAS_SIZE, 0);
+  }
+  const flatbuffers::Vector<int8_t> *cvt_filter() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_CVT_FILTER);
+  }
+  const flatbuffers::Vector<int8_t> *cvt_bias() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_CVT_BIAS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint64_t>(verifier, VT_CVT_FILTER_SIZE, 8) &&
+           VerifyField<uint64_t>(verifier, VT_CVT_BIAS_SIZE, 8) &&
+           VerifyOffset(verifier, VT_CVT_FILTER) &&
+           verifier.VerifyVector(cvt_filter()) &&
+           VerifyOffset(verifier, VT_CVT_BIAS) &&
+           verifier.VerifyVector(cvt_bias()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ConvWeightsBuilder {
+  typedef ConvWeights Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_cvt_filter_size(uint64_t cvt_filter_size) {
+    fbb_.AddElement<uint64_t>(ConvWeights::VT_CVT_FILTER_SIZE, cvt_filter_size, 0);
+  }
+  void add_cvt_bias_size(uint64_t cvt_bias_size) {
+    fbb_.AddElement<uint64_t>(ConvWeights::VT_CVT_BIAS_SIZE, cvt_bias_size, 0);
+  }
+  void add_cvt_filter(flatbuffers::Offset<flatbuffers::Vector<int8_t>> cvt_filter) {
+    fbb_.AddOffset(ConvWeights::VT_CVT_FILTER, cvt_filter);
+  }
+  void add_cvt_bias(flatbuffers::Offset<flatbuffers::Vector<int8_t>> cvt_bias) {
+    fbb_.AddOffset(ConvWeights::VT_CVT_BIAS, cvt_bias);
+  }
+  explicit ConvWeightsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  flatbuffers::Offset<ConvWeights> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<ConvWeights>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<ConvWeights> CreateConvWeights(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t cvt_filter_size = 0,
+    uint64_t cvt_bias_size = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> cvt_filter = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> cvt_bias = 0) {
+  ConvWeightsBuilder builder_(_fbb);
+  builder_.add_cvt_bias_size(cvt_bias_size);
+  builder_.add_cvt_filter_size(cvt_filter_size);
+  builder_.add_cvt_bias(cvt_bias);
+  builder_.add_cvt_filter(cvt_filter);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<ConvWeights> CreateConvWeightsDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t cvt_filter_size = 0,
+    uint64_t cvt_bias_size = 0,
+    const std::vector<int8_t> *cvt_filter = nullptr,
+    const std::vector<int8_t> *cvt_bias = nullptr) {
+  auto cvt_filter__ = cvt_filter ? _fbb.CreateVector<int8_t>(*cvt_filter) : 0;
+  auto cvt_bias__ = cvt_bias ? _fbb.CreateVector<int8_t>(*cvt_bias) : 0;
+  return ppl::nn::pmx::arm::CreateConvWeights(
+      _fbb,
+      cvt_filter_size,
+      cvt_bias_size,
+      cvt_filter__,
+      cvt_bias__);
+}
+
 struct ConvData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef ConvDataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ALGO_INFO = 4,
-    VT_PARAM_INFO = 6
+    VT_PARAM_INFO = 6,
+    VT_CVT_WEIGHTS = 8
   };
   const ppl::nn::pmx::arm::ConvAlgoInfo *algo_info() const {
     return GetPointer<const ppl::nn::pmx::arm::ConvAlgoInfo *>(VT_ALGO_INFO);
@@ -496,12 +613,17 @@ struct ConvData FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const ppl::nn::pmx::arm::ConvParamInfo *param_info() const {
     return GetPointer<const ppl::nn::pmx::arm::ConvParamInfo *>(VT_PARAM_INFO);
   }
+  const ppl::nn::pmx::arm::ConvWeights *cvt_weights() const {
+    return GetPointer<const ppl::nn::pmx::arm::ConvWeights *>(VT_CVT_WEIGHTS);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ALGO_INFO) &&
            verifier.VerifyTable(algo_info()) &&
            VerifyOffset(verifier, VT_PARAM_INFO) &&
            verifier.VerifyTable(param_info()) &&
+           VerifyOffset(verifier, VT_CVT_WEIGHTS) &&
+           verifier.VerifyTable(cvt_weights()) &&
            verifier.EndTable();
   }
 };
@@ -515,6 +637,9 @@ struct ConvDataBuilder {
   }
   void add_param_info(flatbuffers::Offset<ppl::nn::pmx::arm::ConvParamInfo> param_info) {
     fbb_.AddOffset(ConvData::VT_PARAM_INFO, param_info);
+  }
+  void add_cvt_weights(flatbuffers::Offset<ppl::nn::pmx::arm::ConvWeights> cvt_weights) {
+    fbb_.AddOffset(ConvData::VT_CVT_WEIGHTS, cvt_weights);
   }
   explicit ConvDataBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -530,8 +655,10 @@ struct ConvDataBuilder {
 inline flatbuffers::Offset<ConvData> CreateConvData(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<ppl::nn::pmx::arm::ConvAlgoInfo> algo_info = 0,
-    flatbuffers::Offset<ppl::nn::pmx::arm::ConvParamInfo> param_info = 0) {
+    flatbuffers::Offset<ppl::nn::pmx::arm::ConvParamInfo> param_info = 0,
+    flatbuffers::Offset<ppl::nn::pmx::arm::ConvWeights> cvt_weights = 0) {
   ConvDataBuilder builder_(_fbb);
+  builder_.add_cvt_weights(cvt_weights);
   builder_.add_param_info(param_info);
   builder_.add_algo_info(algo_info);
   return builder_.Finish();

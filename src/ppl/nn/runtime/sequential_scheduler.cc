@@ -112,6 +112,7 @@ RetCode SequentialScheduler::Run(const function<RetCode(KernelImpl*, KernelExecC
 
     for (auto x = sorted_nodes_->begin(); x != sorted_nodes_->end(); ++x) {
         auto kernel = nodeid2kernel_->at(*x).get();
+        // LOG(INFO) << kernel->GetNode()->GetName();
         ctx.SetNode(kernel->GetNode());
 
         auto exec_status = exec(kernel, &ctx);

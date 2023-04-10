@@ -45,6 +45,8 @@ public:
 
 private:
     ppl::common::RetCode DoOptimize(const utils::SharedResource&, ir::Graph*, RuntimePartitionInfo*);
+    ppl::common::RetCode CalDataOmittedConstants(const ir::Graph&, const RuntimePartitionInfo&,
+                                                 std::set<edgeid_t>*) const;
 
     typedef ppl::common::RetCode (*ConfHandlerFunc)(ArmEngine*, va_list);
     static ConfHandlerFunc conf_handlers_[ENGINE_CONF_MAX];

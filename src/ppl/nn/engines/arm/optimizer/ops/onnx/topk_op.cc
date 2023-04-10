@@ -33,10 +33,10 @@ TopKOp::TopKOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeTopK(info, param_.get());
     };
 
-    infer_type_func_ = [](InputOutputInfo* info) -> void {
-        GenericInferType(info);
-        auto out_shape = info->GetOutput<TensorImpl>(1)->GetShape();
-        out_shape->SetDataType(DATATYPE_INT64);
+    infer_layout_func_ = [](InputOutputInfo* info) -> void {
+        GenericInferLayout(info);
+        auto out1_shape = info->GetOutput<TensorImpl>(1)->GetShape();
+        out1_shape->SetDataType(DATATYPE_INT64);
     };
 }
 
@@ -47,6 +47,26 @@ RetCode TopKOp::Init(const OptKernelOptions& options) {
         return status;
     }
 
+    return RC_SUCCESS;
+}
+
+RetCode TopKOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    auto& in0_shape = *options.io_info->GetInput<TensorImpl>(0)->GetShape();
+    common_param_.input_types[0] = in0_shape.GetDataType();
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input[0] type for TopK Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    // common_param_.input_types[1] = DATATYPE_INT64;
+    if (common_param_.input_types[1] != DATATYPE_INT64) {
+        LOG(ERROR) << "Unsupported input[1] type for TopK Op: " << GetDataTypeStr(common_param_.input_types[1]);
+    }
+    common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
+    common_param_.output_types[1] = DATATYPE_INT64; // Op
     return RC_SUCCESS;
 }
 

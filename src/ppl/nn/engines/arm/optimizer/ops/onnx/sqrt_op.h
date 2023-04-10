@@ -26,6 +26,7 @@ class SqrtOp final : public ArmOptKernel {
 public:
     SqrtOp(const ir::Node* node);
     ppl::common::RetCode Init(const OptKernelOptions& options) override;
+    ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) override;
     KernelImpl* CreateKernelImpl() const override;
 };
 

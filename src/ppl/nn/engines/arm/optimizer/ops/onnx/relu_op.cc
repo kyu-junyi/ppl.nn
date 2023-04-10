@@ -25,19 +25,21 @@ namespace ppl { namespace nn { namespace arm {
 
 ReluOp::ReluOp(const ir::Node* node) : ArmOptKernel(node) {
     infer_dims_func_ = GenericInferDims;
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ReluOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ReluOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
-                             vector<dataformat_t>* selected_output_formats) {
-    // NOTE: No data format requirements since it is an elt-wise op.
-    //       The format should be inferred from the previous op.
-    selected_input_formats->at(0) = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    selected_output_formats->at(0) = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
+RetCode ReluOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (!CheckDTypes<DATATYPE_FLOAT32, DATATYPE_FLOAT16, DATATYPE_BFLOAT16>(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for Relu Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

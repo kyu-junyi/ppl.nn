@@ -72,7 +72,18 @@ ConvOp::ConvOp(const ir::Node* node) : ArmOptKernel(node), conv2d_param_(nullptr
         }
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = [this](InputOutputInfo* info) -> void {
+        if (conv2d_param_ && conv2d_param_->mgr) {
+            TensorShape* out_shape = info->GetOutput<TensorImpl>(0)->GetShape();
+            out_shape->SetDataType(conv2d_param_->mgr->algo_info().data_type);
+            out_shape->SetDataFormat(conv2d_param_->mgr->algo_info().output_format);
+        } else {
+            TensorShape* in_shape = info->GetInput<TensorImpl>(0)->GetShape();
+            TensorShape* out_shape = info->GetOutput<TensorImpl>(0)->GetShape();
+            out_shape->SetDataType(in_shape->GetDataType());
+            out_shape->SetDataFormat(GetNbcxFormat_(out_shape->GetDataType()));
+        }
+    };
 }
 
 ConvOp::~ConvOp() {
@@ -99,16 +110,118 @@ RetCode ConvOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const OptKernelOptions& options) {
+RetCode ConvOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto node = GetNode();
+    auto graph_data = options.graph_data;
+
+    // Check Filter
+    auto weight_data_it = graph_data->constants.find(node->GetInput(1));
+    if (weight_data_it == graph_data->constants.end()) {
+        LOG(ERROR) << "ConvOp constant weight not found. No support for runtime convolution now.";
+        return RC_UNSUPPORTED;
+    }
+
+    // Check Bias
+    if (node->GetInputCount() == 3) {
+        auto bias_data_it = graph_data->constants.find(node->GetInput(2));
+        if (bias_data_it == graph_data->constants.end()) {
+            LOG(ERROR) << "ConvOp constant weight not found. No support for runtime convolution now.";
+            return RC_UNSUPPORTED;
+        }
+    }
+
+    // Check Type
+    auto input_type = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    if (!CheckMajorFloat_(input_type)) {
+        LOG(ERROR) << "Unsupported input type for Convolution Op: " << GetDataTypeStr(input_type);
+        return RC_UNSUPPORTED;
+    }
+
+    // Check 2D
+    const ir::Shape& weight_shape = graph_data->shapes.find(node->GetInput(1))->second;
+    const int64_t kernel_dims = weight_shape.dims.size() - 2;
+    if (kernel_dims != 2) {
+        LOG(ERROR) << "Only support 2d convolution now.";
+        return RC_UNSUPPORTED;
+    }
+
+    // Check Param
+    const ppl::nn::onnx::ConvParam& conv_param = *param_;
+    for (int64_t i = 0; i < kernel_dims; ++i) {
+        if (conv_param.pads[i] != conv_param.pads[i + kernel_dims]) {
+            LOG(ERROR) << "No support for unsymmetric convolution paddings now.";
+            return RC_UNSUPPORTED;
+        }
+    }
+    
+    // Select Algorithm
+    if (!conv2d_param_) {
+        conv2d_param_ = new Convolution2DParam;
+    }
+    if (!conv2d_param_) {
+        return RC_OUT_OF_MEMORY;
+    }
+
+    const int32_t num_output = weight_shape.dims[0];
+    const int32_t channels = weight_shape.dims[1] * param_->group;
+
+    ppl::kernel::arm_server::neon::conv2d_param& conv2d_kernel_param = conv2d_param_->param;
+    conv2d_kernel_param.kernel_h = conv_param.kernel_shape[0];
+    conv2d_kernel_param.kernel_w = conv_param.kernel_shape[1];
+    conv2d_kernel_param.stride_h = conv_param.strides[0];
+    conv2d_kernel_param.stride_w = conv_param.strides[1];
+    conv2d_kernel_param.pad_h = conv_param.pads[0];
+    conv2d_kernel_param.pad_w = conv_param.pads[1];
+    conv2d_kernel_param.dilation_h = conv_param.dilations[0];
+    conv2d_kernel_param.dilation_w = conv_param.dilations[1];
+    conv2d_kernel_param.group = conv_param.group;
+    conv2d_kernel_param.num_output = num_output;
+    conv2d_kernel_param.channels = channels;
+    conv2d_kernel_param.fuse_flag = 0;
+
+    conv2d_param_->mgr = conv2d_algo_selector::fast_gen_algo(
+        *options.io_info->GetInput<TensorImpl>(0)->GetShape(), options.engine_options->forward_precision,
+        options.engine_options->dynamic_tuning_level, options.engine_options->winograd_level, 
+        options.device->GetISA(), conv2d_param_->param, options.device->GetAllocator());
+
+    if (conv2d_param_->mgr == nullptr) {
+        LOG(ERROR) << "No algorithm selected.";
+        return RC_UNSUPPORTED;
+    }
+
+    auto selected_algo = conv2d_param_->mgr->algo_info();
+    if (selected_algo.algo_type == ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
+        LOG(ERROR) << "Unsupported algorithm type: " << selected_algo.algo_type;
+        return RC_UNSUPPORTED;
+    }
+    LOG(DEBUG) << "Op " << node->GetName() << " selected conv algorithm: "
+               << ppl::kernel::arm_server::neon::get_conv_algo_str(selected_algo.algo_type);
+    
+    common_param_.input_types[0] = conv2d_param_->mgr->algo_info().data_type;
+    common_param_.input_formats[0] = conv2d_param_->mgr->algo_info().input_format;
+    for (uint32_t i = 1; i < options.io_info->GetInputCount(); i++) {
+        auto in_shape = options.io_info->GetInput<TensorImpl>(i)->GetShape();
+        common_param_.input_types[i] = in_shape->GetDataType();
+        common_param_.input_formats[i] = in_shape->GetDataFormat();
+    }
+
+    // Op, private 
+    common_param_.output_types[0] = conv2d_param_->mgr->algo_info().data_type;
+    common_param_.output_formats[0] = conv2d_param_->mgr->algo_info().output_format;
+
+    return RC_SUCCESS;
+}
+
+RetCode ConvOp::ConvertConstants(const OptKernelOptions options) {
+    if (!conv2d_param_ || !conv2d_param_->mgr) {
+        return RC_INVALID_VALUE;
+    }
+    auto selected_algo = conv2d_param_->mgr->algo_info();
+
     auto node = GetNode();
     auto graph_data = options.graph_data;
 
     auto weight_data_it = graph_data->constants.find(node->GetInput(1));
-    if (weight_data_it == graph_data->constants.end()) {
-        LOG(INFO) << "ConvOp constant weight not found, will use conv runtime.";
-        return ppl::common::RC_SUCCESS;
-    }
-
     float* weight_data = (float*)weight_data_it->second.data.GetData();
     int64_t weight_len = weight_data_it->second.data.GetSize() / sizeof(float);
 
@@ -116,187 +229,96 @@ ppl::common::RetCode ConvOp::SelectAlgorithm(const InputOutputInfo& info, const 
     int64_t bias_len = 0;
     if (node->GetInputCount() == 3) {
         auto bias_data_it = graph_data->constants.find(node->GetInput(2));
-        if (bias_data_it == graph_data->constants.end()) {
-            LOG(INFO) << "ConvOp constant weight not found, will use conv runtime.";
-            return ppl::common::RC_SUCCESS;
-        }
         bias_data = (float*)bias_data_it->second.data.GetData();
         bias_len = bias_data_it->second.data.GetSize() / sizeof(float);
     }
 
-    const ir::Shape& weight_shape = graph_data->shapes.find(node->GetInput(1))->second;
-    const int64_t kernel_dims = weight_shape.dims.size() - 2;
+    // Note: If the filter is reused, generate a new input edge to hold cvt_filter which may differ due to different algo/sched_param.
+    ppl::nn::TensorBufferInfo * new_filter = &options.info->constants[node->GetInput(1)];
+    if (new_filter && new_filter->IsBufferOwner() && new_filter->GetBufferPtr<void>()) {
+        auto edge = options.graph_topo->AddEdge(node->GetName() + "_Input_Cvt_Filter").first;
+        edge->AddConsumer(node->GetId());
 
-    // Check Param
-    const ppl::nn::onnx::ConvParam& conv_param = *param_;
-    for (int64_t i = 0; i < kernel_dims; ++i) {
-        if (conv_param.pads[i] != conv_param.pads[i + kernel_dims]) {
-            return ppl::common::RC_UNSUPPORTED;
-        }
+        TensorImpl* tensor = new TensorImpl(edge, TENSORTYPE_RESERVED);
+        utils::IrShape2TensorShape(options.graph_data->shapes[node->GetInput(1)], tensor->GetShape());
+        options.tensors->emplace(edge->GetId(), unique_ptr<TensorImpl>(tensor));
+
+        const_cast<ir::Node*>(node)->ReplaceInput(node->GetInput(1), edge->GetId());
+        new_filter = &options.info->constants[node->GetInput(1)];
+    }
+    new_filter->SetDevice(options.device);
+
+    // Note: If the bias is reused, check it in generate_cvt_weights and simply reuse it as they are the same.
+    // CAVEAT: change this if new algorithms with different cvt_bias are added.
+    ppl::nn::TensorBufferInfo * new_bias = nullptr;
+    if (bias_data != nullptr) {
+        new_bias = &options.info->constants[node->GetInput(2)];
+        new_bias->SetDevice(options.device);
     }
 
-    if (kernel_dims == 2) {
-        if (!conv2d_param_) {
-            conv2d_param_ = new Convolution2DParam;
+    RetCode normal_cvt_weights_ret = RC_SUCCESS;
+    if (selected_algo.data_type == DATATYPE_FLOAT32) {
+        TensorShape cvt_filter_shape, cvt_bias_shape;
+        normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape);
+        if (normal_cvt_weights_ret != RC_SUCCESS) {
+            return normal_cvt_weights_ret;
         }
-        if (!conv2d_param_) {
-            return ppl::common::RC_OUT_OF_MEMORY;
-        }
-
-        const int32_t num_output = weight_shape.dims[0];
-        const int32_t channels = weight_shape.dims[1] * param_->group;
-
-        ppl::kernel::arm_server::neon::conv2d_param& conv2d_kernel_param = conv2d_param_->param;
-        conv2d_kernel_param.kernel_h = conv_param.kernel_shape[0];
-        conv2d_kernel_param.kernel_w = conv_param.kernel_shape[1];
-        conv2d_kernel_param.stride_h = conv_param.strides[0];
-        conv2d_kernel_param.stride_w = conv_param.strides[1];
-        conv2d_kernel_param.pad_h = conv_param.pads[0];
-        conv2d_kernel_param.pad_w = conv_param.pads[1];
-        conv2d_kernel_param.dilation_h = conv_param.dilations[0];
-        conv2d_kernel_param.dilation_w = conv_param.dilations[1];
-        conv2d_kernel_param.group = conv_param.group;
-        conv2d_kernel_param.num_output = num_output;
-        conv2d_kernel_param.channels = channels;
-        conv2d_kernel_param.fuse_flag = 0;
-
-        conv2d_param_->mgr = conv2d_algo_selector::fast_gen_algo(
-            *info.GetInput<TensorImpl>(0)->GetShape(), options.engine_options->forward_precision,
-            options.engine_options->dynamic_tuning_level, options.engine_options->winograd_level, 
-            options.device->GetISA(), conv2d_param_->param, options.device->GetAllocator());
-
-        if (conv2d_param_->mgr == nullptr) {
-            LOG(ERROR) << "No algorithm selected.";
-            return ppl::common::RC_UNSUPPORTED;
+        
+        if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
+            bias_data = nullptr;
+        } else if (bias_data && new_bias) {
+            new_bias->Reshape(cvt_bias_shape);
+            new_bias->ReallocBuffer();
         }
 
-        auto selected_algo = conv2d_param_->mgr->algo_info();
-        if (selected_algo.algo_type == ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
-            LOG(ERROR) << "Unsupported algorithm type: " << selected_algo.algo_type;
-            return ppl::common::RC_UNSUPPORTED;
+        new_filter->Reshape(cvt_filter_shape);
+        new_filter->ReallocBuffer();
+
+        void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
+        void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
+
+        normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights(weight_data, bias_data, cvt_filter_buffer, cvt_bias_buffer);
+        if (normal_cvt_weights_ret != RC_SUCCESS) {
+            return normal_cvt_weights_ret;
         }
-#ifdef PPLNN_ENABLE_KERNEL_PROFILING
-        LOG(INFO) << "Op " << node->GetName() << " selected conv algorithm: "
-                  << ppl::kernel::arm_server::neon::get_conv_algo_str(selected_algo.algo_type);
-#endif
-
-        // Note: If the filter is reused, generate a new input edge to hold cvt_filter which may differ due to different algo/sched_param.
-        ppl::nn::TensorBufferInfo * new_filter = &options.info->constants[node->GetInput(1)];
-        if (new_filter && new_filter->IsBufferOwner() && new_filter->GetBufferPtr<void>()) {
-            auto edge = options.graph_topo->AddEdge(node->GetName() + "_Input_Cvt_Filter").first;
-            edge->AddConsumer(node->GetId());
-
-            TensorImpl* tensor = new TensorImpl(edge, TENSORTYPE_RESERVED);
-            utils::IrShape2TensorShape(options.graph_data->shapes[node->GetInput(1)], tensor->GetShape());
-            options.tensors->emplace(edge->GetId(), unique_ptr<TensorImpl>(tensor));
-
-            const_cast<ir::Node*>(node)->ReplaceInput(node->GetInput(1), edge->GetId());
-            new_filter = &options.info->constants[node->GetInput(1)];
-        }
-        new_filter->SetDevice(options.device);
-
-        // Note: If the bias is reused, check it in generate_cvt_weights and simply reuse it as they are the same.
-        // CAVEAT: change this if new algorithms with different cvt_bias are added.
-        ppl::nn::TensorBufferInfo * new_bias = nullptr;
-        if (bias_data != nullptr) {
-            new_bias = &options.info->constants[node->GetInput(2)];
-            new_bias->SetDevice(options.device);
-        }
-
-        ppl::common::RetCode normal_cvt_weights_ret = ppl::common::RC_SUCCESS;
-        if (selected_algo.data_type == ppl::common::DATATYPE_FLOAT32) {
-            ppl::common::TensorShape cvt_filter_shape, cvt_bias_shape;
-            normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape);
-            if (normal_cvt_weights_ret != ppl::common::RC_SUCCESS) {
-                return normal_cvt_weights_ret;
-            }
-            
-            if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
-                bias_data = nullptr;
-            } else if (bias_data && new_bias) {
-                new_bias->Reshape(cvt_bias_shape);
-                new_bias->ReallocBuffer();
-            }
-
-            new_filter->Reshape(cvt_filter_shape);
-            new_filter->ReallocBuffer();
-
-            void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
-            void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
-
-            normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights(weight_data, bias_data, cvt_filter_buffer, cvt_bias_buffer);
-            if (normal_cvt_weights_ret != ppl::common::RC_SUCCESS) {
-                return normal_cvt_weights_ret;
-            }
 #ifdef PPLNN_USE_ARMV8_2_FP16
-        } else if (selected_algo.data_type == ppl::common::DATATYPE_FLOAT16) {
-            ppl::common::TensorShape cvt_filter_shape, cvt_bias_shape;
-            normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape);
-            if (normal_cvt_weights_ret != ppl::common::RC_SUCCESS) {
-                return normal_cvt_weights_ret;
-            }
+    } else if (selected_algo.data_type == DATATYPE_FLOAT16) {
+        TensorShape cvt_filter_shape, cvt_bias_shape;
+        normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape);
+        if (normal_cvt_weights_ret != RC_SUCCESS) {
+            return normal_cvt_weights_ret;
+        }
 
-            vector<__fp16> weight_data_fp16;
-            weight_data_fp16.resize(weight_len * sizeof(__fp16));
-            Fp32ToFp16(weight_data, weight_len, weight_data_fp16.data());
+        vector<__fp16> weight_data_fp16;
+        weight_data_fp16.resize(weight_len * sizeof(__fp16));
+        Fp32ToFp16(weight_data, weight_len, weight_data_fp16.data());
 
-            vector<__fp16> bias_data_fp16;
-            __fp16 * origin_bias_data_fp16 = nullptr;
-            if (bias_data != nullptr) {
-                bias_data_fp16.resize(bias_len * sizeof(__fp16));
-                Fp32ToFp16(bias_data, bias_len, bias_data_fp16.data());
-                origin_bias_data_fp16 = bias_data_fp16.data();
-            }
+        vector<__fp16> bias_data_fp16;
+        __fp16 * origin_bias_data_fp16 = nullptr;
+        if (bias_data != nullptr) {
+            bias_data_fp16.resize(bias_len * sizeof(__fp16));
+            Fp32ToFp16(bias_data, bias_len, bias_data_fp16.data());
+            origin_bias_data_fp16 = bias_data_fp16.data();
+        }
 
-            if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
-                origin_bias_data_fp16 = nullptr;
-            } else if (origin_bias_data_fp16 && new_bias) {
-                new_bias->Reshape(cvt_bias_shape);
-                new_bias->ReallocBuffer();
-            }
+        if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
+            origin_bias_data_fp16 = nullptr;
+        } else if (origin_bias_data_fp16 && new_bias) {
+            new_bias->Reshape(cvt_bias_shape);
+            new_bias->ReallocBuffer();
+        }
 
-            new_filter->Reshape(cvt_filter_shape);
-            new_filter->ReallocBuffer();
+        new_filter->Reshape(cvt_filter_shape);
+        new_filter->ReallocBuffer();
 
-            void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
-            void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
+        void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
+        void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
 
-            normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights(weight_data_fp16.data(), origin_bias_data_fp16, cvt_filter_buffer, cvt_bias_buffer);
-            if (normal_cvt_weights_ret != ppl::common::RC_SUCCESS) {
-                return normal_cvt_weights_ret;
-            }
+        normal_cvt_weights_ret = conv2d_param_->mgr->generate_cvt_weights(weight_data_fp16.data(), origin_bias_data_fp16, cvt_filter_buffer, cvt_bias_buffer);
+        if (normal_cvt_weights_ret != RC_SUCCESS) {
+            return normal_cvt_weights_ret;
+        }
 #endif
-        } else {
-            LOG(ERROR) << "Unsupported data type: " << selected_algo.data_type;
-            return ppl::common::RC_UNSUPPORTED;
-        }
-        if (ppl::common::RC_SUCCESS != normal_cvt_weights_ret) {
-            LOG(ERROR) << "algo " << selected_algo.algo_type << " cvt weights failed.";
-        }
-    } else {
-        LOG(ERROR) << "Unsupported kernel dim: " << kernel_dims;
-        return ppl::common::RC_UNSUPPORTED;
-    }
-
-    return RC_SUCCESS;
-}
-
-RetCode ConvOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
-                             vector<dataformat_t>* selected_output_formats) {
-    if (conv2d_param_ && conv2d_param_->mgr &&
-        conv2d_param_->mgr->algo_info().algo_type != ppl::kernel::arm_server::neon::conv2d_algo::unknown) {
-        selected_input_formats->at(0) = conv2d_param_->mgr->algo_info().input_format;
-        selected_output_formats->at(0) = conv2d_param_->mgr->algo_info().output_format;
-        return RC_SUCCESS;
-    }
-    return RC_INVALID_VALUE;
-}
-RetCode ConvOp::SelectDataType(const InputOutputInfo& info, std::vector<ppl::common::datatype_t>* selected_input_types,
-                               std::vector<ppl::common::datatype_t>* selected_output_types,
-                               const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    for (uint32_t i = 1; i < info.GetInputCount(); i++) {
-        selected_input_types->at(i) = info.GetInput<TensorImpl>(i)->GetShape()->GetDataType();
     }
     return RC_SUCCESS;
 }
@@ -340,7 +362,7 @@ bool ConvOp::TryFuseSum(void) {
 
 #ifdef PPLNN_ENABLE_PMX_MODEL
 
-ppl::common::RetCode ConvOp::SerializeData(const ::ppl::nn::pmx::SerializationContext& ctx, utils::DataStream* ds) const {
+RetCode ConvOp::SerializeData(const ::ppl::nn::pmx::SerializationContext& ctx, utils::DataStream* ds) const {
     flatbuffers::FlatBufferBuilder conv_builder;
     auto mgr = conv2d_param_->mgr;
     std::vector<int64_t> algo_sp = mgr->get_schedule_param();
@@ -348,6 +370,8 @@ ppl::common::RetCode ConvOp::SerializeData(const ::ppl::nn::pmx::SerializationCo
     auto fb_algo_info = ppl::nn::pmx::arm::CreateConvAlgoInfo(conv_builder,
                                                               mgr->get_algo_type(),
                                                               mgr->algo_info().data_type,
+                                                              mgr->algo_info().input_format,
+                                                              mgr->algo_info().output_format,
                                                               mgr->algo_info().isa,
                                                               conv_builder.CreateVector<int64_t>(algo_sp));
     auto fb_param_info = ppl::nn::pmx::arm::CreateConvParamInfo(conv_builder, 
@@ -369,13 +393,13 @@ ppl::common::RetCode ConvOp::SerializeData(const ::ppl::nn::pmx::SerializationCo
     return ds->Write(op_builder.GetBufferPointer(), op_builder.GetSize());
 }
 
-ppl::common::RetCode ConvOp::DeserializeData(const ::ppl::nn::pmx::DeserializationContext& ctx, const void* base, uint64_t size) {
+RetCode ConvOp::DeserializeData(const ::ppl::nn::pmx::DeserializationContext& ctx, const void* base, uint64_t size) {
     if (conv2d_param_) {
         delete conv2d_param_;
     }
     conv2d_param_ = new Convolution2DParam;
     if (!conv2d_param_) {
-        return ppl::common::RC_OUT_OF_MEMORY;
+        return RC_OUT_OF_MEMORY;
     }
 
     auto fb_op_param = ppl::nn::pmx::onnx::GetOpParam(base);
@@ -393,7 +417,7 @@ ppl::common::RetCode ConvOp::DeserializeData(const ::ppl::nn::pmx::Deserializati
     common_param_.output_types.resize(1);
     common_param_.output_formats.resize(1);
     common_param_.output_types[0] = algo_info->dtype();
-    common_param_.output_formats[0] = (algo_info->dtype() == DATATYPE_FLOAT32) ? DATAFORMAT_N4CX : DATAFORMAT_N8CX;
+    common_param_.output_formats[0] = algo_info->oformat();
 
     conv2d_param &conv2d_kernel_param = conv2d_param_->param;
     conv2d_kernel_param.kernel_h = param_->kernel_shape[0];
@@ -413,7 +437,9 @@ ppl::common::RetCode ConvOp::DeserializeData(const ::ppl::nn::pmx::Deserializati
     auto mgr = conv2d_algo::generate_conv_mgr(algo_info->algo_type(), algo_info->dtype(), conv2d_kernel_param, allocator_);
     mgr->set_algo_info({ .algo_type = algo_info->algo_type(),
                          .isa = algo_info->isa(),
-                         .data_type = algo_info->dtype()
+                         .data_type = algo_info->dtype(),
+                         .input_format = algo_info->iformat(),
+                         .output_format = algo_info->oformat()
                        });
     
     std::vector<int64_t> sp;
@@ -436,7 +462,7 @@ ppl::common::RetCode ConvOp::DeserializeData(const ::ppl::nn::pmx::Deserializati
         cvt_bias_ptr = constants.at(cvt_bias_id).GetBufferPtr<void>();
         mgr->set_cvt_bias(cvt_bias_ptr, cvt_bias_size);
     } else {
-        uint64_t cvt_bias_size = conv2d_kernel_param.num_output * ppl::common::GetSizeOfDataType(algo_info->dtype());
+        uint64_t cvt_bias_size = conv2d_kernel_param.num_output * GetSizeOfDataType(algo_info->dtype());
         cvt_bias_size = (cvt_bias_size + 15) & (~15);
         cvt_bias_ptr = mgr->get_allocator()->Alloc(cvt_bias_size);
         memset(cvt_bias_ptr, 0, cvt_bias_size);

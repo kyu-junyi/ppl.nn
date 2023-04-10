@@ -61,6 +61,10 @@ public:
         return level_;
     }
 
+    const ppl::common::RetCode GetStatus(void) const {
+        return status_;
+    }
+
     bool NameMatched(const std::string& name) {
         return this->StringMatched(name_, name);
     }
@@ -81,6 +85,7 @@ protected:
     std::string name_;
     std::string tag_;
     OptRuleLevel level_;
+    ppl::common::RetCode status_;
 };
 
 }}} // namespace ppl::nn::arm

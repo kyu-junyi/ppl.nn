@@ -31,14 +31,20 @@ LessOp::LessOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeLess(info, nullptr);
     };
 
-    infer_type_func_ = [](InputOutputInfo* info) -> void {
+    infer_layout_func_ = [](InputOutputInfo* info) -> void {
         info->GetOutput<TensorImpl>(0)->GetShape()->SetDataType(DATATYPE_BOOL);
+        info->GetOutput<TensorImpl>(0)->GetShape()->SetDataFormat(info->GetInput<TensorImpl>(0)->GetShape()->GetDataFormat());
     };
 }
 
 RetCode LessOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
+
+RetCode LessOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    return RelationSelectTwoInputsLayout("Less", options.io_info, common_param_);
+}
+
 
 KernelImpl* LessOp::CreateKernelImpl() const {
     return CreateKernelImplWithoutParam<LessKernel>();

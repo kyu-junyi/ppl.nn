@@ -21,6 +21,8 @@
 #include "ppl/nn/engines/arm/optimizer/rules/utils.h"
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/conv_op.h"
 
+using namespace ppl::common;
+
 namespace ppl { namespace nn { namespace arm {
 
 bool FuseConvActivationRule::ApplySingleInputOutputActivationNode(const OptKernelOptions& options) {
@@ -62,6 +64,7 @@ bool FuseConvActivationRule::ApplySingleInputOutputActivationNode(const OptKerne
         }
     }
 
+    status_ = RC_SUCCESS;
     return graph_changed;
 }
 
@@ -169,6 +172,7 @@ bool FuseConvActivationRule::ApplyReLU6(const OptKernelOptions& options) {
         }
     }
 
+    status_ = RC_SUCCESS;
     return graph_changed;
 }
 

@@ -19,6 +19,9 @@
 
 #include <iterator>
 #include "ppl/nn/engines/arm/optimizer/rules/fuse_channel_shuffle.h"
+#include "ppl/nn/engines/arm/optimizer/rules/select_algo_dtype_dformat.h"
+#include "ppl/nn/engines/arm/optimizer/rules/insert_data_reorder.h"
+#include "ppl/nn/engines/arm/optimizer/rules/convert_constant.h"
 #include "ppl/nn/engines/arm/optimizer/rules/fuse_conv_activation.h"
 #include "ppl/nn/engines/arm/optimizer/rules/fuse_conv_eltwise.h"
 #include "ppl/nn/engines/arm/optimizer/rules/fuse_arithmetic_relu.h"
@@ -45,7 +48,7 @@ OptRuleLevel OptRuleManager::GetMaxOptLevel(uint32_t graph_optimization_level) {
     return OPT_RULE_NO_OPT;
 }
 
-ppl::common::RetCode OptRuleManager::ApplyRule(const OptKernelOptions& options, const std::string& name) const {
+ppl::common::RetCode OptRuleManager::ApplyRule(const OptKernelOptions& options, const std::string& name) {
     // find rule
     for (auto r : rule_all_) {
         if (r->GetName() == name) {
@@ -53,18 +56,21 @@ ppl::common::RetCode OptRuleManager::ApplyRule(const OptKernelOptions& options, 
             bool graph_changed = false;
             do {
                 graph_changed = r->Apply(options);
+                if (r->GetStatus() != RC_SUCCESS) {
+                    return (status_ = r->GetStatus());
+                }
             } while (graph_changed);
 
-            return RC_SUCCESS;
+            return (status_ = RC_SUCCESS);
         }
     }
 
     LOG(ERROR) << "Failed to find OptRule " << name << ".";
-    return RC_NOT_FOUND;
+    return (status_ = RC_NOT_FOUND);
 }
 
 ppl::common::RetCode OptRuleManager::ApplyRules(const OptKernelOptions& options, const OptRuleLevel max_opt_level,
-                                                const std::string& tag_filter, const std::string& name_filter) const {
+                                                const std::string& tag_filter, const std::string& name_filter) {
     // filter rules by optimize level, tag & name
     std::vector<std::shared_ptr<OptRule>> filtered_rules;
     filtered_rules.reserve(rule_all_.size());
@@ -80,10 +86,13 @@ ppl::common::RetCode OptRuleManager::ApplyRules(const OptKernelOptions& options,
         graph_changed = false;
         for (auto r : filtered_rules) {
             graph_changed |= r->Apply(options);
+            if (r->GetStatus() != RC_SUCCESS) {
+                return (status_ = r->GetStatus());
+            }
         }
     } while (graph_changed);
 
-    return RC_SUCCESS;
+    return (status_ = RC_SUCCESS);
 }
 
 ppl::common::RetCode OptRuleManager::Register(OptRule* rule) {
@@ -112,12 +121,38 @@ ppl::common::RetCode OptRuleManager::Remove(const std::string& rule_name) {
     return RC_SUCCESS;
 }
 
+ppl::common::RetCode OptRuleManager::RemoveByTag(const std::string& tag_name) {
+    bool is_found = false;
+
+    std::vector<std::shared_ptr<OptRule>> new_rules;
+    for (auto it = rule_all_.begin(); it != rule_all_.end(); std::advance(it, 1)) {
+        if ((*it)->GetTag() != tag_name) {
+            new_rules.emplace_back(*it);
+        } else {
+            is_found = true;
+        }
+    }
+    if (!is_found) {
+        LOG(WARNING) << "Cannot find OptRule with tag " << tag_name << ".";
+    } else {
+        rule_all_ = new_rules;
+    }
+    return RC_SUCCESS;
+}
+
 OptRuleManager::OptRuleManager() {
     Register(new FuseChannelShuffleRule);
+
+    Register(new SelectAlgoDTypeDFormatRule);
+    Register(new InsertDataReorderRule);
+    Register(new ConvertConstantRule);
+
     Register(new FuseConvActivationRule);
     Register(new FuseConvEltwiseRule);
     Register(new FuseArithmeticReLURule);
     Register(new FuseBatchNormalizationReLURule);
+
+    status_ = ppl::common::RC_SUCCESS;
 }
 
 OptRuleManager::~OptRuleManager() {}

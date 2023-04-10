@@ -38,7 +38,7 @@ PadOp::PadOp(const ir::Node* node) : ArmOptKernel(node) {
         return RC_SUCCESS;
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode PadOp::Init(const OptKernelOptions& options) {
@@ -51,38 +51,46 @@ RetCode PadOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode PadOp::SelectDataType(const InputOutputInfo& info, std::vector<ppl::common::datatype_t>* selected_input_types,
-                              std::vector<ppl::common::datatype_t>* selected_output_types,
-                              const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    selected_input_types->at(1) = ppl::common::DATATYPE_INT64;
-    return RC_SUCCESS;
-}
+RetCode PadOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
 
-RetCode PadOp::SelectFormat(const InputOutputInfo& info, std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                            std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    const auto input_format = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    auto selected_dataformat = input_format;
-    if (input_format == ppl::common::DATAFORMAT_N4CX ||
-        input_format ==
-            ppl::common::DATAFORMAT_N8CX) { // for nbcx pad, if pad on channel dim, will fall back to ndarray implement
-        const auto pads_data = info.GetInput<TensorImpl>(1)->GetBufferPtr<int64_t>();
+    auto selected_dataformat = common_param_.input_formats[0];
+    if (selected_dataformat == ppl::common::DATAFORMAT_N4CX ||
+        selected_dataformat == ppl::common::DATAFORMAT_N8CX) { // for nbcx pad, if pad on channel dim, will fall back to ndarray implement
+        const auto pads_data = options.io_info->GetInput<TensorImpl>(1)->GetBufferPtr<int64_t>();
         if (pads_data == nullptr) { // pads not sure on compiler time, fall back to ndarray implement
             selected_dataformat = ppl::common::DATAFORMAT_NDARRAY;
         } else {
             const auto start_pads = pads_data;
-            const auto end_pads = pads_data + info.GetInput<TensorImpl>(0)->GetShape()->GetDimCount();
+            const auto end_pads = pads_data + options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDimCount();
             const int64_t c_dim_idx = 1;
             if (start_pads[c_dim_idx] != 0 || end_pads[c_dim_idx] != 0) {
                 selected_dataformat = ppl::common::DATAFORMAT_NDARRAY;
             }
         }
     }
-
-    selected_input_formats->at(0) = selected_output_formats->at(0) = selected_dataformat;
-    for (uint32_t i = 1; i < info.GetInputCount(); i++) {
-        selected_input_formats->at(i) = ppl::common::DATAFORMAT_NDARRAY;
+    common_param_.input_formats[0] = selected_dataformat;
+    auto num_inputs = options.io_info->GetInputCount();
+    if (num_inputs >= 2) {
+        // common_param_.input_types[1] = ppl::common::DATATYPE_INT64;
+        if (common_param_.input_types[1] != DATATYPE_INT64) {
+            LOG(ERROR) << "Unsupported input[1] type for Pad Op: " << GetDataTypeStr(common_param_.input_types[1]);
+        }
+        common_param_.input_formats[1] = ppl::common::DATAFORMAT_NDARRAY;
     }
+    if (num_inputs >= 3) {
+        common_param_.input_types[2] = common_param_.input_types[0];
+        common_param_.input_formats[2] = ppl::common::DATAFORMAT_NDARRAY;
+    }
+    if (num_inputs >= 4) {
+        // common_param_.input_types[3] = ppl::common::DATATYPE_INT64;
+        if (!CheckDTypes<DATATYPE_INT64, DATATYPE_INT32>(common_param_.input_types[3])) {
+            LOG(ERROR) << "Unsupported input[3] type for Pad Op: " << GetDataTypeStr(common_param_.input_types[3]);
+        }
+        common_param_.input_formats[3] = ppl::common::DATAFORMAT_NDARRAY;
+    }
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

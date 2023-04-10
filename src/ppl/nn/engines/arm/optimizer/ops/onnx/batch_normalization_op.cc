@@ -34,7 +34,7 @@ BatchNormalizationOp::BatchNormalizationOp(const ir::Node* node) : ArmOptKernel(
         return onnx::ReshapeBatchNormalization(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode BatchNormalizationOp::Init(const OptKernelOptions& options) {
@@ -47,14 +47,24 @@ RetCode BatchNormalizationOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode BatchNormalizationOp::SelectFormat(const InputOutputInfo& info,
-                                           std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                           std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    for (uint32_t i = 1; i < info.GetInputCount(); i++) {
-        selected_input_formats->at(i) = ppl::common::DATAFORMAT_NDARRAY;
+RetCode BatchNormalizationOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto info = options.io_info;
+    common_param_.input_types[0] = info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    common_param_.input_formats[0] = info->GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) { // fallback bfloat16
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+        common_param_.input_formats[0] = GetMajorFormat_(common_param_.input_types[0], common_param_.input_formats[0]);
     }
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for BatchNormalization Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    for (uint32_t i = 1; i < info->GetInputCount(); i++) {
+        common_param_.input_types[i] = common_param_.input_types[0];
+        common_param_.input_formats[i] = DATAFORMAT_NDARRAY;
+    }
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

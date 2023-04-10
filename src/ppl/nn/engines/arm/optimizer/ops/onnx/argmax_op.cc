@@ -34,8 +34,9 @@ ArgMaxOp::ArgMaxOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeArgMax(info, param_.get());
     };
 
-    infer_type_func_ = [](InputOutputInfo* info) {
+    infer_layout_func_ = [](InputOutputInfo* info) {
         info->GetOutput<TensorImpl>(0)->GetShape()->SetDataType(DATATYPE_INT64);
+        info->GetOutput<TensorImpl>(0)->GetShape()->SetDataFormat(DATAFORMAT_NDARRAY);
     };
 }
 
@@ -49,12 +50,21 @@ RetCode ArgMaxOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ArgMaxOp::SelectDataType(const InputOutputInfo& info,
-                                 std::vector<ppl::common::datatype_t>* selected_input_types,
-                                 std::vector<ppl::common::datatype_t>* selected_output_types,
-                                 const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    selected_output_types->at(0) = DATATYPE_INT64;
+RetCode ArgMaxOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    common_param_.input_types[0] = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) { // fallback bfloat16
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+    }
+    if (!CheckDTypes<DATATYPE_FLOAT32, DATATYPE_FLOAT16, DATATYPE_INT64>(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for ArgMax Op: "
+                   << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+
+    // Op
+    common_param_.output_types[0] = DATATYPE_INT64;
+    common_param_.output_formats[0] = DATAFORMAT_NDARRAY;
     return RC_SUCCESS;
 }
 

@@ -34,7 +34,7 @@ GatherOp::GatherOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeGather(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode GatherOp::Init(const OptKernelOptions& options) {
@@ -47,28 +47,21 @@ RetCode GatherOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode GatherOp::SelectAlgorithm(const InputOutputInfo& info, const OptKernelOptions& options) {
-    if (info.GetInputCount() != 2) {
+RetCode GatherOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    if (options.io_info->GetInputCount() != 2) {
         LOG(ERROR) << "Gather Op should have 2 inputs.";
         return RC_INVALID_VALUE;
     }
-    return RC_SUCCESS;
-}
 
-RetCode GatherOp::SelectDataType(const InputOutputInfo& info,
-                                 std::vector<ppl::common::datatype_t>* selected_input_types,
-                                 std::vector<ppl::common::datatype_t>* selected_output_types,
-                                 const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    selected_input_types->at(1) = DATATYPE_INT64;
-    return RC_SUCCESS;
-}
+    common_param_.input_types[0] = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    // common_param_.input_types[1] = DATATYPE_INT64;
+    if (!CheckDTypes<DATATYPE_INT64, DATATYPE_INT32>(common_param_.input_types[1])) {
+        LOG(ERROR) << "Unsupported input[1] type for Gather Op: " << GetDataTypeStr(common_param_.input_types[1]);
+    }
+    common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
 
-RetCode GatherOp::SelectFormat(const InputOutputInfo& info,
-                               std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                               std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_input_formats->at(1) = selected_output_formats->at(0) =
-        ppl::common::DATAFORMAT_NDARRAY;
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

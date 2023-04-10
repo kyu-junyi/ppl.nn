@@ -27,9 +27,7 @@ class UnsqueezeOp final : public ArmOptKernel {
 public:
     UnsqueezeOp(const ir::Node* node);
     ppl::common::RetCode Init(const OptKernelOptions& options) override;
-    ppl::common::RetCode SelectFormat(const InputOutputInfo& info,
-                                      std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                      std::vector<ppl::common::dataformat_t>* selected_output_formats) override;
+    ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) override;
     KernelImpl* CreateKernelImpl() const override;
 
 #ifdef PPLNN_ENABLE_PMX_MODEL

@@ -24,6 +24,8 @@
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/mul_op.h"
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/sub_op.h"
 
+using namespace ppl::common;
+
 namespace ppl { namespace nn { namespace arm {
 
 bool FuseArithmeticReLURule::Apply(const OptKernelOptions& options) {
@@ -112,6 +114,7 @@ bool FuseArithmeticReLURule::Apply(const OptKernelOptions& options) {
         }
     }
 
+    status_ = RC_SUCCESS;
     return graph_changed;
 }
 

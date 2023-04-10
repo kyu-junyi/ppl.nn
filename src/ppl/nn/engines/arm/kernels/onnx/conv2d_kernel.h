@@ -46,6 +46,7 @@ public:
 private:
     uint64_t CalcTmpBufferSize(const KernelExecContext& ctx) const override;
     ppl::common::RetCode DoExecute(KernelExecContext* ctx) override;
+    bool CanDoExecute(const KernelExecContext& ctx) const override;
 private:
     const Convolution2DParam *param_ = nullptr;
     ppl::kernel::arm_server::neon::conv2d_runtime_executor *executor_ = nullptr;

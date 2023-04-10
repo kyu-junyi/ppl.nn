@@ -36,7 +36,7 @@ SplitOp::SplitOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeSplit(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode SplitOp::Init(const OptKernelOptions& options) {
@@ -49,16 +49,18 @@ RetCode SplitOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode SplitOp::SelectFormat(const InputOutputInfo& info,
-                              std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                              std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    const auto input_format = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-
-    selected_input_formats->at(0) = input_format;
-    for (uint32_t i = 0; i < info.GetOutputCount(); i++) {
-        selected_output_formats->at(i) = input_format;
+RetCode SplitOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    if (options.io_info->GetInputCount() == 2) {
+        // common_param_.input_types[1] = DATATYPE_INT64;
+        if (common_param_.input_types[1] != DATATYPE_INT64) {
+            LOG(ERROR) << "Unsupported input[1] type for Split Op: " << GetDataTypeStr(common_param_.input_types[1]);
+        }
+        common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
     }
 
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

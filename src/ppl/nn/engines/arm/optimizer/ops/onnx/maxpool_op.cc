@@ -35,7 +35,7 @@ MaxPoolOp::MaxPoolOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapePooling(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode MaxPoolOp::Init(const OptKernelOptions& options) {
@@ -48,20 +48,22 @@ RetCode MaxPoolOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode MaxPoolOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
-                                vector<dataformat_t>* selected_output_formats) {
-    auto input_datatype = info.GetInput<TensorImpl>(0)->GetShape()->GetDataType();
-    selected_input_formats->at(0) = selected_output_formats->at(0) = (input_datatype == DATATYPE_FLOAT16)
-        ? DATAFORMAT_N8CX
-        : ((input_datatype == DATATYPE_FLOAT32) ? DATAFORMAT_N4CX : DATAFORMAT_UNKNOWN);
-    return RC_SUCCESS;
-}
+RetCode MaxPoolOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    common_param_.input_types[0] = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    if (common_param_.input_types[0] == DATATYPE_BFLOAT16) { // fallback bfloat16
+        common_param_.input_types[0] = options.engine_options->forward_precision;
+    }
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for MaxPool Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    common_param_.input_formats[0] = GetNbcxFormat_(common_param_.input_types[0]);
 
-RetCode MaxPoolOp::SelectDataType(const InputOutputInfo& info,
-                                  std::vector<ppl::common::datatype_t>* selected_input_types,
-                                  std::vector<ppl::common::datatype_t>* selected_output_types,
-                                  const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
+    if (options.io_info->GetOutputCount() > 1) {
+        LOG(ERROR) << "No support for Output[Indices] of MaxPool Op currently.";
+        return RC_UNSUPPORTED;
+    }
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

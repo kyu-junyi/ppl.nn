@@ -23,6 +23,8 @@
 namespace ppl { namespace nn { namespace arm {
 
 struct ArmCommonParam {
+    std::vector<ppl::common::dataformat_t> input_formats;
+    std::vector<ppl::common::datatype_t> input_types;
     std::vector<ppl::common::dataformat_t> output_formats;
     std::vector<ppl::common::datatype_t> output_types;
 };

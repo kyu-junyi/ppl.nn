@@ -122,6 +122,50 @@ RetCode ArmEngine::DoOptimize(const utils::SharedResource& resource, ir::Graph* 
     return RC_SUCCESS;
 }
 
+RetCode ArmEngine::CalDataOmittedConstants(const ir::Graph& graph, const RuntimePartitionInfo& info,
+                                                        std::set<edgeid_t>* data_omitted_constants) const {
+    data_omitted_constants->clear();
+
+    std::map<edgeid_t, int64_t> constants_data_refcount;
+    for (uint32_t i = 0; i < graph.topo->GetConstantCount(); ++i) {
+        auto edge_id = graph.topo->GetConstant(i);
+        auto edge = graph.topo->GetEdge(edge_id);
+        if (edge == nullptr) {
+            LOG(ERROR) << "Edge of Constant[edgeid=" << edge_id << "] not found";
+            return RC_NOT_FOUND;
+        }
+        const int64_t refcount = edge->CalcConsumerCount();
+        auto ret = constants_data_refcount.insert(make_pair(edge_id, refcount));
+        if (!ret.second) {
+            LOG(ERROR) << "Duplicated Constant Edge";
+            return RC_OTHER_ERROR;
+        }
+    }
+
+    for (auto it = info.kernels.begin(); it != info.kernels.end(); ++it) {
+        auto kernel = (ArmOptKernel*)it->second.get();
+        auto ret = kernel->OmitConstantsData(&constants_data_refcount);
+        if (ppl::common::RC_SUCCESS != ret) {
+            return ret;
+        }
+    }
+
+    std::set<edgeid_t> graph_output_set;
+    if (data_omitted_constants != nullptr) {
+        for (uint32_t i = 0; i < graph.topo->GetOutputCount(); ++i) {
+            graph_output_set.insert(graph.topo->GetOutput(i));
+        }
+    }
+
+    for (auto it = constants_data_refcount.begin(); it != constants_data_refcount.end(); ++it) {
+        if (it->second <= 0 && (graph_output_set.find(it->first) == graph_output_set.end())) {
+            data_omitted_constants->insert(it->first);
+        }
+    }
+
+    return ppl::common::RC_SUCCESS;
+}
+
 RetCode ArmEngine::ProcessGraph(const utils::SharedResource& resource, ir::Graph* graph, RuntimePartitionInfo* info) {
     auto status = DoOptimize(resource, graph, info);
     if (status != RC_SUCCESS) {
@@ -129,7 +173,14 @@ RetCode ArmEngine::ProcessGraph(const utils::SharedResource& resource, ir::Graph
         return status;
     }
 
-    status = utils::LoadConstants(*graph, &device_, &info->constants);
+    std::set<edgeid_t> data_omitted_constants;
+    status = CalDataOmittedConstants(*graph, *info, &data_omitted_constants);
+    if (status != RC_SUCCESS) {
+        LOG(ERROR) << "CalDataOmittedConstants failed: " << GetRetCodeStr(status);
+        return status;
+    }
+
+    status = utils::LoadConstants(*graph, &device_, &info->constants, &data_omitted_constants);
     if (status != RC_SUCCESS) {
         LOG(ERROR) << "FillConstants failed: " << GetRetCodeStr(status);
         return status;

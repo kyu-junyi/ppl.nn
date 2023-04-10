@@ -34,7 +34,7 @@ TransposeOp::TransposeOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeTranspose(info, param_.get());
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode TransposeOp::Init(const OptKernelOptions& options) {
@@ -47,10 +47,11 @@ RetCode TransposeOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode TransposeOp::SelectFormat(const InputOutputInfo& info,
-                                  std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                                  std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_output_formats->at(0) = ppl::common::DATAFORMAT_NDARRAY;
+RetCode TransposeOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

@@ -24,10 +24,21 @@ namespace ppl { namespace nn { namespace arm {
 
 SqrtOp::SqrtOp(const ir::Node* node) : ArmOptKernel(node) {
     infer_dims_func_ = GenericInferDims;
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode SqrtOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode SqrtOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input type for Sqrt Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

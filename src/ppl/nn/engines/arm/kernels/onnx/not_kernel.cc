@@ -31,12 +31,6 @@ ppl::common::RetCode NotKernel::DoExecute(KernelExecContext* ctx) {
     PPL_ARM_TENSOR_PRINT_DEBUG_MSG(output);
     PPLNN_ARM_DEBUG_TRACE("isa: %u\n", GetISA());
 
-    const auto data_type = x->GetShape()->GetDataType();
-    if (data_type == ppl::common::DATATYPE_FLOAT16 && !MayUseISA(ppl::common::ISA_ARMV8_2)) {
-        LOG(ERROR) << "fp16 needs isa >= armv8.2.";
-        return ppl::common::RC_UNSUPPORTED;
-    }
-
     return ppl::kernel::arm_server::neon::not_bool(x->GetShape(), x->GetBufferPtr<uint8_t>(), output->GetBufferPtr<uint8_t>());
 }
 

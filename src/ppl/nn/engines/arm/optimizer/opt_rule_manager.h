@@ -39,17 +39,19 @@ public:
     OptRuleLevel GetMaxOptLevel(uint32_t graph_optimization_level);
 
     // apply single rule
-    ppl::common::RetCode ApplyRule(const OptKernelOptions& options, const std::string& name) const;
+    ppl::common::RetCode ApplyRule(const OptKernelOptions& options, const std::string& name);
 
     // apply rules filtered by optimize level, tag & name
     ppl::common::RetCode ApplyRules(const OptKernelOptions& options, const OptRuleLevel max_opt_level,
-                                    const std::string& tag_filter = "", const std::string& name_filter = "") const;
+                                    const std::string& tag_filter = "", const std::string& name_filter = "");
 
     ppl::common::RetCode Register(OptRule* rule);
     ppl::common::RetCode Remove(const std::string& rule_name);
+    ppl::common::RetCode RemoveByTag(const std::string& tag_name);
 
 private:
     std::vector<std::shared_ptr<OptRule>> rule_all_;
+    ppl::common::RetCode status_;
 
 private:
     OptRuleManager();

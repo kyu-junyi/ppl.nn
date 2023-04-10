@@ -29,10 +29,23 @@ ExpandOp::ExpandOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeExpand(info, nullptr);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ExpandOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode ExpandOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    common_param_.input_types[0] = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    // common_param_.input_types[1] = DATATYPE_INT64;
+    if (common_param_.input_types[1] != DATATYPE_INT64) {
+        LOG(ERROR) << "Unsupported input[1] type for Expand Op: " << GetDataTypeStr(common_param_.input_types[1]);
+    }
+    common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

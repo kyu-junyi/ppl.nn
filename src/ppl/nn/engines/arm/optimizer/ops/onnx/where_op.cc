@@ -29,14 +29,35 @@ WhereOp::WhereOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeWhere(info, nullptr);
     };
 
-    infer_type_func_ = [](InputOutputInfo* info) -> void {
-        GenericInferType(info);
-        info->GetOutput<TensorImpl>(0)->GetShape()->SetDataType(
-            info->GetInput<TensorImpl>(1)->GetShape()->GetDataType());
+    infer_layout_func_ = [](InputOutputInfo* info) -> void {
+        auto in1_shape = info->GetInput<TensorImpl>(1)->GetShape();
+        auto output_shape = info->GetOutput<TensorImpl>(0)->GetShape();
+        output_shape->SetDataType(in1_shape->GetDataType());
+        output_shape->SetDataFormat(in1_shape->GetDataFormat());
     };
 }
 
 RetCode WhereOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode WhereOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (common_param_.input_types[0] != DATATYPE_BOOL) {
+        LOG(ERROR) << "Unsupported input[0] type for Where Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    // simple resolution for broadcasting 
+    common_param_.input_types[2] = common_param_.input_types[1];
+    if (common_param_.input_formats[2] != common_param_.input_formats[1]) {
+        common_param_.input_formats[2] = common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+    }
+    //!CAVEAT: leave broadcasting with two nbcx to runtime
+    common_param_.input_formats[0] = common_param_.input_formats[1];
+
+    // Op: main tensor - 1
+    common_param_.output_types[0] = common_param_.input_types[1];
+    common_param_.output_formats[0] = common_param_.input_formats[1];
     return RC_SUCCESS;
 }
 

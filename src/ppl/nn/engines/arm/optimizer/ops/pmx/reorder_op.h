@@ -26,12 +26,16 @@ class ReorderOp final : public ArmOptKernel {
 public:
     ReorderOp(const ir::Node* node);
     ppl::common::RetCode Init(const OptKernelOptions& options) override;
+    ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) override;
     KernelImpl* CreateKernelImpl() const override;
 
 #ifdef PPLNN_ENABLE_PMX_MODEL
     ppl::common::RetCode SerializeData(const ::ppl::nn::pmx::SerializationContext&, utils::DataStream*) const override;
     ppl::common::RetCode DeserializeData(const ::ppl::nn::pmx::DeserializationContext&, const void*, uint64_t) override;
 #endif
+
+private:
+    static uint32_t reorder_cases_[8][4];
 };
 
 }}} // namespace ppl::nn::arm

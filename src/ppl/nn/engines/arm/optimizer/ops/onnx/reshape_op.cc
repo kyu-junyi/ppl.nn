@@ -29,27 +29,28 @@ ReshapeOp::ReshapeOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeReshape(info, nullptr);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ReshapeOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ReshapeOp::SelectAlgorithm(const InputOutputInfo& info, const OptKernelOptions& options) {
-    if (info.GetInputCount() != 2) {
+RetCode ReshapeOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    if (options.io_info->GetInputCount() != 2) {
         LOG(ERROR) << "Reshape Op should have 2 inputs.";
         return RC_INVALID_VALUE;
     }
-    return RC_SUCCESS;
-}
 
-RetCode ReshapeOp::SelectDataType(const InputOutputInfo& info,
-                                  std::vector<ppl::common::datatype_t>* selected_input_types,
-                                  std::vector<ppl::common::datatype_t>* selected_output_types,
-                                  const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    selected_input_types->at(1) = ppl::common::DATATYPE_INT64;
+    GenericSelectInputLayout(options.io_info, common_param_);
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    if (common_param_.input_types[1] != DATATYPE_INT64) {
+        LOG(ERROR) << "Unsupported input[1] type for Reshape Op: " << GetDataTypeStr(common_param_.input_types[1]);
+        return RC_INVALID_VALUE;
+    }
+    common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

@@ -27,6 +27,7 @@ class FlattenOp final : public ArmOptKernel {
 public:
     FlattenOp(const ir::Node* node);
     ppl::common::RetCode Init(const OptKernelOptions& options) override;
+    ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) override;
     KernelImpl* CreateKernelImpl() const override;
 
 #ifdef PPLNN_ENABLE_PMX_MODEL

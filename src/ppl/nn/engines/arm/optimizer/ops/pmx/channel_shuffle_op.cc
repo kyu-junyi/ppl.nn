@@ -30,8 +30,6 @@ using namespace ppl::common;
 namespace ppl { namespace nn { namespace arm {
 
 ChannelShuffleOp::ChannelShuffleOp(const ir::Node* node) : ArmOptKernel(node) {
-    infer_type_func_ = GenericInferType;
-
     infer_dims_func_ = [](InputOutputInfo* info) -> RetCode {
         auto& input0 = *info->GetInput<TensorImpl>(0)->GetShape();
         int64_t channels = input0.GetDim(1);
@@ -50,6 +48,8 @@ ChannelShuffleOp::ChannelShuffleOp(const ir::Node* node) : ArmOptKernel(node) {
 
         return RC_SUCCESS;
     };
+
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ChannelShuffleOp::Init(const OptKernelOptions& options) {
@@ -62,19 +62,16 @@ RetCode ChannelShuffleOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode ChannelShuffleOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
-                                       vector<dataformat_t>* selected_output_formats) {
-    auto data_format = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    if (info.GetInputCount() == 2 && info.GetInput<TensorImpl>(1)->GetShape()->GetDataFormat() != data_format) {
-        data_format = DATAFORMAT_NDARRAY;
-    }
-    for (uint32_t i = 0; i < info.GetInputCount(); i++) {
-        selected_input_formats->at(i) = data_format;
-    }
-    for (uint32_t i = 0; i < info.GetOutputCount(); i++) {
-        selected_output_formats->at(i) = data_format;
+RetCode ChannelShuffleOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (options.io_info->GetInputCount() == 2) {
+        common_param_.input_types[1] = common_param_.input_types[0];
+        if (common_param_.input_formats[1] != common_param_.input_formats[0]) {
+            common_param_.input_formats[1] = common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+        }
     }
 
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 
@@ -92,7 +89,6 @@ ppl::common::RetCode ChannelShuffleOp::SerializeData(const ::ppl::nn::pmx::Seria
     auto fb_root = ppl::nn::pmx::onnx::CreateOpParam(op_builder, ppl::nn::pmx::onnx::OpParamType_NONE, 0, fb_data);
     ppl::nn::pmx::onnx::FinishOpParamBuffer(op_builder, fb_root);
     return ds->Write(op_builder.GetBufferPointer(), op_builder.GetSize());
-    return 0;
 }
 
 ppl::common::RetCode ChannelShuffleOp::DeserializeData(const ::ppl::nn::pmx::DeserializationContext& ctx, const void* base, uint64_t size) {

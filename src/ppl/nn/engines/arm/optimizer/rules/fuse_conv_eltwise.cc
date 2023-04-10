@@ -22,6 +22,8 @@
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/conv_op.h"
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/add_op.h"
 
+using namespace ppl::common;
+
 namespace ppl { namespace nn { namespace arm {
 
 bool FuseConvEltwiseRule::Apply(const OptKernelOptions& options) {
@@ -115,6 +117,7 @@ bool FuseConvEltwiseRule::Apply(const OptKernelOptions& options) {
         }
     }
 
+    status_ = RC_SUCCESS;
     return graph_changed;
 }
 

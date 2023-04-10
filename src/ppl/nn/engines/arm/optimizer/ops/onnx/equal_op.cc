@@ -28,13 +28,18 @@ EqualOp::EqualOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeEqual(info, nullptr);
     };
 
-    infer_type_func_ = [](InputOutputInfo* info) -> void {
+    infer_layout_func_ = [](InputOutputInfo* info) -> void {
         info->GetOutput<TensorImpl>(0)->GetShape()->SetDataType(DATATYPE_BOOL);
+        info->GetOutput<TensorImpl>(0)->GetShape()->SetDataFormat(info->GetInput<TensorImpl>(0)->GetShape()->GetDataFormat());
     };
 }
 
 RetCode EqualOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
+}
+
+RetCode EqualOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    return RelationSelectTwoInputsLayout("Equal", options.io_info, common_param_);
 }
 
 KernelImpl* EqualOp::CreateKernelImpl() const {

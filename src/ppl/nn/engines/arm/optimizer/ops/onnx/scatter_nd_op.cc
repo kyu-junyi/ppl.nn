@@ -28,10 +28,30 @@ ScatterNDOp::ScatterNDOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeScatterND(info, nullptr);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode ScatterNDOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode ScatterNDOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    auto& in0_shape = *options.io_info->GetInput<TensorImpl>(0)->GetShape();
+    common_param_.input_types[0] = in0_shape.GetDataType();
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    if (!CheckMajorFloat_(common_param_.input_types[0])) {
+        LOG(ERROR) << "Unsupported input[0] type for ScatterND Op: " << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    // common_param_.input_types[1] = DATATYPE_INT64;
+    if (common_param_.input_types[1] != DATATYPE_INT64) {
+        LOG(ERROR) << "Unsupported input[1] type for ScatterND Op: " << GetDataTypeStr(common_param_.input_types[1]);
+    }
+    common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+    common_param_.input_types[2] = common_param_.input_types[0];
+    common_param_.input_formats[2] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

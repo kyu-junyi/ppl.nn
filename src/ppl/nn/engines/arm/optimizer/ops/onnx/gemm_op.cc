@@ -55,7 +55,7 @@ GemmOp::GemmOp(const ir::Node* node) : ArmOptKernel(node), fc_param_(nullptr) {
         }  
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 GemmOp::~GemmOp() {
@@ -78,12 +78,21 @@ RetCode GemmOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-ppl::common::RetCode GemmOp::SelectAlgorithm(const InputOutputInfo& info, const OptKernelOptions& options) {
+RetCode GemmOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
     auto node = GetNode();
     auto graph_data = options.graph_data;
 
+    auto input_type = options.io_info->GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    if (!CheckMajorFloat_(input_type)) {
+        LOG(ERROR) << "Unsupported datatype for Gemm Op: " << GetDataTypeStr(input_type);
+        return RC_UNSUPPORTED;
+    }
+    for (uint32_t i = 0; i < options.io_info->GetInputCount(); i++) {
+        common_param_.input_types[i] = input_type;
+        common_param_.input_formats[i] = DATAFORMAT_NDARRAY;
+    }
+
     auto weight_data_it = graph_data->constants.find(node->GetInput(1));
-    int64_t weight_len = weight_data_it->second.data.GetSize() / sizeof(float);
     void* weight_data = nullptr;
     if (weight_data_it != graph_data->constants.end()) {
         weight_data = weight_data_it->second.data.GetData();
@@ -99,118 +108,126 @@ ppl::common::RetCode GemmOp::SelectAlgorithm(const InputOutputInfo& info, const 
         }
     }
 
-    if (!param_->transA && param_->transB && weight_data != nullptr) {
-        if (!fc_param_) {
-            fc_param_ = new FCParam;
-        }
-        if (!fc_param_) {
-            return ppl::common::RC_OUT_OF_MEMORY;
-        }
+    if ((param_->transA || !param_->transB || weight_data == nullptr || (node->GetInputCount() == 3 && bias_data == nullptr))) {
+        LOG(DEBUG) << "Gemm Op is not suitable for the fully-connected kernel.";
+        return RC_SUCCESS;
+    }
 
-        const ir::Shape& weight_shape = graph_data->shapes.find(node->GetInput(1))->second;
-        fc_param_->param.num_output = weight_shape.dims[0];
-        fc_param_->param.channels = weight_shape.dims[1];
-        fc_param_->param.fuse_flag = 0;
+    if (!fc_param_) {
+        fc_param_ = new FCParam;
+    }
+    if (!fc_param_) {
+        return ppl::common::RC_OUT_OF_MEMORY;
+    }
 
-        auto input_format = info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-        auto dtype = info.GetInput<TensorImpl>(0)->GetShape()->GetDataType();
+    const ir::Shape& weight_shape = graph_data->shapes.find(node->GetInput(1))->second;
+    fc_param_->param.num_output = weight_shape.dims[0];
+    fc_param_->param.channels = weight_shape.dims[1];
+    fc_param_->param.fuse_flag = 0;
 
-        fc_param_->algo_info = ppl::kernel::arm_server::neon::fc_algo_selector::select_algo(
-            input_format, fc_param_->param, dtype, options.device->GetISA());
+    fc_param_->algo_info = ppl::kernel::arm_server::neon::fc_algo_selector::select_algo(
+        DATAFORMAT_NDARRAY, fc_param_->param, input_type, options.device->GetISA());
 
-        if (fc_param_->algo_info.algo_type == ppl::kernel::arm_server::neon::fc_algo::unknown) {
-            LOG(INFO) << "FC select algorithm failed, use fallback kernel";
-        } else {
-            fc_param_->mgr = ppl::kernel::arm_server::neon::fc_algo_selector::gen_algo(
-                fc_param_->param, fc_param_->algo_info, options.device->GetAllocator());
-
-            // Note: If the filter is reused, check it in generate_cvt_weights and simply reuse it as they are the same.
-            // CAVEAT: change this if new algorithms with different cvt_filter are added.
-            ppl::nn::TensorBufferInfo * new_filter = &options.info->constants[node->GetInput(1)];
-            new_filter->SetDevice(options.device);
-
-            // Note: If the bias is reused, check it in generate_cvt_weights and simply reuse it as they are the same.
-            // CAVEAT: change this if new algorithms with different cvt_bias are added.
-            ppl::nn::TensorBufferInfo * new_bias = nullptr;
-            if (bias_data != nullptr) {
-                new_bias = &options.info->constants[node->GetInput(2)];
-                new_bias->SetDevice(options.device);
-            }
-
-            if (dtype == ppl::common::DATATYPE_FLOAT32) {
-                ppl::common::TensorShape cvt_filter_shape, cvt_bias_shape;
-                fc_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape, dtype);
-
-                if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
-                    bias_data = nullptr;
-                } else if (bias_data && new_bias) {
-                    new_bias->Reshape(cvt_bias_shape);
-                    new_bias->ReallocBuffer();
-                }
-
-                new_filter->Reshape(cvt_filter_shape);
-                new_filter->ReallocBuffer();
-
-                void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
-                void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
-
-                fc_param_->mgr->generate_cvt_weights(cvt_filter_buffer, cvt_bias_buffer, weight_data, bias_data, dtype);
-#ifdef PPLNN_USE_ARMV8_2_FP16
-            } else if (dtype == ppl::common::DATATYPE_FLOAT16) {
-                ppl::common::TensorShape cvt_filter_shape, cvt_bias_shape;
-                fc_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape, dtype);
-
-                vector<__fp16> weight_data_fp16;
-                weight_data_fp16.resize(weight_len * sizeof(__fp16));
-                Fp32ToFp16((const float*)weight_data, weight_len, weight_data_fp16.data());
-
-                vector<__fp16> bias_data_fp16;
-                __fp16 * origin_bias_data_fp16 = nullptr;
-                if (bias_data != nullptr) {
-                    bias_data_fp16.resize(bias_len * sizeof(__fp16));
-                    Fp32ToFp16((const float*)bias_data, bias_len, bias_data_fp16.data());
-                    origin_bias_data_fp16 = bias_data_fp16.data();
-                }
-
-                if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
-                    origin_bias_data_fp16 = nullptr;
-                } else if (bias_data && new_bias) {
-                    new_bias->Reshape(cvt_bias_shape);
-                    new_bias->ReallocBuffer();
-                }
-
-                new_filter->Reshape(cvt_filter_shape);
-                new_filter->ReallocBuffer();
-
-                void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
-                void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
-
-                fc_param_->mgr->generate_cvt_weights(cvt_filter_buffer, cvt_bias_buffer, weight_data_fp16.data(), origin_bias_data_fp16, dtype);
-#endif
-            }
-        }
-    } else {
+    if (fc_param_->algo_info.algo_type == ppl::kernel::arm_server::neon::fc_algo::unknown) {
         LOG(INFO) << "FC select algorithm failed, use fallback kernel";
+    } else {
+        fc_param_->mgr = ppl::kernel::arm_server::neon::fc_algo_selector::gen_algo(
+            fc_param_->param, fc_param_->algo_info, options.device->GetAllocator());
     }
 
+    GenericSelectInputLayout(options.io_info, common_param_);
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 
-ppl::common::RetCode GemmOp::SelectFormat(const InputOutputInfo& info, vector<dataformat_t>* selected_input_formats,
-                                          vector<dataformat_t>* selected_output_formats) {
-    // auto input_datatype = info.GetInput<TensorImpl>(0)->GetShape()->GetDataType();
-    selected_input_formats->at(0) = selected_output_formats->at(0) = DATAFORMAT_NDARRAY;
-    return RC_SUCCESS;
-}
-
-ppl::common::RetCode GemmOp::SelectDataType(const InputOutputInfo& info,
-                                            std::vector<ppl::common::datatype_t>* selected_input_types,
-                                            std::vector<ppl::common::datatype_t>* selected_output_types,
-                                            const ppl::common::datatype_t preferred_fp_datatype) {
-    GenericSelectDataType(info, selected_input_types, selected_output_types, preferred_fp_datatype);
-    for (uint32_t i = 1; i < info.GetInputCount(); i++) {
-        selected_input_types->at(i) = info.GetInput<TensorImpl>(i)->GetShape()->GetDataType();
+RetCode GemmOp::ConvertConstants(const OptKernelOptions options) {
+    if (!fc_param_) {
+        return RC_SUCCESS;
     }
+
+    auto node = GetNode();
+    auto graph_data = options.graph_data;
+
+    auto weight_data_it = graph_data->constants.find(node->GetInput(1));
+    int64_t weight_len = weight_data_it->second.data.GetSize() / sizeof(float);
+    void* weight_data = weight_data_it->second.data.GetData();
+
+    void* bias_data = nullptr;
+    int64_t bias_len = 0;
+    if (node->GetInputCount() == 3) {
+        auto bias_data_it = graph_data->constants.find(node->GetInput(2));
+        bias_len = bias_data_it->second.data.GetSize() / sizeof(float);
+        bias_data = bias_data_it->second.data.GetData();
+    }
+
+    // Note: If the filter is reused, check it in generate_cvt_weights and simply reuse it as they are the same.
+    //!CAVEAT: change this if new algorithms with different cvt_filter are added.
+    ppl::nn::TensorBufferInfo * new_filter = &options.info->constants[node->GetInput(1)];
+    new_filter->SetDevice(options.device);
+
+    // Note: If the bias is reused, check it in generate_cvt_weights and simply reuse it as they are the same.
+    //!CAVEAT: change this if new algorithms with different cvt_bias are added.
+    ppl::nn::TensorBufferInfo * new_bias = nullptr;
+    if (bias_data != nullptr) {
+        new_bias = &options.info->constants[node->GetInput(2)];
+        new_bias->SetDevice(options.device);
+    }
+
+    auto dtype = fc_param_->algo_info.dtype;
+    if (dtype == ppl::common::DATATYPE_FLOAT32) {
+        ppl::common::TensorShape cvt_filter_shape, cvt_bias_shape;
+        fc_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape, dtype);
+
+        if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
+            bias_data = nullptr;
+        } else if (bias_data && new_bias) {
+            new_bias->Reshape(cvt_bias_shape);
+            new_bias->ReallocBuffer();
+        }
+
+        new_filter->Reshape(cvt_filter_shape);
+        new_filter->ReallocBuffer();
+
+        void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
+        void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
+
+        fc_param_->mgr->generate_cvt_weights(cvt_filter_buffer, cvt_bias_buffer, weight_data, bias_data, dtype);
+#ifdef PPLNN_USE_ARMV8_2_FP16
+    } else if (dtype == ppl::common::DATATYPE_FLOAT16) {
+        ppl::common::TensorShape cvt_filter_shape, cvt_bias_shape;
+        fc_param_->mgr->generate_cvt_weights_shapes(cvt_filter_shape, cvt_bias_shape, dtype);
+
+        vector<__fp16> weight_data_fp16;
+        weight_data_fp16.resize(weight_len * sizeof(__fp16));
+        Fp32ToFp16((const float*)weight_data, weight_len, weight_data_fp16.data());
+
+        vector<__fp16> bias_data_fp16;
+        __fp16 * origin_bias_data_fp16 = nullptr;
+        if (bias_data != nullptr) {
+            bias_data_fp16.resize(bias_len * sizeof(__fp16));
+            Fp32ToFp16((const float*)bias_data, bias_len, bias_data_fp16.data());
+            origin_bias_data_fp16 = bias_data_fp16.data();
+        }
+
+        if (new_bias && new_bias->IsBufferOwner() && new_bias->GetBufferPtr()) {
+            origin_bias_data_fp16 = nullptr;
+        } else if (bias_data && new_bias) {
+            new_bias->Reshape(cvt_bias_shape);
+            new_bias->ReallocBuffer();
+        }
+
+        new_filter->Reshape(cvt_filter_shape);
+        new_filter->ReallocBuffer();
+
+        void *cvt_filter_buffer = (new_filter) ? new_filter->GetBufferPtr() : nullptr;
+        void *cvt_bias_buffer   = (new_bias  ) ? new_bias->GetBufferPtr()   : nullptr;
+
+        fc_param_->mgr->generate_cvt_weights(cvt_filter_buffer, cvt_bias_buffer, weight_data_fp16.data(), origin_bias_data_fp16, dtype);
+#endif
+    }
+
     return RC_SUCCESS;
 }
 

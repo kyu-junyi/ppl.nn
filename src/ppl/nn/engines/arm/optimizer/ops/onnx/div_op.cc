@@ -29,26 +29,15 @@ DivOp::DivOp(const ir::Node* node) : ArmOptKernel(node) {
         return onnx::ReshapeAdd(info, nullptr);
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode DivOp::Init(const OptKernelOptions& options) {
     return RC_SUCCESS;
 }
 
-RetCode DivOp::SelectAlgorithm(const InputOutputInfo& info, const OptKernelOptions& options) {
-    if (info.GetInputCount() != 2) {
-        LOG(ERROR) << "Div Op should have 2 inputs.";
-        return RC_INVALID_VALUE;
-    }
-    return RC_SUCCESS;
-}
-
-RetCode DivOp::SelectFormat(const InputOutputInfo& info, std::vector<ppl::common::dataformat_t>* selected_input_formats,
-                            std::vector<ppl::common::dataformat_t>* selected_output_formats) {
-    selected_input_formats->at(0) = selected_input_formats->at(1) = selected_output_formats->at(0) =
-        info.GetInput<TensorImpl>(0)->GetShape()->GetDataFormat();
-    return RC_SUCCESS;
+RetCode DivOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    return ArithmeticSelectTwoInputsLayout("Div", options.io_info, common_param_);
 }
 
 #ifdef PPLNN_ENABLE_PMX_MODEL

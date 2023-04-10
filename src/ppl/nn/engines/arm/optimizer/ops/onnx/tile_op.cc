@@ -30,22 +30,35 @@ TileOp::TileOp(const ir::Node* node) : ArmOptKernel(node) {
         if (ret != RC_SUCCESS) {
             return ret;
         }
-        auto A = info->GetInput<TensorImpl>(0)->GetShape();
-        auto B = info->GetInput<TensorImpl>(1)->GetShape();
-        auto C = info->GetOutput<TensorImpl>(0)->GetShape();
+        // auto A = info->GetInput<TensorImpl>(0)->GetShape();
+        // auto B = info->GetInput<TensorImpl>(1)->GetShape();
+        // auto C = info->GetOutput<TensorImpl>(0)->GetShape();
 
-        if (A->GetDataFormat() != DATAFORMAT_NDARRAY || B->GetDataFormat() != DATAFORMAT_NDARRAY ||
-            C->GetDataFormat() != DATAFORMAT_NDARRAY) {
-            LOG(ERROR) << "only support ndarray now.";
-            return RC_UNSUPPORTED;
-        }
+        // if (A->GetDataFormat() != DATAFORMAT_NDARRAY || B->GetDataFormat() != DATAFORMAT_NDARRAY ||
+        //     C->GetDataFormat() != DATAFORMAT_NDARRAY) {
+        //     LOG(ERROR) << "only support ndarray now.";
+        //     return RC_UNSUPPORTED;
+        // }
         return RC_SUCCESS;
     };
 
-    infer_type_func_ = GenericInferType;
+    infer_layout_func_ = GenericInferLayout;
 }
 
 RetCode TileOp::Init(const OptKernelOptions& options) {
+    return RC_SUCCESS;
+}
+
+RetCode TileOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+    // common_param_.input_types[1] = DATATYPE_INT64;
+    if (common_param_.input_types[1] != DATATYPE_INT64) {
+        LOG(ERROR) << "Unsupported input[1] type for Tile Op: " << GetDataTypeStr(common_param_.input_types[1]);
+    }
+    common_param_.input_formats[1] = DATAFORMAT_NDARRAY;
+
+    GenericSelectOutputLayout(options.io_info, common_param_);
     return RC_SUCCESS;
 }
 

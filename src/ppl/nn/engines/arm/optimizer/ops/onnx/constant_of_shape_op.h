@@ -27,6 +27,7 @@ class ConstantOfShapeOp final : public ArmOptKernel {
 public:
     ConstantOfShapeOp(const ir::Node* node);
     ppl::common::RetCode Init(const OptKernelOptions& options) override;
+    ppl::common::RetCode SelectAlgoDTypeDFormat(const OptKernelOptions options) override;
     KernelImpl* CreateKernelImpl() const override;
 
 private:

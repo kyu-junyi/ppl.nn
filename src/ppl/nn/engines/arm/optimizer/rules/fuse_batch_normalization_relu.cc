@@ -21,6 +21,8 @@
 #include "ppl/nn/engines/arm/optimizer/rules/utils.h"
 #include "ppl/nn/engines/arm/optimizer/ops/onnx/batch_normalization_op.h"
 
+using namespace ppl::common;
+
 namespace ppl { namespace nn { namespace arm {
 
 bool FuseBatchNormalizationReLURule::Apply(const OptKernelOptions& options) {
@@ -69,6 +71,7 @@ bool FuseBatchNormalizationReLURule::Apply(const OptKernelOptions& options) {
         }
     }
 
+    status_ = RC_SUCCESS;
     return graph_changed;
 }
 

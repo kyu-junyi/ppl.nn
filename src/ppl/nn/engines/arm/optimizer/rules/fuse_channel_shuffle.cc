@@ -24,6 +24,8 @@
 #include "ppl/nn/params/onnx/split_param.h"
 #include "ppl/nn/params/pmx/channel_shuffle_param.h"
 
+using namespace ppl::common;
+
 namespace ppl { namespace nn { namespace arm {
 
 inline void GetSliceParam(const ir::Node* node, const ir::GraphTopo* graph_topo, const ir::GraphData* graph_data,
@@ -335,6 +337,7 @@ bool FuseChannelShuffleRule::Apply(const OptKernelOptions& options) {
         }
     }
 
+    status_ = RC_SUCCESS;
     return graph_changed;
 }
 

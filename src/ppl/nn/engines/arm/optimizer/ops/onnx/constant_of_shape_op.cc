@@ -28,9 +28,10 @@ ConstantOfShapeOp::ConstantOfShapeOp(const ir::Node* node) : ArmOptKernel(node) 
         return onnx::ReshapeConstantOfShape(info, param_.get());
     };
 
-    infer_type_func_ = [this](InputOutputInfo* info) -> void {
+    infer_layout_func_ = [this](InputOutputInfo* info) -> void {
         TensorShape* shape = info->GetOutput<TensorImpl>(0)->GetShape();
         shape->SetDataType(param_->data_type);
+        shape->SetDataFormat(DATAFORMAT_NDARRAY);
     };
 }
 
@@ -41,6 +42,21 @@ RetCode ConstantOfShapeOp::Init(const OptKernelOptions& options) {
         return status;
     }
 
+    return RC_SUCCESS;
+}
+
+RetCode ConstantOfShapeOp::SelectAlgoDTypeDFormat(const OptKernelOptions options) {
+    GenericSelectInputLayout(options.io_info, common_param_);
+    if (common_param_.input_types[0] != DATATYPE_INT64) {
+        LOG(ERROR) << "Unsupported input type for ConstantOfShape Op: "
+                   << GetDataTypeStr(common_param_.input_types[0]);
+        return RC_UNSUPPORTED;
+    }
+    common_param_.input_formats[0] = DATAFORMAT_NDARRAY;
+
+    // Op, param
+    common_param_.output_types[0] = param_->data_type;
+    common_param_.output_formats[0] = DATAFORMAT_NDARRAY;
     return RC_SUCCESS;
 }
 

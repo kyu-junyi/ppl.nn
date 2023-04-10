@@ -24,6 +24,15 @@
 
 namespace ppl { namespace nn { namespace arm {
 
+
+bool Conv2dKernel::CanDoExecute(const KernelExecContext& ctx) const {
+    auto tensor = ctx.GetInput<TensorImpl>(0);
+    if (!tensor || tensor->GetShape()->CalcBytesIncludingPadding() == 0) {
+        return false;
+    }
+    return true;
+}
+
 ppl::common::RetCode Conv2dKernel::DoExecute(KernelExecContext* ctx) {
     TensorImpl* X = ctx->GetInput<TensorImpl>(0);
 
