@@ -248,7 +248,7 @@ unset(__GOOGLETEST_TAG__)
 
 # --------------------------------------------------------------------------- #
 
-set(__PPLCPUKERNEL_COMMIT__ 41dc9660d721be9028ad8a63193940283589b4ab)
+set(__PPLCPUKERNEL_COMMIT__ 865436e96c7a0c549f10b7de1a6afbdf2d517f5b)
 
 if(PPLNN_USE_X86_64 OR PPLNN_USE_AARCH64 OR PPLNN_USE_ARMV7 OR PPLNN_USE_RISCV64)
     if(PPLNN_DEP_PPLCPUKERNEL_PKG)
