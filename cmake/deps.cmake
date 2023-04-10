@@ -256,7 +256,7 @@ if(PPLNN_USE_X86_64 OR PPLNN_USE_AARCH64 OR PPLNN_USE_ARMV7 OR PPLNN_USE_RISCV64
             ${PPLNN_DEP_PPLCPUKERNEL_PKG})
     else()
         if(NOT PPLNN_DEP_PPLCPUKERNEL_GIT)
-            set(PPLNN_DEP_PPLCPUKERNEL_GIT "git@github.com:kyu-junyi/ppl.kernel.cpu.git")
+            set(PPLNN_DEP_PPLCPUKERNEL_GIT "https://github.com/kyu-junyi/ppl.kernel.cpu.git")
         endif()
         hpcc_declare_git_dep(ppl.kernel.cpu
             ${PPLNN_DEP_PPLCPUKERNEL_GIT}
