@@ -128,7 +128,6 @@ protected:
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataType(input0_type);
                 }
             }
-            infer_layout_func_(info);
             for (uint32_t i = 0; i < info->GetOutputCount(); i++) {
                 if (i < common_param_.output_types.size()) {
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataFormat(common_param_.output_formats[i]);
@@ -136,6 +135,7 @@ protected:
                     info->GetOutput<TensorImpl>(i)->GetShape()->SetDataFormat(ppl::common::DATAFORMAT_NDARRAY);
                 }
             }
+            infer_layout_func_(info);
             return infer_dims_func_(info);
         });
         return kernel;

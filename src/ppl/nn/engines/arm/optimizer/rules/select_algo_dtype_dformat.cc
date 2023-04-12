@@ -46,15 +46,15 @@ bool SelectAlgoDTypeDFormatRule::Apply(const OptKernelOptions& options) {
         // CheckInput
         const int num_inputs = node->GetInputCount();
         if (node->GetType().name == "Reshape") {
-            LOG(WARNING) << node->GetName() << " has " << num_inputs << " inputs";
+            LOG(DEBUG) << node->GetName() << " has " << num_inputs << " inputs";
             for (auto idx = 0; idx < num_inputs; idx++) {
                 auto *input_tensor = io.GetInput<TensorImpl>(idx);
 
                 auto cur_dformat = input_tensor->GetShape()->GetDataFormat();
                 auto cur_dtype   = input_tensor->GetShape()->GetDataType();
 
-                LOG(WARNING) << "Graph input[" << node->GetInput(idx) << "] has " << GetDataTypeStr(cur_dtype);
-                LOG(WARNING) << "Graph input[" << node->GetInput(idx) << "] has " << GetDataFormatStr(cur_dformat);
+                LOG(DEBUG) << " - Graph input[" << node->GetInput(idx) << "] has " << GetDataTypeStr(cur_dtype);
+                LOG(DEBUG) << " - Graph input[" << node->GetInput(idx) << "] has " << GetDataFormatStr(cur_dformat);
             }
         }
 

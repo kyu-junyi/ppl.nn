@@ -107,7 +107,7 @@ inline ppl::common::dataformat_t GetMajorFormat_(ppl::common::datatype_t dtype, 
     static constexpr uint64_t VAR_OUT(t) = ((uint64_t)v)
 
 #define DECLARE_LAYOUT_PAIR(dt1, df1, dt2, df2) \
-    static constexpr uint64_t VAR_LAYOUT_PAIR(dt1, df1, dt2, df2) = VAR_IN(dt1) | VAR_IN(df1) | VAR_OUT(dt2) | VAR_OUT(df2); \ 
+    static constexpr uint64_t VAR_LAYOUT_PAIR(dt1, df1, dt2, df2) = VAR_IN(dt1) | VAR_IN(df1) | VAR_OUT(dt2) | VAR_OUT(df2); \
     static constexpr uint64_t VAR_LAYOUT_PAIR(dt2, df2, dt1, df1) = VAR_IN(dt2) | VAR_IN(df2) | VAR_OUT(dt1) | VAR_OUT(df1)
 
 class OptLayoutManager {
